@@ -1,0 +1,47 @@
+.package {
+	type    0 : integer
+	session 1 : integer
+    index   2 : integer
+    version 3 : integer
+}
+
+.player {
+    uid     0 : integer
+    subid   1 : integer
+    session 2 : integer
+    idx     3 : integer
+}
+
+handshake 1 {
+    response {
+    	errorcode 0 : integer
+    }
+}
+
+match 2 {
+    request {
+        mode 0 : integer
+    }
+	response {
+		errorcode 0 : integer
+	}
+}
+
+join 3 {
+    request {
+        roomid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+		players 1 : *player
+		session	2 : integer
+		host 3 : string
+		port 4 : integer
+    }
+}
+
+setupmap 4 {
+    response {
+        errorcode 0 : integer
+    }
+}

@@ -1,0 +1,35 @@
+.package {
+	type 0 : integer
+	session 1 : integer
+    index 2 : integer
+    version 3 : integer
+}
+
+handshake 1 {
+    response {
+    	errorcode 0 : integer
+    }
+}
+
+match 2 {
+	request {
+		roomid 0 : integer
+		udphost 1 : string
+		udpport 2 : integer
+		session 3 : integer
+	}
+	response {
+		errorcode 0 : integer
+	}
+}
+
+join 3 {
+	request {
+		index 0 : integer
+		uid 1 : integer
+		k 2 : integer
+	}
+	response {
+		errorcode 0 : integer
+	}
+}

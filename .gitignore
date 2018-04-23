@@ -1,52 +1,18 @@
-# Prerequisites
-*.d
+#*.o
+#*.a
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+/skynet
+/skynet.pid
+3rd/lua/lua
+3rd/lua/luac
+/cservice
+/luaclib
+/logs
+/build64
+/build_linux64
+/bin
 
-# Linker output
-*.ilk
-*.map
-*.exp
+#*.so
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+*.dSYM
+.DS_Store

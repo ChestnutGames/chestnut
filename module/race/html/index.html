@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Sign in &middot; Twitter Bootstrap</title>
+
+   <!-- Le styles -->
+</head>
+<body>
+  <div id="root">
+    <button id="btn01" type="button">login</button>
+    <button id="btn02" type="button">handshake</button>
+    <div id="text"></div>
+  </div> <!-- /container -->
+
+  <script src="https://cdn.bootcss.com/babel-core/5.8.24/browser.min.js"></script>
+  <script src="http://code.jquery.com/jquery-2.2.0.min.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function (argument) {
+      // body...
+      var session = 0
+      $("#btn01").click(function (argument) {
+        // body...
+        var htmlobj = $.ajax({
+          type: "POST",
+          url: "/login",
+          contentType: "application/json",
+          data: JSON.stringify({
+            username: "hello13",
+            password: "Password"
+            }),
+          dataType: "json",
+          success: function (result) {
+            // body...
+            session = result.session
+            console.log(result)
+          }
+        })
+      })
+      $("#btn02").click(function (argument) {
+        // body...
+        $.ajax({
+          type: "POST",
+          url: "/handshake",
+          contentType: "application/json",
+          data: JSON.stringify({
+            header: {
+              session: session
+            },
+            payload: {
+              test: "hello"
+            }
+            }),
+          dataType: "json",
+          success: function (result) {
+            // body...
+            console.log(result)
+          }
+        })
+      })
+    })
+  </script>
+
+</body>
+</html>

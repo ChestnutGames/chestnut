@@ -1,0 +1,78 @@
+[:01000001] LAUNCH logger mahjong_master.log
+[:01000002] LAUNCH snlua bootstrap
+[:01000003] LAUNCH snlua launcher
+[:01000004] LAUNCH snlua cmaster
+[:01000004] master listen socket 0.0.0.0:2001
+[:01000005] LAUNCH snlua cslave
+[:01000005] slave connect to master 127.0.0.1:2001
+[:01000006] LAUNCH harbor 1 16777221
+[:01000004] connect from 127.0.0.1:50638 4
+[:01000004] Harbor 1 (fd=4) report 127.0.0.1:2401
+[:01000005] Waiting for 0 harbors
+[:01000005] Shakehand ready
+[:01000007] LAUNCH snlua datacenterd
+[:01000008] LAUNCH snlua service_mgr
+[:01000009] LAUNCH snlua main
+[:0100000a] LAUNCH snlua protoloader
+[:0100000b] LAUNCH snlua codweb
+[:0100000c] LAUNCH snlua multicastd
+[:0100000d] LAUNCH xloggerd 
+[:0100000e] LAUNCH snlua redis
+[:0100000f] LAUNCH snlua redis agent
+[:01000010] LAUNCH snlua redis agent
+[:01000011] LAUNCH snlua redis agent
+[:01000012] LAUNCH snlua redis agent
+[:01000013] LAUNCH snlua redis agent
+[:01000014] LAUNCH snlua redis agent
+[:01000015] LAUNCH snlua redis agent
+[:01000016] LAUNCH snlua redis agent
+[:01000017] LAUNCH snlua redis agent
+[:01000018] LAUNCH snlua redis agent
+[:01000019] LAUNCH snlua redis agent
+[:0100001a] LAUNCH snlua redis agent
+[:0100001b] LAUNCH snlua redis agent
+[:0100001c] LAUNCH snlua redis agent
+[:0100001d] LAUNCH snlua redis agent
+[:0100001e] LAUNCH snlua redis agent
+[:0100001f] LAUNCH snlua redis agent
+[:01000020] LAUNCH snlua redis agent
+[:01000021] LAUNCH snlua redis agent
+[:01000022] LAUNCH snlua redis agent
+[:01000023] LAUNCH snlua game
+[:01000024] LAUNCH snlua sharedatad
+[:01000025] LAUNCH snlua room_mgr
+[:01000026] LAUNCH snlua room/room 1
+[:01000027] LAUNCH snlua room/room 2
+[:01000028] LAUNCH snlua room/room 3
+[:01000029] LAUNCH snlua room/room 4
+[:0100002a] LAUNCH snlua sid_mgr
+[:0100002b] LAUNCH snlua radiocenter
+[:0100002c] LAUNCH snlua chatd
+[:0100002d] LAUNCH snlua sysemail/mail_mgr
+[:0100002e] LAUNCH snlua record/record_mgr
+[:0100002f] LAUNCH snlua agent_mgr
+[:01000030] LAUNCH snlua agent/agent
+[:01000031] LAUNCH snlua agent/agent
+[:01000032] LAUNCH snlua agent/agent
+[:01000033] LAUNCH snlua agent/agent
+[:01000034] LAUNCH snlua agent/agent
+[:01000035] LAUNCH snlua wx_signupd
+[:01000036] LAUNCH snlua logind/logind 0.0.0.0:3002
+[:01000037] LAUNCH snlua logind/logind
+[:01000038] LAUNCH snlua logind/logind
+[:01000039] LAUNCH snlua logind/logind
+[:0100003a] LAUNCH snlua logind/logind
+[:0100003b] LAUNCH snlua logind/logind
+[:0100003c] LAUNCH snlua logind/logind
+[:0100003d] LAUNCH snlua logind/logind
+[:0100003e] LAUNCH snlua logind/logind
+[:01000036] login server listen at : 0.0.0.0 3002
+[:0100003f] LAUNCH snlua gated/gated
+[:0100003f] Listen on 0.0.0.0:3301
+[:0100003f] reister gate server: sample1
+[:01000009] KILL self
+[:01000002] KILL self
+[:01000037] connect from 127.0.0.1:50661 (fd = 27)
+[:0100003f] connect 127.0.0.1:50662
+[:0100003f] gateserver start auth ...
+[:0100003f] gateserver close auth ...

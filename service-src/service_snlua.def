@@ -1,0 +1,4 @@
+EXPORTS
+	snlua_create
+	snlua_release
+	snlua_init

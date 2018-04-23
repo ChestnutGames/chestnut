@@ -1,0 +1,6 @@
+[submodule "3rd/jemalloc"]
+	path = 3rd/jemalloc
+	url = https://github.com/jemalloc/jemalloc
+[submodule "3rd/pthread-win32"]
+	path = 3rd/pthread-win32
+	url = https://github.com/GerHobbelt/pthread-win32

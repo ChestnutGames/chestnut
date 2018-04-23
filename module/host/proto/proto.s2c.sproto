@@ -1,0 +1,128 @@
+.package {
+	type 0 : integer
+	session 1 : integer
+    index 2 : integer
+    version 3 : integer
+}
+
+.settlement {
+    sid  0 : integer
+    gold 1 : integer    
+}
+
+.player {
+    name 0 : string
+    orientation 1 : integer
+    sid 2 : integer
+}
+
+handshake 1 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+join 2 {
+    request {
+        players 0 : *player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+leave 3 {
+    request {
+        sid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+ready 4 {
+    request {
+        sid       0 : integer
+        ready     1 : boolean
+        deal      2 : boolean
+        cards     3 : *integer
+        your_turn 4 : integer
+        countdown 5 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+mp 5 {
+    request {
+        sid    0 : integer
+        m      1 : integer
+        mcards 2 : integer
+        rcards 3 : integer
+        lcards 4 : integer
+        dcards 5 : integer
+    }
+    response {
+        errorcode 0 : integer
+        msg 1 : integer
+    }
+}
+
+am 6 {
+}
+
+
+rob 7 {
+    request {
+        sid       0 : integer
+        rob       1 : integer
+        your_turn 2 : integer
+        countdown 3 : integer
+        confirm   4 : boolean
+        dz        5 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+lead 8 {
+    request {
+        sid        0 : integer
+        lead       1 : boolean
+        cards      2 : *integer
+        turn       3 : boolean
+        your_turn  4 : integer
+        countdown  5 : integer
+        settlement 6 : boolean
+        ranked1    7 : settlement
+        ranked2    8 : settlement
+        ranked3    9 : settlement
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+dealed 9 {
+    request {
+        sid       0 : integer
+        rob       1 : boolean
+        your_turn 2 : integer
+        countdown 3 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+identity 12 {
+    request {
+        your_turn 0 : integer
+        countdown 1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}

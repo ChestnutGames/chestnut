@@ -1,0 +1,21 @@
+.package {
+	type 0 : integer
+	session 1 : integer
+    index 2 : integer
+    version 3 : integer
+}
+
+handshake 1 {
+    response {
+    	errorcode 0 : integer
+    }
+}
+
+match 2 {
+	request {
+		roomid 0 : integer
+	}
+	response {
+		errorcode 0 : integer
+	}
+}
