@@ -130,7 +130,7 @@ end
 
 function cls:set_id(value, ... )
 	-- body
-	local MAX_ROOM_NUM = tonumber(self._config.config.consts[2]['Value'])
+	local MAX_ROOM_NUM = tonumber(self.config.config.consts[2]['Value'])
 	assert(value >= 1 and value <= MAX_ROOM_NUM)
 	self._id = value
 end
@@ -386,18 +386,17 @@ function cls:init_data()
 		log.info("pack = [%s]", pack)
 		local data = json.decode(pack)
 		local db_room = data.room
-		if open = db_room.open then
-			if not open then
-				return
-			end
+		local open = db_room.open
+		if not open then
+			return
 		end
 		self._id = db_room.id
 	    self._host = db_room.host
-	    self._open = db_room.open = assert(self._open)
+	    self._open = db_room.open
 	    self._local = db_room['local']
 	    self._overtype = db_room.overtype
 	    self._maxmultiple = db_room.maxmultiple
-	    self._hujiaozhuanyi = db_room.hujiaozhuanyi = self._hujiaozhuanyi
+	    self._hujiaozhuanyi = db_room.hujiaozhuanyi
 	    self._zimo = db_room.zimo
 	    self._dianganghua = db_room.dianganghua
 	    self._daiyaojiu = db_room.daiyaojiu
@@ -405,7 +404,7 @@ function cls:init_data()
 	    self._jiangdui = db_room.jiangdui
 	    self._tiandihu = db_room.tiandihu
 	    self._maxju = db_room.maxju
-		for k,db_user in pairs(data.users) do
+		for _,db_user in pairs(data.users) do
 			local player = self._players[db_user.idx]
 			player._uid = db_user.uid
 			player._idx = db_user.idx
@@ -438,8 +437,8 @@ function cls:init_data()
 				print(k,v)
 			end
 		end
-		
 	end
+	return true
 end
 
 function cls:save_data()

@@ -19,7 +19,7 @@ skynet.start(function()
 	else
 		skynet.call(codweb, "lua", "init_data")
 		skynet.call(codweb, "lua", "sayhi")
-		log.info("host successful .")
+		log.info("host successful --------------------------------------------")
 
 		-- local agent_robot = skynet.uniqueservice("agent_robot/agent")
 		-- skynet.call(agent_robot, "lua", "login")
