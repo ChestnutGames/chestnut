@@ -1,10 +1,9 @@
 package.path = "./module/mahjong/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
-local sd = require "skynet.sharedata"
+local builder = require "skynet.datasheet.builder"
 local log = require "chestnut.skynet.log"
-local dbmonitor = require "dbmonitor"
-local const = require "const"
+local AppConfig = require "AppConfig"
 local NORET = {}
 
 
@@ -13,7 +12,14 @@ local CMD = {}
 function CMD.start( ... )
 	-- body
 	-- 更新数据
-	return true
+	local config = AppConfig.new()
+	if config:LoadFile() then
+		for k,v in pairs(config.config) do
+			builder.new(k, v)
+		end
+		return true
+	end
+	return false
 end
 
 function CMD.close( ... )
@@ -28,7 +34,7 @@ end
 
 skynet.start(function()
 	skynet.dispatch("lua", function(_,_, cmd, ...)
-		log.info("game cmd = %s", cmd)
+		log.info("sdata cmd = %s", cmd)
 		local f = CMD[cmd]
 		local r = f(...)
 		if r ~= NORET then
@@ -36,5 +42,5 @@ skynet.start(function()
 		end
 	end)
 	-- skynet.fork(update_db)
-	skynet.register "game"
+	skynet.register "sdata"
 end)

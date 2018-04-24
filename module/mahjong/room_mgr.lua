@@ -2,20 +2,20 @@ package.path = "./module/mahjong/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
 local mc = require "skynet.multicast"
+local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local redis = require "chestnut.redis"
-local AppConfig = require "AppConfig"
 local json = require "rapidjson"
 
 local channel_id
 local NORET = {}
 local users = {}   -- 玩家信息
 local rooms = {}   -- 正在打牌的
+local num = 0      -- 正在打牌的桌子数
 local pool = {}    -- 闲置的桌子
-local config
+local bank = 101010
 local MAX_ROOM_NUM = 4
-local id = 1              -- [1, MAX_ROOM_NUM]
-local num = 0      -- 正在打牌的桌子
+local id = bank + 1
 
 -- @breif 生成房间id，
 -- @return 0,成功, 13 超过最大房间数
@@ -26,28 +26,19 @@ local function next_id()
 	else
 		while rooms[id] do
 			id = id + 1
-			if id > MAX_ROOM_NUM then
-				id = 1
+			if id > bank + MAX_ROOM_NUM then
+				id = bank + 1
 			end
 		end
 		return 0, id
 	end
 end
 
+
 local CMD = {}
 
 function CMD.start(chan_id)
 	-- body
-	if not config:LoadFile() then
-		return false
-	end
-	if not config:CheckConfig() then
-		return false
-	end
-	-- 初始一些配置
-	MAX_ROOM_NUM = tonumber(config.config.consts[2]['Value'])
-	assert(MAX_ROOM_NUM > 1)
-
 	local channel = mc.new {
 		channel = chan_id,
 		dispatch = function (_, _, cmd, ...)
@@ -66,10 +57,16 @@ function CMD.start(chan_id)
 	channel:subscribe()
 	channel_id = chan_id
 
+	-- 初始一些配置
+	MAX_ROOM_NUM = tonumber(ds.query('consts')['2']['Value'])
+	assert(MAX_ROOM_NUM > 1)
+	log.info('MAX_ROOM_NUM ==> %d', MAX_ROOM_NUM)
+
 	-- 初始所有桌子
 	for i=1,MAX_ROOM_NUM do
-		local addr = skynet.newservice("room/room", i)
-		pool[i] = { id = i, addr = addr }
+		local roomid = bank + i
+		local addr = skynet.newservice("room/room", roomid)
+		pool[roomid] = { id = roomid, addr = addr }
 	end
 	return true
 end
@@ -94,28 +91,29 @@ function CMD.init_data()
 		end
 	end
 	-- 打开所有房间
-	for k,v in pairs(rooms) do
-		local room = {}
-		if pool[k] then
-			room = pool[k]
-			pool[k] = nil
-		else
-			local addr = skynet.newservice("room/room", k)
-			room = { id = k, addr = addr }
-		end
-		assert(room.id == k)
-		local ok = skynet.call(room.addr, "lua", "start", channel_id, v.host, v.rule)
+	for _,room in pairs(pool) do
+		local ok = skynet.call(room.addr, "lua", "start", channel_id)
 		if not ok then
-			log.error("start room id = %d failed.", k)
+			log.error("start room id = %d failed.", room.id)
 		else
 			ok = skynet.call(room.addr, "lua", "init_data")
 			assert(ok)
-			v.id   = assert(room.id)
-			v.addr = assert(room.addr)
+		end
+	end
+
+	-- 验证mgr数据与room数据的一致
+	for k,v in pairs(rooms) do
+		local room = pool[k]
+		local ok = skynet.call(room.addr, "lua", "sayhi")
+		if ok then
+			v.addr = room.addr
+			pool[k] = nil
 			num = num + 1
 			if k > id then
 				id = k
 			end
+		else
+			log.error("room data wrong.")
 		end
 	end
 	return true
@@ -161,16 +159,8 @@ function CMD.kill()
 	skynet.exit()
 end
 
-function CMD.checkin(uid, agent)
-	-- body
-end
 
-function CMD.afk(uid, ... )
-	-- body
-	assert(users[uid])
-	users[uid] = nil
-end
-
+-- match
 function CMD.enqueue_agent(source, uid, rule, mode, scene, ... )
 	-- body
 	log.info("enqueue_agent")
@@ -209,6 +199,7 @@ function CMD.dequeue_agent(source, uid, ... )
 	end
 end
 
+-- open room------------------------------------------------------
 function CMD.create(uid, agent, args)
 	-- body
 	log.info("ROOM_MGR create")
@@ -217,19 +208,6 @@ function CMD.create(uid, agent, args)
 		local res = {}
 		res.errorcode = 10
 		return res
-		-- TODO: 如果玩家已经创建了房间，那么是不应该能无限次创建的
-		-- skynet.call(u.room.addr, "lua", "close")
-		-- mgr:enqueue_room(u.room)
-
-		-- local room = mgr:dequeue_room()
-		-- room.creator = uid
-
-		-- local res = skynet.call(room.addr, "lua", "start", uid, args)
-		-- u.room = room
-		-- u.agent = agent
-
-		-- log.info("create room ok")
-		-- return res
 	else
 		local res = {}
 		local errorcode, roomid = next_id()
@@ -237,10 +215,10 @@ function CMD.create(uid, agent, args)
 			res.errorcode = errorcode
 			return res
 		end
-		assert(roomid >= 1 and roomid <= MAX_ROOM_NUM)
+		assert(roomid >= bank + 1 and roomid <= bank + MAX_ROOM_NUM)
 		local room = assert(pool[roomid])
 
-		res = skynet.call(room.addr, "lua", "start", channel_id, uid, args)
+		res = skynet.call(room.addr, "lua", "create", uid, args)
 		if res.errorcode ~= 0 then
 			return res
 		else
@@ -263,6 +241,7 @@ function CMD.create(uid, agent, args)
 	end
 end
 
+-- 查询房间地址
 function CMD.apply(roomid)
 	-- body
 	log.info("apply roomid: %d, return room addr", roomid)
@@ -274,28 +253,20 @@ function CMD.apply(roomid)
 	end
 end
 
-function CMD.dissolve(source, roomid, ... )
+-- 解散房间 call by room
+function CMD.dissolve(roomid)
 	-- body
-	local room = mgr:get(roomid)
-	local res = skynet.call(room.addr, "lua", "close")
-end
-
--- only
-function CMD.radio()
-	-- body
-end
-
--- room exit
-function CMD.enqueue_room(roomid)
-	-- body
-	local room = mgr:get(roomid)
-	mgr:enqueue_room(room)
+	local room = rooms[roomid]
+	assert(room)
+	rooms[roomid] = nil
+	assert(pool[roomid] == nil)
+	pool[roomid] = room
 	return true
 end
 
+
 skynet.start(function ()
 	-- body
-	config = AppConfig.new()
 	skynet.dispatch("lua", function ( _, _, cmd, ... )
 		-- body
 		local f = assert(CMD[cmd])

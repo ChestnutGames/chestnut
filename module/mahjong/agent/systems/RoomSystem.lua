@@ -103,8 +103,6 @@ function cls:create(args)
 	if res.errorcode == 0 then
 		room.isCreated = true
 		room.id        = res.roomid
-		local MAX_ROOM_NUM = tonumber(self.agentContext.config.config.consts[2]['Value'])
-		assert(room.id >= 1 and room.id <= MAX_ROOM_NUM)
 	end
 	return res
 end
@@ -116,21 +114,13 @@ function cls:join(args)
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
 
-	local res = {}
-	local MAX_ROOM_NUM = tonumber(self.agentContext.config.config.consts[2]['Value'])
-	if args.roomid < 1 or args.roomid > MAX_ROOM_NUM then
-		log.error("uid(%d) join room roomid = %d not range.", uid, args.roomid)
-		res.errorcode = 14
-		return res
-	end
-
 	local xargs = {
 		uid   = uid,
 		agent = agent,
 		name  = assert(entity.account.nickname),
 		sex   = assert(entity.account.sex)
 	}
-	res = skynet.call(".ROOM_MGR", "lua", "apply", args.roomid)
+	local res = skynet.call(".ROOM_MGR", "lua", "apply", args.roomid)
 	if res.errorcode ~= 0 then
 		return res
 	else
@@ -139,6 +129,8 @@ function cls:join(args)
 			log.info("join room SUCCESS.")
 			entity.room.addr = res.addr
 			entity.room.joined = true
+		else
+			log.info('join room FAIL.')
 		end
 		return res
 	end

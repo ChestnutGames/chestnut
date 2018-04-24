@@ -6,30 +6,35 @@ local context = require "rcontext"
 
 local CMD = {}
 
-function CMD:start(channel_id, uid, args)
+function CMD:start(channel_id)
 	-- body
 	local channel = mc.new {
 		channel = channel_id,
 		dispatch = function (_, _, cmd, ...)
 			-- body
 			local f = assert(CMD[cmd])
-			local r = f( ... )
+			local r = f(self, ... )
 			if r ~= servicecode.NORET then
 				-- if r ~= nil then
 				-- 	skynet.retpack(r)
 				-- else
-					log.error("subscribe cmd = %s not return", cmd)
+					-- log.error("subscribe cmd = %s not return", cmd)
 				-- end
 			end
 		end
 	}
 	channel:subscribe()
-	return self:start(uid, args)
+	return self:start()
 end
 
 function CMD:init_data()
 	-- body
 	return self:init_data()
+end
+
+function CMD:sayhi()
+	-- body
+	return self:sayhi()
 end
 
 function CMD:save_data( ... )
@@ -51,6 +56,11 @@ end
 function CMD:afk(uid)
 	-- body
 	return self:afk(uid)
+end
+
+function CMD:create(uid, args, ... )
+	-- body
+	return self:create(uid, args)
 end
 
 function CMD:on_join(agent, ... )

@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local list = require "chestnut.list"
 local util = require "chestnut.time"
@@ -16,7 +17,6 @@ local exist = require "existhu"
 local overtype = require "overtype"
 local gangmultiple = require "gangmultiple"
 local json = require "rapidjson"
-local AppConfig = require "AppConfig"
 local table_mgr = require "mjlib.base_table.table_mgr"
 
 
@@ -50,14 +50,6 @@ local cls = class("rcontext")
 
 function cls:ctor()
 	-- body
-	local config = AppConfig.new()
-	if not config:LoadFile() then
-		return false
-	end
-	if not config:CheckConfig() then
-		return false
-	end
-	self.config = config
 	table_mgr:load()
 
 	-- players
@@ -75,7 +67,7 @@ function cls:ctor()
 	self._local = region.Sichuan
 	self._overtype = overtype.XUEZHAN
 	self._maxmultiple = 8
-	self._humultiple = humultiple(self._local, self._maxmultiple)
+	-- self._humultiple = humultiple(self._local, self._maxmultiple)
 	self._exist = exist(self._local)
 	self._hujiaozhuanyi = false
 	self._zimo = 0
@@ -101,11 +93,11 @@ function cls:ctor()
 	self._state = state.NONE
 	self._laststate = state.NONE
 
-	self._firsttake = 0
-	self._firstidx  = 0    -- zhuangjia
-	self._curtake   = 0
-	self._curidx    = 0      -- player
-	self._curcard   = nil    -- take card 
+	self._firsttake = 0      -- 拿谁的牌
+	self._firstidx  = 0      -- 庄家玩家的索引
+	self._curtake   = 0      -- 当前拿谁的牌
+	self._curidx    = 0      -- 当前该谁拿
+	self._curcard   = nil    -- 此字段应该注释不用
 	self._lastidx   = 0      -- last time lead from who
 	self._lastcard  = nil    -- last time lead card
 	
@@ -130,8 +122,6 @@ end
 
 function cls:set_id(value, ... )
 	-- body
-	local MAX_ROOM_NUM = tonumber(self.config.config.consts[2]['Value'])
-	assert(value >= 1 and value <= MAX_ROOM_NUM)
 	self._id = value
 end
 
@@ -333,50 +323,9 @@ function cls:check_over( ... )
 end
 
 ------------------------------------------------protocol
-function cls:start(uid, args)
+function cls:start()
 	-- body
-	assert(uid)
-	self._host = uid
-	self._open = true
-	if args.provice == region.Sichuan then
-		self._local = region.Sichuan
-		self._overtype = args.overtype
-		self._maxmultiple = args.sc.top
-		self._hujiaozhuanyi = args.sc.hujiaozhuanyi
-		self._humultiple = humultiple(self._local, self._maxmultiple)
-		self._exist = exist(self._local)
-		self._maxju = args.ju
-
-	elseif args.provice == region.Shaanxi then
-		self._local = region.Shaanxi
-		self._overtype = args.overtype
-		self._maxmultiple = -1
-		self._hujiaozhuanyi = false
-		self._humultiple = humultiple(self._local, self._maxmultiple)
-		self._exist = exist(self._local)
-		self._maxju = args.ju
-	end
-
-	-- clear player
-	for i=1,4 do
-		self._players[i]:set_noone(true)
-		self._players[i]:set_online(false)
-	end
-	self._joined = 0
-	self._online = 0
-
-	self:clear()
-
-	self._stime = 0
-	self._record = {}
-	self._ju = 0
-
-	self._state = state.JOIN
-	local res = {}
-	res.errorcode = 0
-	res.roomid = self._id
-	res.room_max = self._max
-	return res
+	return true
 end
 
 function cls:init_data()
@@ -404,6 +353,22 @@ function cls:init_data()
 	    self._jiangdui = db_room.jiangdui
 	    self._tiandihu = db_room.tiandihu
 	    self._maxju = db_room.maxju
+
+	    -- gameplay data
+	    self._state = db_room.state
+	    self._laststate = db_room.last_state
+	    self._firsttake = db_room.firsttake
+	    self._firstidx = db_room.firstidx
+	    self._curtake = db_room.curtake
+	    self._curidx = db_room.curidx
+	    self._lastidx = db_room.lastidx
+		if db_room.lastcard then
+			self._lastcard = self._kcards[db_room.lastcard]
+		end
+	    self._firsthu = db_room.firsthu
+	    self._hucount = db_room.hucount
+	    self._ju = db_room.ju
+
 		for _,db_user in pairs(data.users) do
 			local player = self._players[db_user.idx]
 			player._uid = db_user.uid
@@ -441,44 +406,58 @@ function cls:init_data()
 	return true
 end
 
+function cls:sayhi()
+	-- body
+	if self._open then
+		return true
+	else
+		return false
+	end
+end
+
 function cls:save_data()
 	-- body
+	if not self._open then
+		return
+	end
 	local db_users = {}
 	local db_room = {}
 	for k,v in pairs(self._players) do
-		local db_user = {}
-		db_user.uid = assert(v._uid)
-		db_user.idx = assert(v._idx)
-		db_user.chip = assert(v._chip)
-		db_user.state = assert(v._state)
-		db_user.last_state   = assert(v._laststate)
-		db_user.que          = assert(v._que)
-		db_user.takecardsidx = assert(v._takecardsidx)
-		db_user.takecardscnt = assert(v._takecardscnt)
-		db_user.takecardslen = assert(v._takecardslen)
-		db_user.takecards = {}
-		for pos,card in pairs(v._takecards) do
-			db_user.takecards[string.format("%d", pos)] = card:get_value()
+		if v._uid > 0 then      -- > 0 才是有人加入
+			local db_user = {}
+			db_user.uid = assert(v._uid)
+			db_user.idx = assert(v._idx)
+			db_user.chip = assert(v._chip)
+			db_user.state = assert(v._state)
+			db_user.last_state   = assert(v._laststate)
+			db_user.que          = assert(v._que)
+			db_user.takecardsidx = assert(v._takecardsidx)
+			db_user.takecardscnt = assert(v._takecardscnt)
+			db_user.takecardslen = assert(v._takecardslen)
+			db_user.takecards = {}
+			for pos,card in pairs(v._takecards) do
+				db_user.takecards[string.format("%d", pos)] = card:get_value()
+			end
+			db_user.cards = {}
+			for pos,card in pairs(v._cards) do
+				db_user.cards[string.format("%d", pos)] = card:get_value()
+			end
+			db_user.leadcards = {}
+			for pos,card in pairs(v._leadcards) do
+				db_user.leadcards[string.format("%d", pos)] = card:get_value()
+			end
+			db_user.putcards = {}
+			for pos,card in pairs(v._putcards) do
+				db_user.putcards[string.format("%d", pos)] = card:get_value()
+			end
+			db_user.putidx = assert(v._putidx)
+			db_user.holdcard = assert(v._holdcard:get_value())
+			db_user.hucards = {}
+			for pos,card in pairs(v._hucards) do
+				db_user.hucards[string.format("%d", pos)] = card:get_value()
+			end
+			db_users[string.format("%d", k)] = db_user
 		end
-		db_user.cards = {}
-		for pos,card in pairs(v._cards) do
-			db_user.cards[string.format("%d", pos)] = card:get_value()
-		end
-		db_user.leadcards = {}
-		for pos,card in pairs(v._leadcards) do
-			db_user.leadcards[string.format("%d", pos)] = card:get_value()
-		end
-		db_user.putcards = {}
-		for pos,card in pairs(v._putcards) do
-			db_user.putcards[string.format("%d", pos)] = card:get_value()
-		end
-		db_user.putidx = assert(v._putidx)
-		db_user.holdcard = assert(v._holdcard:get_value())
-		db_user.hucards = {}
-		for pos,card in pairs(v._hucards) do
-			db_user.hucards[string.format("%d", pos)] = card:get_value()
-		end
-		db_users[string.format("%d", k)] = db_user
 	end
 	db_room.open = assert(self._open)
 	db_room.id = assert(self._id)
@@ -496,11 +475,26 @@ function cls:save_data()
 	db_room.tiandihu = self._tiandihu
 	db_room.maxju = self._maxju
 
+	-- gameplay data
+	db_room.state      = assert(self._state)
+	db_room.last_state = assert(self._laststate)
+	db_room.firsttake  = assert(self._firsttake)
+	db_room.firstidx   = assert(self._firstidx)
+	db_room.curtake    = assert(self._curtake)
+	db_room.curidx     = assert(self._curidx)
+	db_room.lastidx    = assert(self._lastidx)
+	if self._lastcard then
+		db_room.lastcard = self._lastcard:get_value()
+	end
+	db_room.firsthu = self._firsthu
+	db_room.hucount = self._hucount
+	db_room.ju = self._ju
+
 	local data = {}
 	data.users = db_users
 	data.room = db_room
 	local pack = json.encode(data)
-	redis:set(string.format("tb_room:%d", self.id), pack)
+	redis:set(string.format("tb_room:%d", self._id), pack)
 end
 
 function cls:close( ... )
@@ -521,6 +515,52 @@ function cls:afk(uid)
 	args.idx = p:get_idx()
 	self:push_client_except_idx(p:get_idx(), "offline", args)
 	return true
+end
+
+function cls:create(uid, args)
+	-- body
+	assert(uid)
+	self._host = uid
+	self._open = true
+	if args.provice == region.Sichuan then
+		self._local = region.Sichuan
+		self._overtype = args.overtype
+		self._maxmultiple = args.sc.top
+		self._hujiaozhuanyi = args.sc.hujiaozhuanyi
+		-- self._humultiple = humultiple(self._local, self._maxmultiple)
+		self._exist = exist(self._local)
+		self._maxju = args.ju
+
+	elseif args.provice == region.Shaanxi then
+		self._local = region.Shaanxi
+		self._overtype = args.overtype
+		self._maxmultiple = -1
+		self._hujiaozhuanyi = false
+		-- self._humultiple = humultiple(self._local, self._maxmultiple)
+		self._exist = exist(self._local)
+		self._maxju = args.ju
+	end
+
+	-- clear player
+	for i=1,4 do
+		self._players[i]:set_noone(true)
+		self._players[i]:set_online(false)
+	end
+	self._joined = 0
+	self._online = 0
+
+	self:clear()
+
+	self._stime = 0
+	self._record = {}
+	self._ju = 0
+
+	self._state = state.JOIN
+	local res = {}
+	res.errorcode = 0
+	res.roomid = self._id
+	res.room_max = self._max
+	return res
 end
 
 function cls:join(uid, agent, name, sex)

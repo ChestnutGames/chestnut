@@ -2,9 +2,7 @@ local skynet = require "skynet"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local context = require "chestnut.context"
-local util = require "chestnut.time"
 local servicecode = require "chestnut.servicecode"
-local errorcode = require "errorcode"
 local AgentSystems = require "AgentSystems"
 local EntitasContext = require "entitas.Context"
 local Matcher = require "entitas.Matcher"
@@ -46,12 +44,6 @@ function cls:start(reload, channel_id, ... )
 	end
 	self.reload = reload
 	if self.reload then
-		if not self.config:LoadFile() then
-			return false
-		end
-		if not self.config:CheckConfig() then
-			return false
-		end
 		-- subscribe channel
 		local channel = mc.new {
 		channel = channel_id,
@@ -68,6 +60,30 @@ function cls:start(reload, channel_id, ... )
 		self.channel = channel
 	end
 	return true
+end
+
+function cls:init_data(uid)
+	-- body
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if not entity then
+		-- 加入所有的组件
+		entity = self.context:create_entity()
+		entity:add(AccountComponent, uid)
+		entity:add(UserComponent, uid)
+		entity:add(DbComponent)
+		entity:add(InboxComponent)
+		entity:add(OutboxComponent)
+		entity:add(PackageComponent, {})
+		entity:add(RoomComponent, false, 0, 0, 0, 0, false)
+	end
+
+	local ok, err = pcall(self.systems.db.load_cache_to_data, self.systems.db)
+	if not ok then
+		log.error(err)
+		return servicecode.LOGIN_AGENT_LOAD_ERR
+	end
+	self.initdataed = true
 end
 
 function cls:save_data()
@@ -93,28 +109,8 @@ function cls:login(gate, uid, subid, secret)
 		return servicecode.FAIL
 	end
 	if self.reload then
-		local index = self.context:get_entity_index(UserComponent)
-		local entity = index:get_entity(uid)
-		if not entity then
-			-- 加入所有的组件
-			entity = self.context:create_entity()
-			entity:add(AccountComponent, uid)
-			entity:add(UserComponent, uid)
-			entity:add(DbComponent)
-			entity:add(InboxComponent)
-			entity:add(OutboxComponent)
-			entity:add(PackageComponent, {})
-			entity:add(RoomComponent, false, 0, 0, 0, 0, false)
-		end
-
-		ok, err = pcall(self.systems.db.load_cache_to_data, self.systems.db)
-		if not ok then
-			log.error(err)
-			return servicecode.LOGIN_AGENT_LOAD_ERR
-		end
-		self.initdataed = true
+		self:init_data(uid)
 	end
-
 	return servicecode.SUCCESS
 end
 

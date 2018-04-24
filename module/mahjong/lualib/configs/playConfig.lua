@@ -1,6 +1,6 @@
 local _M = {}
 
-_M[10] = {
+_M["10"] = {
 	
 	["Id"] = 10,	
 	["Orient"] = 1,	
@@ -37,7 +37,7 @@ _M[10] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[11] = {
+_M["11"] = {
 	
 	["Id"] = 11,	
 	["Orient"] = 1,	
@@ -74,7 +74,7 @@ _M[11] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[20] = {
+_M["20"] = {
 	
 	["Id"] = 20,	
 	["Orient"] = 2,	
@@ -111,7 +111,7 @@ _M[20] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[21] = {
+_M["21"] = {
 	
 	["Id"] = 21,	
 	["Orient"] = 2,	
@@ -148,7 +148,7 @@ _M[21] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[30] = {
+_M["30"] = {
 	
 	["Id"] = 30,	
 	["Orient"] = 3,	
@@ -185,7 +185,7 @@ _M[30] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[31] = {
+_M["31"] = {
 	
 	["Id"] = 31,	
 	["Orient"] = 3,	
@@ -222,7 +222,7 @@ _M[31] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[40] = {
+_M["40"] = {
 	
 	["Id"] = 40,	
 	["Orient"] = 4,	
@@ -259,7 +259,7 @@ _M[40] = {
 	["DealCardDelta"] = 0.3,	
 	["FangDaoPaiDelta"] = 0.3,
 }
-_M[41] = {
+_M["41"] = {
 	
 	["Id"] = 41,	
 	["Orient"] = 4,	

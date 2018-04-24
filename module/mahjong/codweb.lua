@@ -18,12 +18,18 @@ function CMD.start( ... )
 	skynet.launch("xloggerd")
 	log.info("xloggerd start ... ")
 
+	-- read config
+	local sdata = skynet.uniqueservice("sdata")
+	ok = skynet.call(sdata, "lua", "start")
+	if not ok then
+		log.error("call sdata failture.")
+		skynet.exit()
+	end
+
+	-- db
 	skynet.uniqueservice("redis")
 
-	-- read config
-	local game = skynet.uniqueservice("game")
-	skynet.call(game, "lua", "start", channel.channel)
-
+	-- logic
 	local room_mgr = skynet.uniqueservice("room_mgr")
 	skynet.call(room_mgr, "lua", "start", channel.channel)
 	table.insert(services, room_mgr)
