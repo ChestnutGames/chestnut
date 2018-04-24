@@ -34,6 +34,7 @@ end
 
 function CMD:save_data( ... )
 	-- body
+	self:save_data()
 end
 
 function CMD:close( ... )
@@ -60,8 +61,8 @@ end
 
 function CMD:join(args, ... )
 	-- body
-	assert(args.errorcode == errorcode.SUCCESS)
-	return errorcode.NORET
+	assert(args.errorcode == 0)
+	return servicecode.NORET
 end
 
 function CMD:on_rejoin(uid)
@@ -76,7 +77,7 @@ end
 
 function CMD:leave(args, ... )
 	-- body
-	assert(args.errorcode == errorcode.SUCCESS)
+	assert(args.servicecode == servicecode.SUCCESS)
 end
 
 function CMD:on_ready(args, ... )
@@ -86,107 +87,107 @@ end
 
 function CMD:ready(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:take_turn(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:peng(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:gang(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:hu(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:call(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:shuffle(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:dice(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:lead(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:deal(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:over(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:restart(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:take_restart(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:rchat(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:take_xuanpao(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:xuanpao( ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:take_xuanque(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:xuanque(args, ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:settle( ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:final_settle( ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:roomover( ... )
 	-- body
-	return errorcode.NORET
+	return servicecode.NORET
 end
 
 function CMD:on_lead(args, ... )
@@ -205,7 +206,7 @@ function CMD:on_step(args, ... )
 	if not ok then
 		log.error(res)
 		local res = {}
-		res.errorcode = errorcode.SERVER_ERROR
+		res.servicecode = servicecode.SERVER_ERROR
 		return res
 	else
 		return res
@@ -216,7 +217,7 @@ function CMD:on_restart(args, ... )
 	-- body
 	self:restart(args.idx)
 	local res = {}
-	res.errorcode = errorcode.SUCCESS
+	res.servicecode = servicecode.SUCCESS
 	return res
 end
 
@@ -224,7 +225,7 @@ function CMD:on_rchat(args, ... )
 	-- body
 	self:chat(args)
 	local res = {}
-	res.errorcode = errorcode.SUCCESS
+	res.servicecode = servicecode.SUCCESS
 	return res
 end
 
