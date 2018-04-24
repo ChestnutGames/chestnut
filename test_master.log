@@ -5,8 +5,8 @@
 [:01000004] master listen socket 0.0.0.0:2001
 [:01000005] LAUNCH snlua cslave
 [:01000005] slave connect to master 127.0.0.1:2001
+[:01000004] connect from 127.0.0.1:52127 4
 [:01000006] LAUNCH harbor 1 16777221
-[:01000004] connect from 127.0.0.1:50930 4
 [:01000004] Harbor 1 (fd=4) report 127.0.0.1:2401
 [:01000005] Waiting for 0 harbors
 [:01000005] Shakehand ready
@@ -14,5 +14,5 @@
 [:01000008] LAUNCH snlua service_mgr
 [:01000009] LAUNCH snlua test_main
 [:0100000a] LAUNCH xloggerd 
-[:0100000b] LAUNCH snlua test_chestnut_array
+[:0100000b] LAUNCH snlua test_chestnut_vector
 [:01000002] KILL self

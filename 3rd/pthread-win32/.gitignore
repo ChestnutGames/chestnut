@@ -14,4 +14,4 @@ cvs
 bin/
 obj/
 ipch/
-
+.vs

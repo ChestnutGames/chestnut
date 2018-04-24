@@ -8,5 +8,6 @@ skynet.start(function ( ... )
 	-- log.info("xloggerd start ... ")
 
 	-- skynet.newservice("test_chestnut_redis")
-	skynet.newservice("test_chestnut_array")
+	-- skynet.newservice("test_chestnut_array")
+	skynet.newservice("test_chestnut_vector")
 end)
