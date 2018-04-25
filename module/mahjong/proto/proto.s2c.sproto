@@ -48,7 +48,6 @@
     putidx       15 : integer
     hold_card    16 : card
     hucards      17 : *card
-    hashu        18 : boolean
 }
 
 .huinfo {
@@ -185,11 +184,18 @@ records 106 {
     }
 }
 
+rejoin 107 {
+    request {
+        p         0 : player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
 
 join 401 {
     request {
         p         0 : player
-        ready     1 : boolean
     }
     response {
         errorcode 0 : integer

@@ -128,7 +128,7 @@ end
 
 function cls:afk()
 	-- body
-	local ok, err = pcall(self.systems.afk)
+	local ok, err = pcall(self.systems.afk, self.systems)
 	if not ok then
 		log.error(err)
 	end

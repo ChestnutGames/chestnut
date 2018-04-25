@@ -59,7 +59,7 @@ function cls:afk( ... )
 	end
 end
 
-function cls:on_func_open( ... )
+function cls:on_func_open()
 	-- body
 	local uid = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
@@ -68,7 +68,7 @@ function cls:on_func_open( ... )
 	entity.room.id = 0
 	entity.room.addr = 0
 	entity.room.joined = false
-	entity.room.play = false
+	entity.room.online = false
 end
 
 function cls:room_info()
@@ -81,6 +81,7 @@ function cls:room_info()
 	local res = {}
 	res.errorcode = 0
 	res.isCreated = entity.room.isCreated
+	res.joined    = entity.room.joined
 	res.roomid    = entity.room.id
 	return res
 end
@@ -113,6 +114,11 @@ function cls:join(args)
 	local agent = skynet.self()
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
+	if self.isCreated then
+		if entity.room.id ~= args.roomid then
+			return { errorcode = 1 }
+		end
+	end
 
 	local xargs = {
 		uid   = uid,
@@ -124,15 +130,17 @@ function cls:join(args)
 	if res.errorcode ~= 0 then
 		return res
 	else
-		res = skynet.call(res.addr, "lua", "on_join", xargs)
-		if res.errorcode == 0 then
+		local response = skynet.call(res.addr, "lua", "on_join", xargs)
+		if response.errorcode == 0 then
 			log.info("join room SUCCESS.")
+			entity.room.id = args.roomid
 			entity.room.addr = res.addr
 			entity.room.joined = true
+			entity.room.online = true
 		else
 			log.info('join room FAIL.')
 		end
-		return res
+		return response
 	end
 end
 

@@ -33,7 +33,6 @@
     putidx       15 : integer  # 无用
     hold_card    16 : card
     hucards      17 : *card
-    hashu        18 : boolean
 }
 
 .mail {
@@ -147,7 +146,6 @@ join 102 {
         me        3 : player
         rule      4 : rule
         ps        5 : *player
-        ready     6 : boolean
     }
 }
 
@@ -252,11 +250,21 @@ room_info 114 {
     response {
         errorcode 0 : integer
         isCreated 1 : boolean
-        roomid    2 : integer
+        joined    2 : boolean
+        roomid    3 : integer
     }
 }
 
-
+rejoin 115 {
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+        me        3 : player
+        rule      4 : rule
+        ps        5 : *player
+    }
+}
 
 call 501 {
     request {

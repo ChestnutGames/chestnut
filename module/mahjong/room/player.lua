@@ -88,8 +88,6 @@ function cls:ctor(env, uid, agent)
 	self._holdcard = nil
 	self._hucards = {}
 
-	self._hashu  = false
-
 	self._cancelcd = nil
 	self._chipli = {}   -- { code,dian,chip}
 
@@ -271,7 +269,7 @@ function cls:print_cards( ... )
 	log.info("player %d end print cards", self._idx)
 end
 
--- take card------------------------------------------------------------------------------
+-- 处理takecards相关------------------------------------------------------------------------------
 function cls:take_card( ... )
 	-- body
 	if self._takecardscnt > 0 then
@@ -296,9 +294,17 @@ function cls:insert_take_cards_with_pos( ... )
 	-- body
 end
 
+function cls:pack_takecards()
+	-- body
+	local ccs = {}
+	for _,card in pairs(self._takecards) do
+		local cc = { pos = card:get_pos(), value = card:get_value() }
+		table.insert(ccs, cc)
+	end
+	return ccs
+end
 
-
--- deal and cards in hand------------------------------------------------------------------
+-- 处理cards in hand------------------------------------------------------------------
 function cls:_quicksort(low, high, ... )
 	-- body
 	if low >= high then
@@ -412,9 +418,20 @@ function cls:find(c, ... )
 	end
 	return nil
 end
+
+function cls:pack_cards()
+	-- body
+	local ccs = {}
+	for _,card in pairs(self._cards) do
+		local cc = { pos = card:get_pos(), value = card:get_value() }
+		table.insert(ccs, cc)
+	end
+	return ccs
+end
+
 -- end ------------------------------------------------------------------------------------
 
--- lead
+-- 开始处理出牌
 function cls:append_lead(card, ... )
 	-- body
 	assert(card)
@@ -471,6 +488,40 @@ function cls:lead(c, isHoldcard, ... )
 	end
 end
 
+function cls:pack_leadcards()
+	-- body
+	local ccs = {}
+	for _,card in pairs(self._leadcards) do
+		local cc = { pos = card:get_pos(), value = card:get_value() }
+		table.insert(ccs, cc)
+	end
+	return ccs
+end
+
+function cls:pack_putcards( ... )
+	-- body
+end
+
+function cls:pack_holdcard()
+	-- body
+	if self._holdcard then
+		return { pos = self._holdcard:get_pos(), value = self._holdcard:get_value() }
+	else
+		return { pos = 0, value = 0 }
+	end
+end
+
+function cls:pack_hucards()
+	-- body
+	local ccs = {}
+	for _,card in pairs(self._hucards) do
+		local cc = { pos = card:get_pos(), value = card:get_value() }
+		table.insert(ccs, cc)
+	end
+	return ccs
+end
+
+-----------------------------------------------------------------------------------end
 -- na
 function cls:take_turn_card(card, ... )
 	-- body

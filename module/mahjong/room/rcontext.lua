@@ -100,10 +100,10 @@ function cls:ctor()
 	self._curcard   = nil    -- 此字段应该注释不用
 	self._lastidx   = 0      -- last time lead from who
 	self._lastcard  = nil    -- last time lead card
-	
+
 	self._takeround = 1      -- deal card count
 	self._takepoint = 0
-	
+
 	self._call = {}
 	self._callcounter = 0
 	self._opinfos = {}
@@ -116,7 +116,7 @@ function cls:ctor()
 
 	self._ju = 0
 	self._overtimer = nil
-	
+
 	return self
 end
 
@@ -497,7 +497,7 @@ function cls:save_data()
 	redis:set(string.format("tb_room:%d", self._id), pack)
 end
 
-function cls:close( ... )
+function cls:close()
 	-- body
 	self._open = false
 	return true
@@ -577,74 +577,154 @@ function cls:join(uid, agent, name, sex)
 		return res
 	end
 
+	-- 原来肯定是不存在此用户
 	local p = self:get_player_by_uid(uid)
-	if p then
-		assert(not p:get_online())
-		p:set_online(true)
-		self._online = self._online + 1
+	assert(p == nil)
 
-		res.errorcode = 0
-		skynet.retpack(res)
+	local me = assert(self:find_noone())
+	me:set_uid(uid)
+	me:set_agent(agent)
+	me:set_name(name)
+	me:set_sex(sex)
+	me:set_online(true)
 
-		local args = {}
-		args.idx = p:get_idx()
-		self:push_client_except_idx(args.idx, args)
-		return servicecode.NORET
-	else
-		local me = assert(self:find_noone())
-		me:set_uid(uid)
-		me:set_agent(agent)
-		me:set_name(name)
-		me:set_sex(sex)
-		me:set_noone(false)
-		me:set_online(true)
+	self._joined = self._joined + 1
+	self._online = self._online + 1
 
-		self._joined = self._joined + 1
-		self._online = self._online + 1
-
-		local ready = false
-		if self._joined >= self._max then
-			ready = true
-			self._state = state.READY
-			self:clear_state(player.state.WAIT_READY)
-		end
-
-		-- sync
-		local p = {
-			idx = me:get_idx(),
-			chip = me:get_chip(),
-			sid = me:get_sid(),
-			sex = me:get_sex(),
-			name = me:get_name(),
-		}
-
-		res.errorcode = 0
-		res.roomid = self._id
-		res.room_max = self._max
-		res.me = p
-		res.ready = ready
-		local ps = {}
-		for i,v in ipairs(self._players) do
-			if not v:get_noone() and v:get_uid() ~= uid then
-				local p = {
-					idx  = v:get_idx(),
-					chip = v:get_chip(),
-					sid  = v:get_sid(),
-					sex  = v:get_sex(),
-					name = v:get_name(),
-				}
-				table.insert(ps, p)
-			end
-		end
-		res.ps = ps
-		skynet.retpack(res)
-
-		local args = {}
-		args.p = p
-		args.ready = ready
-		self:push_client_except_idx(me:get_idx(), "join", args)
-		return servicecode.NORET
+	if self._joined >= self._max then
+		self._state = state.READY
+		self:clear_state(player.state.WAIT_READY)
 	end
+
+	-- sync
+	local p = {
+		idx   =  me._idx,
+		chip  =  me._chip,
+		sex   =  me._sex,
+		name  =  me._name,
+		state =  me._state,
+		last_state   = me._laststate,
+		que          = me._que,
+		takecardsidx = me._takecardsidx,
+		takecardscnt = me._takecardscnt,
+		takecardslen = me._takecardslen,
+		takecards    = me:pack_takecards(),
+		cards        = me:pack_cards(),
+		leadcards    = me:pack_leadcards(),
+		putcards     = me:pack_putcards(),
+		putidx       = me._putidx,
+		hold_card    = me:pack_holdcard(),
+		hucards      = me:pack_hucards()
+	}
+
+	res.errorcode = 0
+	res.roomid = self._id
+	res.room_max = self._max
+	res.me = p
+	res.ps = {}
+	for _,v in ipairs(self._players) do
+		if not v:get_noone() and v:get_uid() ~= uid then
+			local p = {
+				idx   =  v._idx,
+				chip  =  v._chip,
+				sex   =  v._sex,
+				name  =  v._name,
+				state =  v._state,
+				last_state   = v._laststate,
+				que          = v._que,
+				takecardsidx = v._takecardsidx,
+				takecardscnt = v._takecardscnt,
+				takecardslen = v._takecardslen,
+				takecards    = v:pack_takecards(),
+				cards        = v:pack_cards(),
+				leadcards    = v:pack_leadcards(),
+				putcards     = v:pack_putcards(),
+				putidx       = v._putidx,
+				hold_card    = v:pack_holdcard(),
+				hucards      = v:pack_hucards()
+			}
+			table.insert(res.ps, p)
+		end
+	end
+	skynet.retpack(res)
+
+	local args = {}
+	args.p = p
+	self:push_client_except_idx(me:get_idx(), "join", args)
+	return servicecode.NORET
+end
+
+function cls:rejoin(uid, agent)
+	-- body
+	assert(uid and agent)
+	local res = { errorcode = 0 }
+	local me = self:get_player_by_uid(uid)
+	if me == nil then
+		res.errorcode = 17
+		return res
+	end
+
+	assert(not me:get_online())
+	me:set_agent(agent)
+	me:set_online(true)
+	self._online = self._online + 1
+
+	-- sync
+	local p = {
+		idx   =  me._idx,
+		chip  =  me._chip,
+		sex   =  me._sex,
+		name  =  me._name,
+		state =  me._state,
+		last_state   = me._laststate,
+		que          = me._que,
+		takecardsidx = me._takecardsidx,
+		takecardscnt = me._takecardscnt,
+		takecardslen = me._takecardslen,
+		takecards    = me:pack_takecards(),
+		cards        = me:pack_cards(),
+		leadcards    = me:pack_leadcards(),
+		putcards     = me:pack_putcards(),
+		putidx       = me._putidx,
+		hold_card    = me:pack_holdcard(),
+		hucards      = me:pack_hucards()
+	}
+
+	res.errorcode = 0
+	res.roomid = self._id
+	res.room_max = self._max
+	res.me = p
+	res.ps = {}
+	for _,v in ipairs(self._players) do
+		if not v:get_noone() and v:get_uid() ~= uid then
+			local p = {
+				idx   =  v._idx,
+				chip  =  v._chip,
+				sex   =  v._sex,
+				name  =  v._name,
+				state =  v._state,
+				last_state   = v._laststate,
+				que          = v._que,
+				takecardsidx = v._takecardsidx,
+				takecardscnt = v._takecardscnt,
+				takecardslen = v._takecardslen,
+				takecards    = v:pack_takecards(),
+				cards        = v:pack_cards(),
+				leadcards    = v:pack_leadcards(),
+				putcards     = v:pack_putcards(),
+				putidx       = v._putidx,
+				hold_card    = v:pack_holdcard(),
+				hucards      = v:pack_hucards()
+			}
+			table.insert(res.ps, p)
+		end
+	end
+	skynet.retpack(res)
+
+	local args = {}
+	args.p = p
+	self:push_client_except_idx(me:get_idx(), "rejoin", args)
+	return servicecode.NORET
 end
 
 function cls:leave(uid)
