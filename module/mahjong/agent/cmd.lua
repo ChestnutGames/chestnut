@@ -53,7 +53,7 @@ function CMD:auth(source, conf)
 end
 
 -- others serverce disconnect
-function CMD:afk(source)
+function CMD:afk(_)
 	-- body
 	return self:afk()
 end

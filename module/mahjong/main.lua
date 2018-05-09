@@ -3,9 +3,9 @@ require "skynet.manager"
 local log = require "chestnut.skynet.log"
 
 skynet.start(function()
-	
+
 	skynet.uniqueservice("protoloader")
-	
+
 	-- local console = skynet.newservice("console")
 	-- skynet.newservice("debug_console",8000)
 

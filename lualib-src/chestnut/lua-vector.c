@@ -1,4 +1,4 @@
-#define LUA_LIB
+ï»¿#define LUA_LIB
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -69,8 +69,8 @@ linsert(lua_State *L) {
 
 /*
 ** @breif 
-** @param Ò»¸öÊıpos
-** @param Á½¸öÊı¾İ
+** @param ä¸€ä¸ªæ•°pos
+** @param ä¸¤ä¸ªæ•°æ®
 */
 static int
 lerase(lua_State *L) {

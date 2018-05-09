@@ -128,6 +128,7 @@ end
 
 function cls:afk()
 	-- body
+	log.info("uid(%d)-------------------------------------afk", self.uid)
 	local ok, err = pcall(self.systems.afk, self.systems)
 	if not ok then
 		log.error(err)

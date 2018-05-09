@@ -13,7 +13,7 @@ cls.type.CRAK = 1       -- 万
 cls.type.BAM  = 2       -- 条
 cls.type.DOT  = 3       -- 同
 
-function cls:ctor(t, num, idx, ... )
+function cls:ctor(t, num, idx)
 	-- body
 	-- log.info("t:%d, num:%d, idx:%d", t, num, idx)
 	assert(t and num and idx)
@@ -24,7 +24,6 @@ function cls:ctor(t, num, idx, ... )
 	self._color = 0
 	self._pos = 0
 	self._que  = 0
-	
 	self._master = false  -- 判断是否已经被分配
 	self._bright = false  -- 判断是否已经被选中
 
@@ -32,7 +31,7 @@ function cls:ctor(t, num, idx, ... )
 	return self
 end
 
-function cls:_init_color( ... )
+function cls:_init_color()
 	-- body
 	if self._type == cls.type.CRAK then
 		self._color = self._num
@@ -43,12 +42,12 @@ function cls:_init_color( ... )
 	end
 end
 
-function cls:tof( ... )
+function cls:tof()
 	-- body
 	return self._type
 end
 
-function cls:nof( ... )
+function cls:nof()
 	-- body
 	return self._num
 end

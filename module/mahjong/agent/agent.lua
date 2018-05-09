@@ -57,7 +57,7 @@ skynet.register_protocol {
 			assert(false)
 		end
 	end,
-	dispatch = function (session, source, type, ...)	
+	dispatch = function (session, source, type, ...)
 		if type == "REQUEST" then
 			local traceback = debug.traceback
 			local ok, result = xpcall(request, traceback, ...)

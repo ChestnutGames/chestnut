@@ -70,7 +70,6 @@ function cls:ctor(env, uid, agent)
 	self._online = false  -- user in game
 	self._robot  = false  -- user
 
-	
 	self._state  = state.NONE
 	self._laststate = state.NONE
 	self._que    = 0
@@ -119,12 +118,12 @@ function cls:get_idx( ... )
 	return self._idx
 end
 
-function cls:get_online( ... )
+function cls:get_online()
 	-- body
 	return self._online
 end
 
-function cls:set_online(value, ... )
+function cls:set_online(value)
 	-- body
 	self._online = value
 end

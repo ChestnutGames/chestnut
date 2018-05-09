@@ -38,6 +38,11 @@ function REQUEST:join(args)
 	return M:join(args)
 end
 
+function REQUEST:rejoin()
+	-- body
+	return self.systems.room:rejoin()
+end
+
 function REQUEST:leave(args, ... )
 	-- body
 	local M = self.systems.room

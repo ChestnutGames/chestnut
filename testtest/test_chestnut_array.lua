@@ -6,6 +6,8 @@ skynet.start(function ( ... )
 	local a = array(6)()
 	a[1] = 'hell'
 	a[2] = {}
+	a[3] = 'hhhhhhhh'
+	a[4] = 'syhlsh'
 	for k,v in pairs(a) do
 		print(k,v)
 	end

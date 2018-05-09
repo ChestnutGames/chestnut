@@ -13,13 +13,9 @@ function CMD:start(channel_id)
 		dispatch = function (_, _, cmd, ...)
 			-- body
 			local f = assert(CMD[cmd])
-			local r = f(self, ... )
-			if r ~= servicecode.NORET then
-				-- if r ~= nil then
-				-- 	skynet.retpack(r)
-				-- else
-					-- log.error("subscribe cmd = %s not return", cmd)
-				-- end
+			local ok, result = pcall(f, self, ... )
+			if not ok then
+				log.error(result)
 			end
 		end
 	}
@@ -37,18 +33,18 @@ function CMD:sayhi()
 	return self:sayhi()
 end
 
-function CMD:save_data( ... )
+function CMD:save_data()
 	-- body
 	self:save_data()
 end
 
-function CMD:close( ... )
+function CMD:close()
 	-- body
 	-- will be kill
 	return self:close()
 end
 
-function CMD:kill( ... )
+function CMD:kill()
 	-- body
 	skynet.exit()
 end
@@ -75,14 +71,14 @@ function CMD:join(args, ... )
 	return servicecode.NORET
 end
 
-function CMD:on_rejoin(uid)
+function CMD:on_rejoin(args)
 	-- body
-
+	return self:rejoin(args.uid, args.agent)
 end
 
-function CMD:on_leave(args, ... )
+function CMD:on_leave(uid)
 	-- body
-	return self:leave(args.idx)
+	return self:leave(uid)
 end
 
 function CMD:leave(args, ... )

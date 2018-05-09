@@ -125,13 +125,13 @@ function cls:set_id(value, ... )
 	self._id = value
 end
 
-function cls:clear( ... )
+function cls:clear()
 	-- body
 	self._countdown = 20 -- s
 
-	self._state = state.NONE	
+	self._state = state.NONE
 	self._lastfirsthu  = 0    -- last,make next zhuangjia
-	
+
 	self._lastidx  = 0    -- last time lead from who
 	self._lastcard = nil    -- last time lead card
 
@@ -140,10 +140,10 @@ function cls:clear( ... )
 	self._curtake   = 0
 	self._curidx    = 0      -- player
 	self._curcard = nil
-	
+
 	self._takeround = 1
 	self._takepoint = 0
-	
+
 	self._call = {}
 	self._callcounter = 0
 end
@@ -325,6 +325,7 @@ end
 ------------------------------------------------protocol
 function cls:start()
 	-- body
+	assert(self)
 	return true
 end
 
@@ -390,15 +391,17 @@ function cls:init_data()
 				cc:set_pos(tonumber(k))
 				player:insert_take_cards_with_pos(cc)
 			end
-			for k,v in pairs(db_user._leadcards) do
-				print(k,v)
+			for k,v in pairs(db_user.leadcards) do
+				-- local cc = self._kcards[v]
+				-- cc:set_pos(tonumber(k))
 			end
-			for k,v in pairs(db_user._putcards) do
-				print(k,v)
+			for k,v in pairs(db_user.putcards) do
+				-- local cc = self._kcards[v]
+				-- cc:set_pos(tonumber(k))
 			end
 			player._putidx = db_user.putidx
 			player._holdcard = self._kcards[db_user.holdcard]
-			for k,v in pairs(db_user._hucards) do
+			for k,v in pairs(db_user.hucards) do
 				print(k,v)
 			end
 		end
@@ -408,16 +411,14 @@ end
 
 function cls:sayhi()
 	-- body
-	if self._open then
-		return true
-	else
-		return false
-	end
+	assert(self)
+	return true
 end
 
 function cls:save_data()
 	-- body
 	if not self._open then
+		-- log.info("roomid = %d, save_data self._open is false", self._id)
 		return
 	end
 	local db_users = {}
@@ -451,7 +452,9 @@ function cls:save_data()
 				db_user.putcards[string.format("%d", pos)] = card:get_value()
 			end
 			db_user.putidx = assert(v._putidx)
-			db_user.holdcard = assert(v._holdcard:get_value())
+			if v._holdcard then
+				db_user.holdcard = assert(v._holdcard:get_value())
+			end
 			db_user.hucards = {}
 			for pos,card in pairs(v._hucards) do
 				db_user.hucards[string.format("%d", pos)] = card:get_value()
@@ -462,7 +465,6 @@ function cls:save_data()
 	db_room.open = assert(self._open)
 	db_room.id = assert(self._id)
 	db_room.host = assert(self._host)
-	db_room.open = assert(self._open)
 	db_room['local'] = self._local
 	db_room.overtype = self._overtype
 	db_room.maxmultiple = self._maxmultiple
@@ -499,12 +501,14 @@ end
 
 function cls:close()
 	-- body
-	self._open = false
+	assert(self)
+	-- self._open = false
 	return true
 end
 
 function cls:afk(uid)
 	-- body
+	log.info('roomid = %d, uid(%d) afk', self._id, uid)
 	local p = self:get_player_by_uid(uid)
 	assert(p)
 	p:set_online(false)

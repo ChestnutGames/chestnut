@@ -26,6 +26,7 @@ end
 
 function cls:initialize()
 	-- body
+	assert(self)
 	if false then
 		local uid  = self.agentContext.uid
 		local index = self.context:get_entity_index(UserComponent)
@@ -46,13 +47,15 @@ function cls:initialize()
 	return true
 end
 
-function cls:afk( ... )
+function cls:afk()
 	-- body
-	local uid     = self.agentContext.uid
+	log.info("RoomSystem call afk")
+	local uid   = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
 	if entity.room.joined then
-		local ok = skynet.call(entity.room.addr, "lua", "on_leave", uid)
+		print(entity.room.addr)
+		local ok = skynet.call(entity.room.addr, "lua", "afk", uid)
 		assert(ok)
 		entity.room.online = false
 		entity.room.addr = 0
@@ -135,6 +138,38 @@ function cls:join(args)
 			log.info("join room SUCCESS.")
 			entity.room.id = args.roomid
 			entity.room.addr = res.addr
+			entity.room.joined = true
+			entity.room.online = true
+		else
+			log.info('join room FAIL.')
+		end
+		return response
+	end
+end
+
+function cls:rejoin()
+	-- body
+	local uid   = self.agentContext.uid
+	local agent = skynet.self()
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if not entity.room.joined then
+		return { errorcode = 1 }
+	end
+
+	local xargs = {
+		uid   = uid,
+		agent = agent,
+		name  = assert(entity.account.nickname),
+		sex   = assert(entity.account.sex)
+	}
+	local res = skynet.call(".ROOM_MGR", "lua", "apply", entity.room.id)
+	if res.errorcode ~= 0 then
+		return res
+	else
+		local response = skynet.call(res.addr, "lua", "on_rejoin", xargs)
+		if response.errorcode == 0 then
+			entity.room.addr   = res.addr
 			entity.room.joined = true
 			entity.room.online = true
 		else
