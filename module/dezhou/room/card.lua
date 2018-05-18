@@ -1,39 +1,60 @@
+-- local log = require "log"
 local assert = assert
+
+local TYPE_SHIFT = 8
+local NUM_SHIFT = 4
+local IDX_SHIFT = 0
+
 local cls = class("card")
 
-function cls:ctor(v, ... )
+cls.type = {}
+cls.type.NONE = 0
+cls.type.CRAK = 1       -- 万
+cls.type.BAM  = 2       -- 条
+cls.type.DOT  = 3       -- 同
+
+function cls:ctor(t, num, idx)
 	-- body
-	assert(v)
-	self._value = v
-	local t = v >> 4 & 0x0f
-	local num = v & 0x0f
+	-- log.info("t:%d, num:%d, idx:%d", t, num, idx)
+	assert(t and num and idx)
 	self._type = t
-	self._num =  num
-	self._idx = 0
+	self._num  = num
+	self._idx  = idx
+	self._value = ((t & 0xff) << TYPE_SHIFT) | ((num & 0x0f) << NUM_SHIFT) | ((idx & 0x0f) << IDX_SHIFT)
+	self._color = 0
+	self._pos = 0
+	self._que  = 0
 	self._master = false  -- 判断是否已经被分配
 	self._bright = false  -- 判断是否已经被选中
 
+	self:_init_color()
 	return self
 end
 
-function cls:tof( ... )
+function cls:_init_color()
+	-- body
+	if self._type == cls.type.CRAK then
+		self._color = self._num
+	elseif self._type == cls.type.DOT then
+		self._color = 9 + self._num
+	elseif self._type == cls.type.BAM then
+		self._color = 18 + self._num
+	end
+end
+
+function cls:tof()
 	-- body
 	return self._type
 end
 
-function cls:nof( ... )
+function cls:nof()
 	-- body
 	return self._num
 end
 
-function cls:get_type( ... )
+function cls:iof( ... )
 	-- body
-	return self._type
-end
-
-function cls:get_num( ... )
-	-- body
-	return self._num
+	return self._idx
 end
 
 function cls:get_value( ... )
@@ -41,15 +62,34 @@ function cls:get_value( ... )
 	return self._value
 end
 
--- position
-function cls:get_idx( ... )
+function cls:get_color( ... )
 	-- body
-	return self._idx
+	return self._color
 end
 
-function cls:set_idx(idx, ... )
+function cls:set_que(ctype, ... )
 	-- body
-	self._idx = idx
+	if self._type == ctype then
+		self._que = 1
+	else
+		self._que = 0
+	end
+end
+
+function cls:get_que( ... )
+	-- body
+	return self._que
+end
+
+-- position
+function cls:get_pos( ... )
+	-- body
+	return self._pos
+end
+
+function cls:set_pos(pos, ... )
+	-- body
+	self._pos = pos
 end
 
 function cls:set_master(m, ... )
@@ -60,130 +100,6 @@ end
 function cls:get_master( ... )
 	-- body
 	return self._master
-end
-
--- 比较单牌,这里只比较数字
-function cls:mt(o, ... )
-	-- body
-	local t1 = self._type
-	local n1 = self._num
-	local t2 = o._type
-	local n2 = o._num
-	if t1 == 5 then
-		return true
-	elseif t2 == 5 then
-		return false
-	elseif t1 == 4 then
-		if t2 == 5 then
-			return false
-		else
-			return true
-		end
-	elseif t2 == 4 then
-		if t1 == 5 then
-			return true
-		else
-			return false
-		end
-	elseif n1 > 0 and n2 > 0 then
-		if n1 == n2 then
-			return false
-		elseif n1 == 2 and n2 ~= 2 then
-			return true
-		elseif n2 == 2 and n1 ~= 2 then
-			return false
-		elseif n1 == 1 then
-			if n2 == 2 or n2 == 1 then
-				return false
-			else
-				return true
-			end
-		elseif n2 == 1 then
-			if n1 == 2 then
-				return true
-			else
-				return false
-			end
-		else
-			return n1 > n2
-		end
-	else
-		assert(false)
-		return false
-	end
-end
-
-function cls:eq(o, ... )
-	-- body
-	local t1 = self._type
-	local n1 = self._num
-	local t2 = o._type
-	local n2 = o._num
-	if n1 > 0 and n2 > 0 then
-		return (n1 == n2)
-	else
-		return false
-	end
-end
-
-function cls:lt(o, ... )
-	-- body
-	if not self:mt(o) or not self:eq(o) then
-		return true
-	else
-		return false
-	end
-end
-
--- 发牌的时候的比较，这里既比较数字也比较类型
-function cls:mt_t(o, ... )
-	-- body
-	assert(o)
-	if self._type == 5 then
-		return true
-	elseif self._type == 4 then
-		if o._type == 5 then
-			return false
-		else
-			return true
-		end
-	elseif self._num == o._num then -- 两个数字相同的时候，判断type
-		if self._type > o._type then
-			return true
-		else
-			return false
-		end
-	elseif self._num == 2 then
-		return true
-	elseif o._num == 2 then
-		return false
-	elseif self._num == 1 then
-		if o._num == 2 then
-			return false
-		else
-			return true
-		end
-	elseif o._num == 1 then
-		if self._num == 2 then
-			return true
-		else
-			return false
-		end
-	elseif self._num > o._num then
-		return true
-	else
-		return false
-	end
-end
-
-function cls:eq_t(o, ... )
-	-- body
-	return false
-end
-
-function cls:lt_t(o, ... )
-	-- body
-	return not self:mt_t(o) and not self:lt_t(o)
 end
 
 function cls:set_bright(flag, ... )
@@ -198,9 +114,51 @@ end
 
 function cls:clear( ... )
 	-- body
-	self._idx = 0         -- deal 
+	self._que = 0
+	self._pos = 0         -- deal 
 	self._master = false  -- deal
 	self._bright = false  -- selection
+end
+
+-- 比较单牌,这里只比较数字
+function cls:mt(o, ... )
+	-- body
+	if self._que == o._que then
+		return self._value > o._value
+	else
+		return self._que > o._que
+	end
+end
+
+function cls:eq(o, ... )
+	-- body
+	if self._type == o._type and self._num == o._num then
+		return true
+	else
+		return false
+	end
+end
+
+function cls:lt(o, ... )
+	-- body
+	return self._value < o._value
+end
+
+function cls:describe( ... )
+	-- body
+	local res = ""
+	if self._type == cls.type.CRAK then
+		res = res .. "crak "
+	elseif self._type == cls.type.BAM then
+		res = res .. "bam "
+	elseif self._type == cls.type.DOT then
+		res = res .. "dot "
+	end
+
+	res = res .. string.format("%d,", self._num)
+	res = res .. string.format("pos: %d", self._pos)
+
+	return res
 end
 
 return cls

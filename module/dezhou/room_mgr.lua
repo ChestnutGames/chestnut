@@ -1,39 +1,163 @@
-package.path = "./../../module/host/lualib/?.lua;"..package.path
+package.path = "./module/mahjong/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
-local waiting_queue = require "waiting_queue"
-local log = require "log"
-local noret = {}
-local users = {}
-local mgr
+local mc = require "skynet.multicast"
+local ds = require "skynet.datasheet"
+local log = require "chestnut.skynet.log"
+
+local channel_id
+local NORET = {}
+local users = {}   -- 玩家信息
+local rooms = {}   -- 正在打牌的
+local num = 0      -- 正在打牌的桌子数
+local pool = {}    -- 闲置的桌子
+local bank = 101010
+local MAX_ROOM_NUM = 4
+local id = bank + 1
+
+-- @breif 生成房间id，
+-- @return 0,成功, 13 超过最大房间数
+local function next_id()
+	-- body
+	if num >= MAX_ROOM_NUM then
+		return 13
+	else
+		while rooms[id] do
+			id = id + 1
+			if id > bank + MAX_ROOM_NUM then
+				id = bank + 1
+			end
+		end
+		return 0, id
+	end
+end
+
 
 local CMD = {}
 
-function CMD.start(source, ... )
+function CMD.start(chan_id)
+	-- body
+	local channel = mc.new {
+		channel = chan_id,
+		dispatch = function (_, _, cmd, ...)
+			-- body
+			local f = assert(CMD[cmd])
+			local r = f( ... )
+			if r ~= NORET then
+				if r ~= nil then
+					skynet.retpack(r)
+				else
+					log.error("subscribe cmd = %s not return", cmd)
+				end
+			end
+		end
+	}
+	channel:subscribe()
+	channel_id = chan_id
+
+	-- 初始一些配置
+	MAX_ROOM_NUM = tonumber(ds.query('consts')['2']['Value'])
+	assert(MAX_ROOM_NUM > 1)
+	log.info('MAX_ROOM_NUM ==> %d', MAX_ROOM_NUM)
+
+	-- 初始所有桌子
+	for i=1,MAX_ROOM_NUM do
+		local roomid = bank + i
+		local addr = skynet.newservice("room/room", roomid)
+		pool[roomid] = { id = roomid, addr = addr }
+	end
+	return true
+end
+
+function CMD.init_data()
+	-- body
+	local pack = skynet.call('.DB', "lua", "read_room_mgr_users")
+	if pack then
+		-- log.info("pack = [%s]", pack)
+		-- for k,v in pairs(data.users) do
+		-- 	local db_user = {}
+		-- 	db_user.uid = assert(v.uid)
+		-- 	db_user.roomid = assert(v.roomid)
+		-- 	users[tonumber(k)] = db_user
+		-- end
+		-- for k,v in pairs(data.rooms) do
+		-- 	local db_room = {}
+		-- 	db_room.id = assert(v.id)
+		-- 	db_room.host = assert(v.host)
+		-- 	rooms[tonumber(k)] = db_room
+		-- end
+	end
+	-- -- 打开所有房间
+	-- for _,room in pairs(pool) do
+	-- 	local ok = skynet.call(room.addr, "lua", "start", channel_id)
+	-- 	if not ok then
+	-- 		log.error("start room id = %d failed.", room.id)
+	-- 	else
+	-- 		ok = skynet.call(room.addr, "lua", "init_data")
+	-- 		assert(ok)
+	-- 	end
+	-- end
+
+	-- -- 验证mgr数据与room数据的一致
+	-- for k,v in pairs(rooms) do
+	-- 	local room = pool[k]
+	-- 	local ok = skynet.call(room.addr, "lua", "sayhi")
+	-- 	if ok then
+	-- 		v.addr = room.addr
+	-- 		pool[k] = nil
+	-- 		num = num + 1
+	-- 		if k > id then
+	-- 			id = k
+	-- 		end
+	-- 	else
+	-- 		log.error("room data wrong.")
+	-- 	end
+	-- end
+	return true
+end
+
+function CMD.sayhi()
 	-- body
 	return true
 end
 
-function CMD.close( ... )
+function CMD.save_data()
 	-- body
+	-- local db_users = {}
+	-- local db_rooms = {}
+	-- for k,v in pairs(users) do
+	-- 	local db_user = {}
+	-- 	db_user.uid = assert(v.uid)
+	-- 	db_user.roomid = assert(v.roomid)
+	-- 	db_users[string.format("%d", k)] = db_user
+	-- end
+	-- for k,v in pairs(rooms) do
+	-- 	local db_room = {}
+	-- 	db_room.id = assert(v.id)
+	-- 	db_room.host = assert(v.host)
+	-- 	db_rooms[string.format("%d", k)] = db_room
+	-- end
+	-- local data = {}
+	-- data.users = db_users
+	-- data.rooms = db_rooms
+	-- local pack = json.encode(data)
+	-- redis:set("tb_room_mgr", pack)
+	return NORET
+end
+
+function CMD.close()
+	-- body
+	CMD.save_data()
 	return true
 end
 
-function CMD.kill( ... )
+function CMD.kill()
 	-- body
 	skynet.exit()
 end
 
-function CMD.afk(source, uid, ... )
-	-- body
-	assert(uid)
-	local u = users[uid]
-	if u then
-		mgr:remove_agent(u)
-		users[uid] = nil
-	end
-end
 
+-- match
 function CMD.enqueue_agent(source, uid, rule, mode, scene, ... )
 	-- body
 	log.info("enqueue_agent")
@@ -72,33 +196,85 @@ function CMD.dequeue_agent(source, uid, ... )
 	end
 end
 
-function CMD.apply(source, roomid, ... )
+-- open room------------------------------------------------------
+function CMD.create(uid, agent, args)
 	-- body
-	local room = mgr:get(roomid)
-	return room.addr
+	log.info("ROOM_MGR create")
+	local u = users[uid]
+	if u then
+		local res = {}
+		res.errorcode = 10
+		return res
+	else
+		local res = {}
+		local errorcode, roomid = next_id()
+		if errorcode ~= 0 then
+			res.errorcode = errorcode
+			return res
+		end
+		assert(roomid >= bank + 1 and roomid <= bank + MAX_ROOM_NUM)
+		local room = assert(pool[roomid])
+
+		res = skynet.call(room.addr, "lua", "create", uid, args)
+		if res.errorcode ~= 0 then
+			return res
+		else
+			u = {}
+			u.uid = uid
+			u.roomid = room.id
+			u.agent = agent
+			users[uid] = u
+
+			-- room
+			pool[roomid] = nil
+			room.rule = args
+			room.host = uid
+			rooms[roomid] = room
+			num = num + 1
+
+			log.info("create room ok")
+			return res
+		end
+	end
 end
 
--- room exit
-function CMD.enqueue_room(source, roomid, ... )
+-- 查询房间地址
+function CMD.apply(roomid)
 	-- body
-	local room = mgr:get(roomid)
-	mgr:remove(room)
-	mgr:enqueue_room(room)
-	return noret
+	log.info("apply roomid: %d, return room addr", roomid)
+	local room = rooms[roomid]
+	if room then
+		return { errorcode = 0, addr = room.addr }
+	else
+		return { errorcode = 14 }
+	end
 end
 
-skynet.start(function ( ... )
+-- 解散房间 call by room
+function CMD.dissolve(roomid)
 	-- body
-	skynet.dispatch("lua", function (_, source, cmd, ... )
+	local room = rooms[roomid]
+	assert(room)
+	rooms[roomid] = nil
+	assert(pool[roomid] == nil)
+	pool[roomid] = room
+	return true
+end
+
+
+skynet.start(function ()
+	-- body
+	skynet.dispatch("lua", function ( _, _, cmd, ... )
 		-- body
 		local f = assert(CMD[cmd])
-		local r = f(source, ...)
-		if r ~= noret then
-			skynet.retpack(r)
+		local r = f( ... )
+		if r ~= NORET then
+			if r ~= nil then
+				skynet.retpack(r)
+			else
+				log.error("ROOM_MGR cmd = %s not return", cmd)
+			end
 		end
 	end)
-	local rt = ( 1 << 24 | 1 << 16 | 1 << 8)
-	local arr = { rt}
-	mgr = waiting_queue.new(false, arr)
 	skynet.register ".ROOM_MGR"
 end)

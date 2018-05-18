@@ -1,7 +1,6 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local log = require "chestnut.skynet.log"
-local center = require "chestnut.notification_center"
 local sproto = require "sproto"
 local sprotoloader = require "sprotoloader"
 
@@ -12,8 +11,6 @@ local cls = class("context")
 
 function cls:ctor( ... )
 	-- body
-	self.center = center.new(self)
-
 	local host = sprotoloader.load(1):host "package"
 	local send_request = host:attach(sprotoloader.load(2))
 
@@ -21,18 +18,17 @@ function cls:ctor( ... )
 	self._send_request = send_request
 	self.response_session = 0
 	self.response_session_name = {}
-	
-	self.fd = false
 
 	-- will been used
 	-- self.version = 0
 	-- self.index = 0
 
+	self.fd = false
 	self.gate   = nil
+	self.watchdog = nil
 	self.uid    = nil
 	self.subid  = nil
 	self.secret = nil
-	self.modules = {}
 
 	self.logined = false
 	self.authed = false
@@ -87,6 +83,7 @@ end
 
 function cls:send_package_id(id, pack, ... )
 	-- body
+	assert(self)
 	assert(id and pack)
 	local package = string_pack(">s2", pack)
 	socket.write(id, package)
@@ -109,6 +106,23 @@ function cls:send_request_id(id, name, args, ... )
 	self.response_session_name[self.response_session] = name
 	local request = self._send_request(name, args, self.response_session)
 	self:send_package_id(id, request)
+end
+
+function cls:send_package_gate(name, args)
+	-- body
+	skynet.send(self.gate, "lua", name, self.fd, args)
+end
+
+function cls:send_request_gate(name, args)
+	-- body
+	if not self.logined or not self.authed then
+		return
+	end
+	assert(name)
+	self.response_session = self.response_session + 1 % max
+	self.response_session_name[self.response_session] = name
+	local request = self._send_request(name, args, self.response_session)
+	skynet.send(self.gate, "lua", "push_client", self.fd, request)
 end
 
 function cls:send_request(name, args, ... )

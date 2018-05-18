@@ -1,6 +1,8 @@
 local skynet = require "skynet"
 local skynet_queue = require "skynet.queue"
-local queue = require "queue"
+local log = require "chestnut.skynet.log"
+local queue = require "chestnut.queue"
+
 local cls = class("waiting_queue")
 
 function cls:ctor( ... )
@@ -78,7 +80,7 @@ end
 function cls:_create_room( ... )
 	-- body
 	self._id = self._id + 1
-	local addr = skynet.newservice("room/room")
+	local addr = skynet.newservice("room/room", self._id)
 
 	local x = {
 		id = self._id,
@@ -90,6 +92,10 @@ end
 -- manager room
 function cls:enqueue_room(room, ... )
 	-- body
+	assert(room and room.id)
+	if self._urooms[room.id] then
+		self._urooms[room.id] = nil
+	end
 	local function func1(q, r, ... )
 		-- body
 		q:enqueue(r)
@@ -107,17 +113,12 @@ function cls:dequeue_room( ... )
 			return self:_create_room()
 		end
 	end
-	return self._cs2(func1, self._rooms)
-end
-
-function cls:add(room, ... )
-	-- body
+	local room = assert(self._cs2(func1, self._rooms))
+	log.info("dequeue room room id: %d ", room.id)
+	assert(room.id)
+	assert(self._urooms[room.id] == nil)
 	self._urooms[room.id] = room
-end
-
-function cls:remove(room, ... )
-	-- body
-	self._urooms[room.id] = nil
+	return room
 end
 
 function cls:get(id, ... )

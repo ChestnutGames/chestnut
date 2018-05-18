@@ -1,127 +1,153 @@
 local skynet = require "skynet"
 require "skynet.manager"
-local mc = require "multicast"
-local log = require "log"
+local mc = require "skynet.multicast"
+local log = require "chestnut.skynet.log"
 
-local servers = {}
+local channel
+local services = {}
+local init_data_servers = {}
+local sayhi_servers = {}
+
 
 local CMD = {}
 
-function CMD.start( ... )
+function CMD.start()
 	-- body
-	repeat 
-		local conf = {
-			db_host = skynet.getenv("db_host") or "192.168.1.116",
-			db_port = skynet.getenv("db_port") or 3306,
-			db_database = skynet.getenv("db_database") or "user",
-			db_user = skynet.getenv("db_user") or "root",
-			db_password = skynet.getenv("db_password") or "yulei",
-			cache_host = skynet.getenv("cache_host") or "192.168.1.116",
-			cache_port = skynet.getenv("cache_port") or 6379
-		}
-		
-		local addr = skynet.newservice("db", "master")
-		assert(skynet.call(addr, "lua", "start", conf))
-		table.insert(servers, addr)
-	until true
+	local ok = false
 
-	local handle = skynet.uniqueservice("uid_mgr")
-	skynet.call(handle, "lua", "start")
-	table.insert(servers, handle)
+	skynet.launch("xloggerd")
+	log.info("xloggerd start ... ")
 
-	local handle = skynet.uniqueservice("sid_mgr")
-	skynet.call(handle, "lua", "start")
-	table.insert(servers, handle)
+	-- read config
+	local sdata = skynet.uniqueservice("sdata")
+	ok = skynet.call(sdata, "lua", "start")
+	if not ok then
+		log.error("call sdata failture.")
+		skynet.exit()
+	else
+		log.info("sdata load success.")
+	end
 
-	-- read
-	local game = skynet.uniqueservice("game")
-	table.insert(servers, game)
+	-- db
+	skynet.uniqueservice("db/db")
+
+	-- logic
+	local room_mgr = skynet.uniqueservice("room_mgr")
+	skynet.call(room_mgr, "lua", "start", channel.channel)
+	table.insert(services, room_mgr)
+	table.insert(init_data_servers, room_mgr)
+	table.insert(sayhi_servers, room_mgr)
+	log.info("room_mgr start success.")
+
+	local sid_mgr = skynet.uniqueservice("sid_mgr")
+	skynet.call(sid_mgr, "lua", "start", channel.channel)
+	table.insert(services, sid_mgr)
+	log.info("sid_mgr start success.")
+
+	local radiocenter = skynet.uniqueservice("radiocenter")
+	skynet.call(radiocenter, "lua", "start", channel.channel)
+	table.insert(services, radiocenter)
+	log.info("radiocenter start success.")
 
 	local chat = skynet.uniqueservice("chatd")
-	skynet.call(chat, "lua", "start")
-	table.insert(servers, chat)
-	
-	local emaild = skynet.uniqueservice("email/emaild")
-	skynet.call(emaild, "lua", "start")
-	table.insert(servers, emaild)
+	skynet.call(chat, "lua", "start", channel.channel)
+	table.insert(services, chat)
+	log.info("chat start success.")
 
-	local sysemaild = skynet.uniqueservice("email/sysemaild")
-	skynet.call(sysemaild, "lua", "start")
-	table.insert(servers, sysemaild)
+	local sysemaild = skynet.uniqueservice("sysemail/mail_mgr")
+	skynet.call(sysemaild, "lua", "start", channel.channel)
+	table.insert(services, sysemaild)
+	table.insert(init_data_servers, sysemaild)
+	log.info("sysemaild start success.")
 
-	-- local lb = skynet.newservice("leaderboardd")
-	-- skynet.call(lb, "lua", "start")
-	-- table.insert(servers, lb)
-	
-	skynet.uniqueservice("agent_mgr")
-	skynet.call(".AGENT_MGR", "lua", "start", 2)
-	table.insert(servers, ".AGENT_MGR")
+	local record_mgr = skynet.uniqueservice("record/record_mgr")
+	skynet.call(record_mgr, "lua", "start", channel.channel)
+	table.insert(services, record_mgr)
+	table.insert(init_data_servers, record_mgr)
+	log.info("record_mgr start success.")
 
-	-- skynet.newservice("branch")
-	-- skynet.newservice("channel")
-	skynet.uniqueservice("ai_mgr")
-	skynet.call(".AI_MGR", "lua", "start")
-	table.insert(servers, ".AGENT_MGR")
+	local agent_mgr = skynet.uniqueservice("agent_mgr")
+	skynet.call(agent_mgr, "lua", "start", channel.channel, 5)
+	table.insert(services, agent_mgr)
+	log.info("agent_mgr start success.")
 
-	local handle = skynet.uniqueservice("room_mgr")
-	skynet.call(handle, "lua", "start")
-	table.insert(servers, handle)
+	-- three service
+	-- local signupd = skynet.getenv("signupd")
+	-- if signupd  then
+	-- 	local addr = skynet.newservice("wx_signupd")
+	-- 	skynet.call(addr, "lua", "start")
+	-- end
 
-	local signupd = skynet.getenv("signupd")
-	if signupd  then
-		local addr = skynet.newservice("signupd")
-		local signupd_name = skynet.getenv("signupd_name")
-		skynet.name(signupd_name, addr)
-	end
+	-- local logind = skynet.getenv("logind") or "0.0.0.0:3002"
+	-- local addr = skynet.newservice("logind/logind", logind)
+	-- skynet.name(".LOGIND", addr)
 
-	local logind = skynet.getenv("logind")
-	if logind then
-		local logind_name = skynet.getenv("logind_name")
-		local addr = skynet.newservice("logind/logind")
-		skynet.name(logind_name, addr)
-	end     
+	-- local gated = skynet.getenv("gated") or "0.0.0.0:3301"
+	-- local address, port = string.match(gated, "([%d.]+)%:(%d+)")
+	-- local gated_name = skynet.getenv("gated_name") or "sample"
+	-- local max_client = skynet.getenv("maxclient") or 1024
+	-- local gate = skynet.uniqueservice("gated/gated")
+	-- skynet.call(gate, "lua", "open", {
+	-- 	address = address or "0.0.0.0",
+	-- 	port = port,
+	-- 	maxclient = tonumber(max_client),
+	-- 	servername = gated_name,
+	-- 	--nodelay = true,
+	-- })
 
-	local gated = skynet.getenv("gated")
-	if gated then
-		local logind_name = skynet.getenv("logind_name")
-		local server_name = skynet.getenv("gated_name")
-		local max_client = skynet.getenv("maxclient")
-		local address, port = string.match(skynet.getenv("gated"), "([%d.]+)%:(%d+)")
-		local gated = skynet.newservice("gated/gated")
-		skynet.name(".GATED", gated)
-		skynet.call(gated, "lua", "open", { 
-			address = address or "0.0.0.0",
-			port = port,
-			maxclient = tonumber(max_client),
-			servername = server_name,
-			--nodelay = true,
-		})
-	end
+	-- local watchdog = skynet.newservice("wswatchdog")
+	-- skynet.call(watchdog, "lua", "start", {
+	-- 	port = 8888,
+	-- 	maxclient = 64,
+	-- 	nodelay = true,
+	-- })
+	skynet.uniqueservice("wslogind")
+	local wsgated = skynet.uniqueservice('wsgated')
+	skynet.call(wsgated, "lua", "start")
+
 	return true
 end
 
-function CMD.kill( ... )
+function CMD.init_data()
 	-- body
-	for i,v in ipairs(servers) do
-		if type(v) == "number" then
-			log.info("call %s close", skynet.address(v))
-		else
-			log.info("call %s close", v)
-		end	
+	for _,v in pairs(init_data_servers) do
+		skynet.call(v, "lua", "init_data")
+	end
+	log.info("init_data over.")
+	return true
+end
+
+function CMD.sayhi()
+	-- body
+	for _,v in pairs(sayhi_servers) do
+		skynet.call(v, "lua", "sayhi")
+	end
+	log.info("sayhi over.")
+	-- begin to save data
+	skynet.timeout(100, function ()
+		-- body
+		while true do
+			channel:publish("save_data")
+			skynet.sleep(100)
+		end
+	end)
+	return true
+end
+
+function CMD.kill()
+	-- body
+	for _,v in pairs(servers) do
 		skynet.call(v, "lua", "close")
 	end
+
 	-- skynet.exit()
 	skynet.abort()
 end
 
-function CMD.register(addr, ... )
-	-- body
-	table.insert(servers, addr)
-end
-
-skynet.start( function () 
-	skynet.dispatch("lua" , function( _, source, command, ... )
-		local f = assert(CMD[command])
+skynet.start( function ()
+	channel = mc.new()
+	skynet.dispatch("lua" , function( _, source, cmd, ... )
+		local f = assert(CMD[cmd])
 		local r = f(source, ...)
 		if r then
 			skynet.ret(skynet.pack(r))

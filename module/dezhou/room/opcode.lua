@@ -1,11 +1,9 @@
 local _M = {}
 
-_M.Bet     = 1
-_M.Call    = 2
-_M.Fold    = 3
-_M.Check   = 4
-_M.Raise   = 5
-_M.Reraise = 6
-_M.Allin   = 7
+_M.none     = 0
+_M.peng     = 1 << 0
+_M.gang     = 1 << 1
+_M.hu       = 1 << 2
+_M.guo      = 1 << 3
 
 return _M
