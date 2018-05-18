@@ -3,13 +3,15 @@ local socket = require "skynet.socket"
 local log = require "chestnut.skynet.log"
 local sproto = require "sproto"
 local sprotoloader = require "sprotoloader"
+local servicecode = require "chestnut.servicecode"
+local assert = assert
 
 local string_pack = string.pack
 local max = 2 ^ 16 - 1
 
 local cls = class("context")
 
-function cls:ctor( ... )
+function cls:ctor()
 	-- body
 	local host = sprotoloader.load(1):host "package"
 	local send_request = host:attach(sprotoloader.load(2))
@@ -36,12 +38,12 @@ function cls:ctor( ... )
 	return self
 end
 
-function cls:get_fd( ... )
+function cls:get_fd()
 	-- body
 	return self.fd
 end
 
-function cls:set_fd(fd, ... )
+function cls:set_fd(fd)
 	-- body
 	self.fd = fd
 end
@@ -66,22 +68,22 @@ end
 -- 	self.index = idx
 -- end
 
-function cls:get_uid( ... )
+function cls:get_uid()
 	-- body
 	return self.uid
 end
 
-function cls:get_subid( ... )
+function cls:get_subid()
 	-- body
 	return self.subid
 end
 
-function cls:get_secret( ... )
+function cls:get_secret()
 	-- body
 	return self.secret
 end
 
-function cls:send_package_id(id, pack, ... )
+function cls:send_package_id(id, pack)
 	-- body
 	assert(self)
 	assert(id and pack)
@@ -89,14 +91,14 @@ function cls:send_package_id(id, pack, ... )
 	socket.write(id, package)
 end
 
-function cls:send_package(pack, ... )
+function cls:send_package(pack)
 	-- body
 	local fd = assert(self.fd)
 	local package = string_pack(">s2", pack)
 	socket.write(fd, package)
 end
 
-function cls:send_request_id(id, name, args, ... )
+function cls:send_request_id(id, name, args)
 	-- body
 	if not self.logined or not self.authed then
 		return
@@ -125,7 +127,7 @@ function cls:send_request_gate(name, args)
 	skynet.send(self.gate, "lua", "push_client", self.fd, request)
 end
 
-function cls:send_request(name, args, ... )
+function cls:send_request(name, args)
 	-- body
 	if not self.logined or not self.authed then
 		return
@@ -134,24 +136,27 @@ function cls:send_request(name, args, ... )
 	self:send_request_id(fd, name, args)
 end
 
-function cls:get_name_by_session(session, ... )
+function cls:get_name_by_session(session)
 	-- body
 	return self.response_session_name[session]
 end
 
-function cls:start( ... )
+function cls:start()
 	-- body
 	self.logined = false
 	self.authed = false
 	return true
 end
 
-function cls:close( ... )
+function cls:close()
 	-- body
+	assert(self)
+	return true
 end
 
-function cls:reset( ... )
+function cls:reset()
 	-- body
+	assert(self)
 end
 
 function cls:login(gate, uid, subid, secret)
@@ -165,21 +170,24 @@ function cls:login(gate, uid, subid, secret)
 	return true
 end
 
-function cls:auth(args, ... )
+function cls:auth(args)
 	-- body
+	assert(not self.authed)
 	self.fd  = assert(args.client)
 	self.authed = true
-	return true
+	return servicecode.SUCCESS
 end
 
-function cls:afk( ... )
+function cls:afk()
 	-- body
+	assert(self.authed)
 	self.authed = false
-	return true
+	return servicecode.SUCCESS
 end
 
-function cls:logout( ... )
+function cls:logout()
 	-- body
+	assert(self.logined)
 	assert(self.gate)
 	log.info("call gate logout")
 	local ok = skynet.call(self.gate, "lua", "logout", self.uid, self.subid)
@@ -188,20 +196,22 @@ function cls:logout( ... )
 		return false
 	end
 
-	local ok = skynet.call(".AGENT_MGR", "lua", "exit_at_once", self.uid)
+	ok = skynet.call(".AGENT_MGR", "lua", "exit_at_once", self.uid)
 	if not ok then
 		log.error("call agent_mgr exit_at_once failture.")
 		return false
 	end
-
+	if self.authed then
+		self.authed = false
+	end
 	self.logined = false
-
 	log.info("uid(%d) logout", self.uid)
 	return true
 end
 
-function cls:inituser( ... )
+function cls:inituser()
 	-- body
+	assert(self)
 	return true
 end
 

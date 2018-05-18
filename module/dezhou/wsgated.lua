@@ -69,13 +69,13 @@ function server.logout_handler(uid, subid)
         log.info("call login logout")
         local err = skynet.call(".wslogind", "lua", "logout", uid, subid)
         if err ~= servicecode.SUCCESS then
-            log.error("logind service logout failture.")
+            log.error("wslogind service logout failture.")
         else
-            log.info("logind service logout ok.")
+            log.info("wslogind service logout ok.")
         end
         return err
     else
-        log.error("gated service not contains uid(%d)", uid)
+        log.error("wsgate service not contains uid(%d)", uid)
         return servicecode.FAIL
     end
 end
@@ -109,6 +109,8 @@ function server.disconnect_handler(fd)
     if u then
         forwarding[fd] = nil
         skynet.call(u.agent, "lua", "afk")
+        skynet.call(u.agent, "lua", "logout")
+        log.info("agent logout ok.")
     end
 end
 
@@ -137,9 +139,6 @@ local handler = {}
 function handler.on_open(ws)
     log.info(string.format("%d::open", ws.id))
     -- skynet.error("New client from : " .. addr)
-    -- local addr = skynet.newservice("agent/agent")
-    -- agent[ws.id] = { addr = addr, ws = ws }
-    -- skynet.call(addr, "lua", "auth_ws", { gate = skynet.self(), client = ws.id, watchdog = skynet.self() })
     -- log.info("New client from : %d", ws.id)
 end
 
@@ -197,13 +196,13 @@ end
 
 function CMD.logout(uid, subid)
     -- body
-    return server.login_handler(uid, subid)
+    return server.logout_handler(uid, subid)
 end
 
 function CMD.push_client(id, args)
     -- body
     if forwarding[id] and forwarding[id].ws then
-        forwarding[id].ws:send_text(args)
+        forwarding[id].ws:send_binary(args)
     end
     return servicecode.NORET
 end

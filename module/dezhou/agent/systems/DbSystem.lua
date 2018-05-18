@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local json = require "rapidjson"
 local UserComponent = require "components.UserComponent"
 local unpack_components = require "db.unpack_components"
 local pack_components = require "db.pack_components"
@@ -15,12 +14,12 @@ function cls:ctor(context)
 	return self
 end
 
-function cls:_on_user_born( ... )
+function cls:_on_user_born()
 	-- body
 	self.agentSystems.func_open:user_born()
 end
 
-function cls:set_context(context, ... )
+function cls:set_context(context)
 	-- body
 	self.context = context
 end
@@ -35,7 +34,6 @@ function cls:load_cache_to_data()
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
 	return true
 end
-
 
 function cls:save_user(uid, entity)
 	-- body

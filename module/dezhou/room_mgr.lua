@@ -4,13 +4,15 @@ require "skynet.manager"
 local mc = require "skynet.multicast"
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
+local queue = require "chestnut.queue"
 
 local channel_id
 local NORET = {}
 local users = {}   -- 玩家信息
 local rooms = {}   -- 正在打牌的
 local num = 0      -- 正在打牌的桌子数
-local pool = {}    -- 闲置的桌子
+local pool = {}    -- 闲置的大佬2桌子
+local q = queue()  -- 排队的队列
 local bank = 101010
 local MAX_ROOM_NUM = 4
 local id = bank + 1
@@ -63,7 +65,7 @@ function CMD.start(chan_id)
 	-- 初始所有桌子
 	for i=1,MAX_ROOM_NUM do
 		local roomid = bank + i
-		local addr = skynet.newservice("room/room", roomid)
+		local addr = skynet.newservice("big2room/room", roomid)
 		pool[roomid] = { id = roomid, addr = addr }
 	end
 	return true
@@ -71,48 +73,47 @@ end
 
 function CMD.init_data()
 	-- body
-	local pack = skynet.call('.DB', "lua", "read_room_mgr_users")
+	local pack = skynet.call('.DB', "lua", "read_room_mgr")
 	if pack then
-		-- log.info("pack = [%s]", pack)
-		-- for k,v in pairs(data.users) do
-		-- 	local db_user = {}
-		-- 	db_user.uid = assert(v.uid)
-		-- 	db_user.roomid = assert(v.roomid)
-		-- 	users[tonumber(k)] = db_user
-		-- end
-		-- for k,v in pairs(data.rooms) do
-		-- 	local db_room = {}
-		-- 	db_room.id = assert(v.id)
-		-- 	db_room.host = assert(v.host)
-		-- 	rooms[tonumber(k)] = db_room
-		-- end
+		for _,db_user in pairs(pack.db_users) do
+			local user = {}
+			user.uid = assert(db_user.uid)
+			user.roomid = assert(db_user.roomid)
+			users[tonumber(user.uid)] = user
+		end
+		for _,db_room in pairs(pack.db_rooms) do
+			local room = {}
+			room.id = assert(db_room.id)
+			room.host = assert(db_room.host)
+			rooms[tonumber(room.id)] = room
+		end
 	end
-	-- -- 打开所有房间
-	-- for _,room in pairs(pool) do
-	-- 	local ok = skynet.call(room.addr, "lua", "start", channel_id)
-	-- 	if not ok then
-	-- 		log.error("start room id = %d failed.", room.id)
-	-- 	else
-	-- 		ok = skynet.call(room.addr, "lua", "init_data")
-	-- 		assert(ok)
-	-- 	end
-	-- end
+	-- 打开所有房间
+	for _,room in pairs(pool) do
+		local ok = skynet.call(room.addr, "lua", "start", channel_id)
+		if not ok then
+			log.error("start room id = %d failed.", room.id)
+		else
+			ok = skynet.call(room.addr, "lua", "init_data")
+			assert(ok)
+		end
+	end
 
-	-- -- 验证mgr数据与room数据的一致
-	-- for k,v in pairs(rooms) do
-	-- 	local room = pool[k]
-	-- 	local ok = skynet.call(room.addr, "lua", "sayhi")
-	-- 	if ok then
-	-- 		v.addr = room.addr
-	-- 		pool[k] = nil
-	-- 		num = num + 1
-	-- 		if k > id then
-	-- 			id = k
-	-- 		end
-	-- 	else
-	-- 		log.error("room data wrong.")
-	-- 	end
-	-- end
+	-- 验证mgr数据与room数据的一致
+	for k,v in pairs(rooms) do
+		local room = pool[k]
+		local ok = skynet.call(room.addr, "lua", "sayhi")
+		if ok then
+			v.addr = room.addr
+			pool[k] = nil
+			num = num + 1
+			if k > id then
+				id = k
+			end
+		else
+			log.error("room data wrong.")
+		end
+	end
 	return true
 end
 
@@ -123,25 +124,24 @@ end
 
 function CMD.save_data()
 	-- body
-	-- local db_users = {}
-	-- local db_rooms = {}
-	-- for k,v in pairs(users) do
-	-- 	local db_user = {}
-	-- 	db_user.uid = assert(v.uid)
-	-- 	db_user.roomid = assert(v.roomid)
-	-- 	db_users[string.format("%d", k)] = db_user
-	-- end
-	-- for k,v in pairs(rooms) do
-	-- 	local db_room = {}
-	-- 	db_room.id = assert(v.id)
-	-- 	db_room.host = assert(v.host)
-	-- 	db_rooms[string.format("%d", k)] = db_room
-	-- end
-	-- local data = {}
-	-- data.users = db_users
-	-- data.rooms = db_rooms
-	-- local pack = json.encode(data)
-	-- redis:set("tb_room_mgr", pack)
+	local db_users = {}
+	local db_rooms = {}
+	for k,v in pairs(users) do
+		local db_user = {}
+		db_user.uid = assert(v.uid)
+		db_user.roomid = assert(v.roomid)
+		db_users[string.format("%d", k)] = db_user
+	end
+	for k,v in pairs(rooms) do
+		local db_room = {}
+		db_room.id = assert(v.id)
+		db_room.host = assert(v.host)
+		db_rooms[string.format("%d", k)] = db_room
+	end
+	local data = {}
+	data.db_users = db_users
+	data.db_rooms = db_rooms
+	skynet.call(".DB", "lua", "write_room_mgr", data)
 	return NORET
 end
 
@@ -157,13 +157,13 @@ function CMD.kill()
 end
 
 
--- match
-function CMD.enqueue_agent(source, uid, rule, mode, scene, ... )
+-- 匹赔
+function CMD.enqueue_agent(uid, agent, rule, mode, scene, ... )
 	-- body
 	log.info("enqueue_agent")
 	local rt = ((scene & 0xff << 16) | (mode & 0xff << 8) | (rule & 0xff))
-	local agent = {
-		agent = source,
+	local user = {
+		agent = agent,
 		uid = uid,
 		sid = sid,
 		rt = rt,
@@ -186,7 +186,7 @@ function CMD.enqueue_agent(source, uid, rule, mode, scene, ... )
 	return noret
 end
 
-function CMD.dequeue_agent(source, uid, ... )
+function CMD.dequeue_agent(uid)
 	-- body
 	assert(uid)
 	local u = users[uid]

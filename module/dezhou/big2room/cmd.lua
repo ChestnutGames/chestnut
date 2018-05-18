@@ -2,7 +2,6 @@ local skynet = require "skynet"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
-local context = require "rcontext"
 
 local CMD = {}
 

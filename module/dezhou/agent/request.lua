@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local time_utils = require "chestnut.time_utils"
 local pcall = pcall
+local assert = assert
 
 local REQUEST = {}
 
@@ -13,20 +14,14 @@ function REQUEST:handshake()
 	return res
 end
 
-function REQUEST:login(args)
-	-- body
-	assert(self)
-	local ret = skynet.call('.DB', "lua", "read_account_by_username", args.username, args.password)
-	local res = {}
-	res.errorcode = 0
-	return res
-end
-
 function REQUEST:logout()
 	-- body
-	self:logout()
 	local res = {}
-	res.errorcode = 0
+	if self:logout() then
+		res.errorcode = 0
+	else
+		res.errorcode = 1
+	end
 	return res
 end
 
@@ -35,6 +30,9 @@ function REQUEST:inituser()
 	return self:inituser()
 end
 
+
+------------------------------------------
+-- 系统模块
 function REQUEST:create(args)
 	-- body
 	local M = self.systems.room
@@ -47,12 +45,7 @@ function REQUEST:join(args)
 	return M:join(args)
 end
 
-function REQUEST:rejoin()
-	-- body
-	return self.systems.room:rejoin()
-end
-
-function REQUEST:leave(args, ... )
+function REQUEST:leave(args)
 	-- body
 	local M = self.systems.room
 	return M:leave(args)
@@ -71,20 +64,8 @@ function REQUEST:first(args)
 	end
 end
 
-function REQUEST:room_info(args)
-	-- body
-	local ok, err = pcall(self.systems.room.room_info, self.systems.room, args)
-	if ok then
-		return err
-	else
-		log.error("uid(%d) REQUEST = [room_info], error = [%s]", self.uid, err)
-		local res = {}
-		res.errorcode = 1
-		return res
-	end
-end
-
-function REQUEST:checkindaily(args, ... )
+-- 检测今天是否签到
+function REQUEST:checkindaily(args)
 	-- body
 	local res = {}
 	local cds, day = time_utils.cd_sec()
@@ -105,17 +86,19 @@ function REQUEST:checkindaily(args, ... )
 	return res
 end
 
-function REQUEST:toast1(args, msg, sz, ... )
+function REQUEST:board(args)
 	-- body
+	assert(self)
 	return skynet.call(".ONLINE_MGR", "lua", "toast1", args)
 end
 
-function REQUEST:toast2(args, msg, sz, ... )
+function REQUEST:adver(args)
 	-- body
+	assert(self)
 	return skynet.call(".ONLINE_MGR", "lua", "toast2", args)
 end
 
-function REQUEST:fetchinbox(args, ... )
+function REQUEST:fetchinbox(args)
 	-- body
 	local M = self.modules.inbox
 	return M:fetch(args)
@@ -133,23 +116,47 @@ function REQUEST:viewedsysmail(args, ... )
 	return sysinbox:viewed(args)
 end
 
-function REQUEST:records(args, ... )
+function REQUEST:records(args)
 	-- body
+	assert(self)
 	-- local M = self.modules.recordmgr
 	-- return M:records(args)
 end
 
-----------------------room----------------------------------
+function REQUEST:record(args)
+	-- body
+	assert(self)
+end
+
+function REQUEST:room_info(args)
+	-- body
+	local ok, err = pcall(self.systems.room.room_info, self.systems.room, args)
+	if ok then
+		return err
+	else
+		log.error("uid(%d) REQUEST = [room_info], error = [%s]", self.uid, err)
+		local res = {}
+		res.errorcode = 1
+		return res
+	end
+end
+
+function REQUEST:rejoin()
+	-- body
+	return self.systems.room:rejoin()
+end
+
+function REQUEST:match(args)
+	-- body
+	return self.systems.room:match(args)
+end
+
+------------------------------------------
+-- 麻将协议
 function REQUEST:ready(args, ... )
 	-- body
 	local M = self.systems.room
 	return M:forward_room("ready", args, ...)
-end
-
-function REQUEST:lead(args, ... )
-	-- body
-	local M = self.systems.room
-	return M:forward_room("lead", args, ...)
 end
 
 function REQUEST:call(args, ... )
@@ -158,16 +165,24 @@ function REQUEST:call(args, ... )
 	return M:forward_room("call", args, ...)
 end
 
+-- 此协议已经无效
 function REQUEST:shuffle(args, ... )
 	-- body
 	local M = self.systems.room
 	return M:forward_room("shuffle", args, ...)
 end
 
+-- 此协议已经无效
 function REQUEST:dice(args, ... )
 	-- body
 	local M = self.systems.room
 	return M:forward_room("dice", args, ...)
+end
+
+function REQUEST:lead(args, ... )
+	-- body
+	local M = self.systems.room
+	return M:forward_room("lead", args, ...)
 end
 
 function REQUEST:step(args, ... )
@@ -182,12 +197,6 @@ function REQUEST:restart(args, ... )
 	return M:forward_room("restart", args, ...)
 end
 
-function REQUEST:rchat(args, ... )
-	-- body
-	local M = self.systems.room
-	return M:forward_room("rchat", args, ...)
-end
-
 function REQUEST:xuanpao(args, ... )
 	-- body
 	local M = self.systems.room
@@ -198,6 +207,46 @@ function REQUEST:xuanque(args, ... )
 	-- body
 	local M = self.systems.room
 	return M:forward_room("xuanque", args, ...)
+end
+
+function REQUEST:ready(args)
+	-- body
+	assert(self)
+end
+
+------------------------------------------
+-- 大佬2协议
+function REQUEST:big2call( ... )
+	-- body
+	return self.systems.room:forward_room("call", ...)
+end
+
+function REQUEST:big2lead( ... )
+	-- body
+	return self.systems.room:forward_room("lead", ...)
+end
+
+function REQUEST:big2step( ... )
+	-- body
+	return self.systems.room:forward_room("step", ...)
+end
+
+function REQUEST:big2restart( ... )
+	-- body
+	return self.systems.room:forward_room("restart", ...)
+end
+
+function REQUEST:big2ready( ... )
+	-- body
+	return self.systems.room:forward_room("ready", ...)
+end
+
+------------------------------------------
+-- 房间聊天协议
+function REQUEST:rchat(args, ... )
+	-- body
+	local M = self.systems.room
+	return M:forward_room("rchat", args, ...)
 end
 
 return REQUEST

@@ -32,6 +32,7 @@ function cls:ctor( ... )
 	self.reload = false
 	self.initdataed = false
 	self.channel = nil
+	self.channelSubscribed = false
 	return self
 end
 
@@ -55,6 +56,7 @@ function cls:start(reload, channel_id, ... )
 			end
 		}
 		channel:subscribe()
+		self.channelSubscribed = true
 		self.channel = channel
 	end
 	return true
@@ -73,7 +75,7 @@ function cls:init_data(uid)
 		entity:add(InboxComponent)
 		entity:add(OutboxComponent)
 		entity:add(PackageComponent, {})
-		entity:add(RoomComponent, false, 0, 0, 0, 0, false)
+		entity:add(RoomComponent, 0, 0, false, false, false)
 	end
 
 	local ok, err = pcall(self.systems.db.load_cache_to_data, self.systems.db)
@@ -97,8 +99,7 @@ end
 
 function cls:close( ... )
 	-- body
-	self:save_data()
-	cls.super.close(self, ... )
+	return cls.super.close(self, ... )
 end
 
 function cls:login(gate, uid, subid, secret)
@@ -115,23 +116,36 @@ end
 function cls:logout( ... )
 	-- body
 	self.initdataed = false
-	-- self.channel:delete()
+	if self.channelSubscribed then
+		self.channelSubscribed = false
+		self.channel:unsubscribe()
+	end
+	self:save_data()
 	return cls.super.logout(self, ... )
 end
 
 function cls:auth(args)
 	-- body
+	if not self.channelSubscribed then
+		self.channelSubscribed = true
+		self.channel:subscribe()
+	end
 	return cls.super.auth(self, args)
 end
 
 function cls:afk()
 	-- body
-	log.info("uid(%d)-------------------------------------afk", self.uid)
-	local ok, err = pcall(self.systems.afk, self.systems)
+	log.info("uid(%d) systems begin-------------------------------------afk", self.uid)
+	local traceback = debug.traceback
+	local ok, err = xpcall(self.systems.afk, traceback, self.systems)
 	if not ok then
 		log.error(err)
 	end
-	self.channel:unsubscribe()
+	log.info("uid(%d) systems end-------------------------------------afk", self.uid)
+	if self.channelSubscribed then
+		self.channelSubscribed = false
+		self.channel:unsubscribe()
+	end
 	self:save_data()
 	return cls.super.afk(self)
 end

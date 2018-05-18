@@ -15,6 +15,7 @@
     value 1 : integer
 }
 
+# 麻将玩家信息，在重新链接的时候
 .player {
     idx          0 : integer
     chip         1 : integer
@@ -80,11 +81,11 @@
 }
 
 .rule {
-    id            0 : integer
+    id 0 : integer
 }
 
 
-
+####################################### 基础模块
 handshake 1 {
     response {
     	errorcode 0 : integer
@@ -103,33 +104,8 @@ inituser 3 {
     }
 }
 
-match 5 {
-    request {
-        rule 0 : integer
-        mode 1 : integer
-        scene 2 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
 
-cmatch 6 {
-    response {
-        errorcode 0 : integer
-    }
-}
-
-login 7 {
-    request {
-        username 0 : string
-        password 1 : string
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
+####################################### 系统模块
 create 101 {
     request {
         provice    0 : integer
@@ -168,6 +144,7 @@ leave 103 {
     }
 }
 
+# 第一条消息，主要是一个写个人信息
 first 104 {
     response {
         errorcode 0 : integer
@@ -276,6 +253,24 @@ rejoin 115 {
     }
 }
 
+match 116 {
+    request {
+        rule 0 : integer
+        mode 1 : integer
+        scene 2 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+cmatch 117 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+####################################### 麻将协议 [500, 600)
 call 501 {
     request {
         op        0 : opinfo
@@ -334,17 +329,17 @@ restart 506 {
     }
 }
 
-rchat 507 {
-    request {
-        idx       0 : integer
-        type      1 : integer
-        textid    2 : integer
-        sdsteam   3 : string
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+# rchat 507 {
+#     request {
+#         idx       0 : integer
+#         type      1 : integer
+#         textid    2 : integer
+#         sdsteam   3 : string
+#     }
+#     response {
+#         errorcode 0 : integer
+#     }
+# }
 
 xuanpao 508 {
     request {
@@ -373,5 +368,70 @@ ready 510 {
     response {
         errorcode 0 : integer
         idx 1 : integer
+    }
+}
+
+####################################### 大佬2协议 [600, 700)
+#大佬2决定
+big2call 600 {
+    request {
+        op        0 : opinfo         # {放弃}
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 大佬2出牌
+big2lead 601 {
+    request {
+        idx        0 : integer
+        leadtype   1 : integer
+        cards      2 : *integer
+    } 
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 确认四个玩家都呈现完毕后，状态转移
+big2step 602 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2restart 603 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2ready 604 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+        idx 1 : integer
+    }
+}
+
+####################################### 聊天协议 [700, 720)
+rchat 700 {
+    request {
+        idx       0 : integer
+        type      1 : integer
+        textid    2 : integer
+        sdsteam   3 : string
+    }
+    response {
+        errorcode 0 : integer
     }
 }

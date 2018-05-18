@@ -87,6 +87,7 @@
     player4       5 : string
 }
 
+####################################### 一般模块 [1, 500)
 handshake 1 {
     response {
         errorcode 0 : integer
@@ -193,7 +194,7 @@ rejoin 107 {
     }
 }
 
-join 401 {
+join 108 {
     request {
         p         0 : player
     }
@@ -202,7 +203,7 @@ join 401 {
     }
 }
 
-leave 402 {
+leave 109 {
     request {
         idx       0 : integer
     }
@@ -211,6 +212,7 @@ leave 402 {
     }
 }
 
+####################################### 麻将模块 [500, 600)
 take_turn 500 {
     request {
         your_turn 0 : integer
@@ -307,6 +309,7 @@ lead 507 {
     }
 }
 
+# 麻将发牌
 deal 508 {
     request {
         firstidx  0 : integer
@@ -352,17 +355,17 @@ take_restart 512 {
     }
 }
 
-rchat 513 {
-    request {
-        idx       0 : integer
-        type      1 : integer
-        textid    2 : integer
-        sdsteam   3 : string
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+# rchat 513 {
+#     request {
+#         idx       0 : integer
+#         type      1 : integer
+#         textid    2 : integer
+#         sdsteam   3 : string
+#     }
+#     response {
+#         errorcode 0 : integer
+#     }
+# }
 
 take_xuanpao 514 {
     request {
@@ -442,6 +445,137 @@ take_card 521 {
     request {
         idx 0 : integer
         card 1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+####################################### 大老二模块 [600, 700)
+# 轮到你做出选择，是出牌还是放弃
+big2take_turn 600 {
+    request {
+        your_turn 0 : integer
+        countdown 1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 
+big2call 601 {
+    request {
+        opcodes   0 : *opinfo
+        countdown  1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 洗牌
+big2shuffle 602 {
+    request {
+        first     0 : integer
+        p1        1 : *integer
+        p2        2 : *integer
+        p3        3 : *integer
+        p4        4 : *integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2lead 603 {
+    request {
+        idx       0 : integer
+        card      1 : integer
+        isHoldcard 2 : boolean
+    } 
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 发牌
+big2deal 604 {
+    request {
+        firstidx  0 : integer
+        firsttake 1 : integer
+        p1        2 : *integer
+        p2        3 : *integer
+        p3        4 : *integer
+        p4        5 : *integer
+        card      6 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2ready 605 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2over 606 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2restart 607 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2take_restart 608 {
+    response { 
+        errorcode 0 : integer
+    }
+}
+
+# 结算
+big2settle 609 {
+    request {
+        settles 0 : *settle
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2final_settle 610 {
+    request {
+        p1 0 : *settlementitem
+        p2 1 : *settlementitem
+        p3 2 : *settlementitem
+        p4 3 : *settlementitem
+        over    4 : boolean
+    } 
+    response {
+        errorcode 0 : integer
+    }
+}
+
+
+####################################### 房间内聊天 [700, 720)
+rchat 513 {
+    request {
+        idx       0 : integer
+        type      1 : integer
+        textid    2 : integer
+        sdsteam   3 : string
     }
     response {
         errorcode 0 : integer

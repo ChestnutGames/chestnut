@@ -78,11 +78,11 @@ skynet.register_protocol {
 }
 
 skynet.start(function()
-	skynet.dispatch("lua", function(_, source, cmd, ...)
+	skynet.dispatch("lua", function(_, _, cmd, ...)
 		log.info("agent cmd [%s] is called", cmd)
 		local f = assert(CMD[cmd])
 		local traceback = debug.traceback
-		local ok, err = xpcall(f, traceback, ctx, source, ...)
+		local ok, err = xpcall(f, traceback, ctx, ...)
 		if ok then
 			if err ~= servicecode.NORET then
 				if err ~= nil then

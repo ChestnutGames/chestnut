@@ -5,15 +5,14 @@ local debug = debug
 
 local CMD = {}
 
-function CMD:start(_, reload, ... )
+function CMD:start(reload, ... )
 	-- body
 	return self:start(reload, ... )
 end
 
 function CMD:close()
 	-- body
-	self:close()
-	return true
+	return self:close()
 end
 
 function CMD:kill()
@@ -24,7 +23,7 @@ function CMD:kill()
 end
 
 -- called by gated
-function CMD:login(_, gate, uid, subid, secret)
+function CMD:login(gate, uid, subid, secret)
 	-- body
 	local ok, err = xpcall(self.login, debug.msgh, self, gate, uid, subid, secret)
 	if not ok then
@@ -42,19 +41,18 @@ function CMD:login(_, gate, uid, subid, secret)
 end
 
 -- prohibit mult landing
-function CMD:logout(_)
+function CMD:logout()
 	-- body
 	return self:logout()
 end
 
 -- begain to wait for client
-function CMD:auth(_, conf)
-	self:auth(conf)
-	return servicecode.SUCCESS
+function CMD:auth(conf)
+	return self:auth(conf)
 end
 
 -- others serverce disconnect
-function CMD:afk(_)
+function CMD:afk()
 	-- body
 	return self:afk()
 end
@@ -62,11 +60,8 @@ end
 function CMD:save_data()
 	-- body
 	local ok, err = pcall(self.save_data, self)
-	if ok then
-		return err
-	else
+	if not ok then
 		log.error(err)
-		return servicecode.NORET
 	end
 end
 
@@ -83,179 +78,256 @@ function CMD:info()
 	return { name="xiaomiao"}
 end
 
-function CMD:alter_rcard(_, args)
+function CMD:alter_rcard(args)
 	-- body
 	local M = self.modules['user']
 	return M:alter_rcard(args)
 end
 
-function CMD:room_over(source, ... )
+function CMD:room_over()
 	-- body
 	self:set_room(nil)
 end
 
-function CMD:record(source, recordid, names, ... )
+function CMD:record(recordid, names)
 	-- body
 	local r = self._recordmgr:create(recordid, names)
 	self._recordmgr:add(r)
 	r:insert_db()
 end
 
-
-----------------------------called by room------------------
-function CMD:online(source, args, ... )
+------------------------------------------
+-- 协议代理
+-- 下面全是协议代理
+-- 一般系统代理
+function CMD:online(args)
 	-- body
 	self:send_request("online", args)
 	return servicecode.NORET
 end
 
-function CMD:offline(source, args, ... )
+function CMD:offline(args)
 	-- body
 	self:send_request("offline", args)
 	return servicecode.NORET
 end
 
-function CMD:join(source, args, ... )
+function CMD:join(args, ... )
 	-- body
 	self:send_request("join", args)
 	return servicecode.NORET
 end
 
-function CMD:leave(source, args, ... )
+function CMD:leave(args, ... )
 	-- body
 	self:send_request("leave", args)
 	return servicecode.NORET
 end
 
-function CMD:ready(source, args, ... )
+function CMD:ready(args, ... )
 	-- body
 	self:send_request("ready", args)
 	return servicecode.NORET
 end
 
-function CMD:deal(source, args, ... )
+function CMD:deal(args, ... )
 	-- body
 	self:send_request("deal", args)
 	return servicecode.NORET
 end
 
-function CMD:take_turn(source, args, ... )
+------------------------------------------
+-- 麻将协议代理
+function CMD:take_turn(args)
 	-- body
 	self:send_request("take_turn", args)
 	return servicecode.NORET
 end
 
-function CMD:peng(source, args, ... )
+function CMD:peng(args)
 	-- body
 	self:send_request("peng", args)
 	return servicecode.NORET
 end
 
-function CMD:gang(source, args, ... )
+function CMD:gang(args)
 	-- body
 	self:send_request("gang", args)
 	return servicecode.NORET
 end
 
-function CMD:hu(source, args, ... )
+function CMD:hu(args)
 	-- body
 	self:send_request("hu", args)
 	return servicecode.NORET
 end
 
-function CMD:mcall(source, args, ... )
-	-- body
-	self:send_request("mcall", args)
-	return servicecode.NORET
-end
-
-function CMD:ocall(source, args, ... )
+function CMD:ocall(args)
 	-- body
 	self:send_request("ocall", args)
 	return servicecode.NORET
 end
 
-function CMD:shuffle(source, args, ... )
+function CMD:shuffle(args)
 	-- body
 	self:send_request("shuffle", args)
 	return servicecode.NORET
 end
 
-function CMD:dice(source, args, ... )
+function CMD:dice(args)
 	-- body
 	self:send_request("dice", args)
 	return servicecode.NORET
 end
 
-function CMD:lead(source, args, ... )
+function CMD:lead(args)
 	-- body
 	self:send_request("lead", args)
 	return servicecode.NORET
 end
 
-function CMD:over(source, args, ... )
+function CMD:over(args)
 	-- body
 	self:send_request("over", args)
 	return servicecode.NORET
 end
 
-function CMD:restart(source, args, ... )
+function CMD:restart(args)
 	-- body
 	self:send_request("restart", args)
 	return servicecode.NORET
 end
 
-function CMD:take_restart(source, args, ... )
+function CMD:take_restart(args)
 	-- body
 	self:send_request("take_restart", args)
 	return servicecode.NORET
 end
 
-function CMD:rchat(source, args, ... )
-	-- body
-	self:send_request("rchat", args)
-	return servicecode.NORET
-end
+-- function CMD:rchat(args)
+-- 	-- body
+-- 	self:send_request("rchat", args)
+-- 	return servicecode.NORET
+-- end
 
-function CMD:take_xuanpao(source, args, ... )
+function CMD:take_xuanpao(args)
 	-- body
 	self:send_request("take_xuanpao", args)
 	return servicecode.NORET
 end
 
-function CMD:take_xuanque(source, args, ... )
-	-- body
-	self:send_request("take_xuanque", args)
-	return servicecode.NORET
-end
-
-function CMD:xuanque(source, args, ... )
-	-- body
-	self:send_request("xuanque", args)
-	return servicecode.NORET
-end
-
-function CMD:xuanpao(source, args, ... )
+function CMD:xuanpao(args)
 	-- body
 	self:send_request("xuanpao", args)
 	return servicecode.NORET
 end
 
-function CMD:settle(source, args, ... )
+function CMD:take_xuanque(args)
+	-- body
+	self:send_request("take_xuanque", args)
+	return servicecode.NORET
+end
+
+function CMD:xuanque(args)
+	-- body
+	self:send_request("xuanque", args)
+	return servicecode.NORET
+end
+
+function CMD:settle(args)
 	-- body
 	self:send_request("settle", args)
 	return servicecode.NORET
 end
 
-function CMD:final_settle(source, args, ... )
+function CMD:final_settle(args)
 	-- body
 	self:send_request("final_settle", args)
 	return servicecode.NORET
 end
 
-function CMD:roomover(source, args, ... )
+function CMD:mcall(args)
+	-- body
+	self:send_request("mcall", args)
+	return servicecode.NORET
+end
+
+function CMD:take_card(args)
+	-- body
+end
+
+function CMD:roomover(args)
 	-- body
 	self:send_request("roomover", args)
+	return servicecode.NORET
+end
+
+------------------------------------------
+-- 大佬2协议代理
+
+function CMD:big2take_turn(args)
+	-- body
+	self:send_request_gate("big2take_turn", args)
+	return servicecode.NORET
+end
+
+function CMD:big2call(args)
+	-- body
+	self:send_request_gate("big2call", args)
+	return servicecode.NORET
+end
+
+function CMD:big2shuffle(args)
+	-- body
+	self:send_request_gate("big2shuffle", args)
+	return servicecode.NORET
+end
+
+function CMD:big2lead(args)
+	-- body
+	self:send_request_gate("big2lead", args)
+	return servicecode.NORET
+end
+
+function CMD:big2deal(args)
+	-- body
+	self:send_request_gate("big2deal", args)
+	return servicecode.NORET
+end
+
+function CMD:big2ready(args)
+	-- body
+	self:send_request_gate("big2ready", args)
+	return servicecode.NORET
+end
+
+function CMD:big2over(args)
+	-- body
+	self:send_request_gate("big2ready", args)
+	return servicecode.NORET
+end
+
+function CMD:big2restart(args)
+	-- body
+	self:send_request_gate("big2restart", args)
+	return servicecode.NORET
+end
+
+function CMD:big2take_restart(args)
+	-- body
+	self:send_request_gate("big2take_restart", args)
+	return servicecode.NORET
+end
+
+function CMD:big2settle(args)
+	-- body
+	self:send_request_gate("big2settle", args)
+	return servicecode.NORET
+end
+
+function CMD:big2final_settle(args)
+	-- body
+	self:send_request_gate("big2final_settle", args)
 	return servicecode.NORET
 end
 

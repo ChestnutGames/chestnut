@@ -2,13 +2,15 @@ local skynet = require "skynet"
 
 local RESPONSE = {}
 
-function RESPONSE:handshake(args, ... )
+function RESPONSE:handshake(args)
 	-- body
-	assert(args.errorcode == errorcode.SUCCESS)
+	assert(self)
+	assert(args.errorcode == 0)
 end
 
-function RESPONSE:join(args, ... )
+function RESPONSE:join(args)
 	-- body
+	assert(self)
 	local room = self:get_room()
 	skynet.send(room, "lua", "join", args)
 end

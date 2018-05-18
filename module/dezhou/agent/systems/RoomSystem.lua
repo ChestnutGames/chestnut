@@ -5,17 +5,11 @@ local UserComponent = require "components.UserComponent"
 
 local cls = class("room")
 
-function cls:ctor(context, ... )
+function cls:ctor(context)
 	-- body
 	self.agentContext = context
-	self.agentSystems = nil
 	self.context = nil
 	return self
-end
-
-function cls:set_agent_systems(systems, ... )
-	-- body
-	self.agentSystems = systems
 end
 
 function cls:set_context(context, ... )
@@ -52,6 +46,7 @@ function cls:afk()
 	local uid   = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
+	print(entity.room.joined)
 	if entity.room.joined then
 		print(entity.room.addr)
 		local ok = skynet.call(entity.room.addr, "lua", "afk", uid)
@@ -85,6 +80,30 @@ function cls:room_info()
 	res.isCreated = entity.room.isCreated
 	res.joined    = entity.room.joined
 	res.roomid    = entity.room.id
+	return res
+end
+
+function cls:match(args)
+	-- body
+	local uid = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+
+	local res = {}
+	-- p匹配
+	if entity.room.matching then
+		res.errorcode = 18
+		return res
+	end
+	if entity.room.joined then
+		res.errorcode = 15
+		return res
+	end
+	local agent = skynet.self()
+	res = skynet.call(".ROOM_MGR", "lua", "create", uid, agent, args)
+	if res.errorcode == 0 then
+		entity.room.matching = true
+	end
 	return res
 end
 
@@ -178,7 +197,7 @@ function cls:rejoin()
 	end
 end
 
-function cls:leave(args, ... )
+function cls:leave(args)
 	-- body
 	local res = {}
 	if self.joined then
@@ -193,7 +212,7 @@ function cls:leave(args, ... )
 	end
 end
 
-function cls:forward_room(name, args, ... )
+function cls:forward_room(name, args)
 	-- body
 	if self.joined then
 		local command = "on_"..name
@@ -202,12 +221,12 @@ function cls:forward_room(name, args, ... )
 		return skynet.call(addr, "lua", command, args)
 	else
 		local res = {}
-		res.errorcode = errorcode.FAIL
+		res.errorcode = 15
 		return res
 	end
 end
 
-function cls:forward_room_rsp(name, args, ... )
+function cls:forward_room_rsp(name, args)
 	-- body
 	if self.joined then
 		local command = name

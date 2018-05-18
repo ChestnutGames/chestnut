@@ -11,7 +11,7 @@ local mode = ...
 if mode == "agent" then
 
 local db
-local test = 1
+local ctx
 
 local function dump(obj)
     local getIndent, quoteStr, wrapKey, wrapVal, dumpObj
@@ -95,52 +95,64 @@ end
 ----------------------------------------------------------read
 function QUERY.read_sysmail()
 	-- body
-	local res = db_read.read_sysmail(db)
-	dump(res)
-	return res
-end
-
-function QUERY.read_room_mgr_users()
-	-- body
-	local res = db_read.read_room_mgr_users(db)
-	dump(res)
-	return res
-end
-
-function QUERY.read_room_mgr_rooms()
-	-- body
-	local res = db_read.read_room_mgr_rooms(db)
-	dump(res)
+	local res = db_read.read_sysmail(ctx)
 	return res
 end
 
 function QUERY.read_account_by_username(username, password)
 	-- body
 	local res = {}
-	local accounts = db_read.read_account_by_username(db, username, password)
-	log.info(dump(accounts))
+	local accounts = db_read.read_account_by_username(ctx, username, password)
 	if #accounts == 1 then
-		local users = db_read.read_user_by_uid(db, accounts[1].uid)
+		local users = db_read.read_user_by_uid(ctx, accounts[1].uid)
 		res.accounts = accounts
 		res.users = users
 	end
 	return res
 end
 
-
 function QUERY.read_user(uid)
 	-- body
 	local res = {}
-	res.db_users = db_read.read_user_by_uid(db, uid)
+	res.db_users = db_read.read_user_by_uid(ctx, uid)
+	return res
+end
+
+function QUERY.read_room_mgr()
+	-- body
+	local res = {}
+	res.db_users = db_read.read_room_mgr_users(ctx)
+	res.db_rooms = db_read.read_room_mgr_rooms(ctx)
+	return res
+end
+
+function QUERY.read_room(id)
+	-- body
+	local res = {}
+	res.db_room = db_read.read_room(ctx, id)
+	res.db_users = db_read.read_room_users(ctx, id)
 	return res
 end
 
 ----------------------------------------------------------write
 function QUERY.write_user(data)
 	-- body
-	local res = db_write.write_user(db, data.db_user)
-	-- log.info(dump(res))
-	return res
+	db_write.write_user(ctx, data.db_user)
+	return true
+end
+
+function QUERY.write_room_mgr(data)
+	-- body
+	db_write.write_room_mgr_users(ctx, data.db_users)
+	db_write.write_room_mgr_rooms(ctx, data.db_rooms)
+	return true
+end
+
+function QUERY.write_room(data)
+	-- body
+	db_write.write_room_users(ctx, data.db_users)
+	db_write.write_room(ctx, data.db_room)
+	return true
 end
 
 -------------------------------------------------------------end
@@ -148,6 +160,7 @@ end
 skynet.start(function ()
 	-- body
 	db = connect_mysql()
+	ctx = { db=db, dump=dump }
 	skynet.dispatch( "lua" , function( _, _, cmd, ... )
 		local f = assert(QUERY[cmd])
 		local ok, err = pcall(f, ...)
