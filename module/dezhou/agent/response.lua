@@ -17,9 +17,16 @@ end
 
 function RESPONSE:leave(args, ... )
 	-- body
+	assert(self)
 end
 
------------------------forward room ----------------------------------
+------------------------------------------
+-- 麻将响应模块
+function RESPONSE:take_turn(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_turn", args)
+end
+
 function RESPONSE:deal(args, ... )
 	-- body
 	local M = self.modules['room']
@@ -30,12 +37,6 @@ function RESPONSE:ready(args, ... )
 	-- body
 	local M = self.modules['room']
 	M:forward_room_rsp("ready", args, ...)
-end
-
-function RESPONSE:take_turn(args, ... )
-	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("take_turn", args, ...)
 end
 
 function RESPONSE:peng(args, ... )
@@ -126,5 +127,59 @@ end
 function RESPONSE:roomover(args, ... )
 	-- body
 end
+
+-- 麻将响应模块over
+------------------------------------------
+
+------------------------------------------
+-- 大佬2响应模块
+
+function RESPONSE:big2take_turn(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_turn", args)
+end
+
+function RESPONSE:big2shuffle(args)
+	-- body
+	self.systems.room:forward_room_rsp("shuffle", args)
+end
+
+function RESPONSE:big2lead(args)
+	-- body
+	self.systems.room:forward_room_rsp("lead", args)
+end
+
+function RESPONSE:big2deal(args)
+	-- body
+	self.systems.room:forward_room_rsp("deal", args)
+end
+
+function RESPONSE:big2ready(args)
+	-- body
+	self.systems.room:forward_room_rsp("ready", args)
+end
+
+function RESPONSE:big2over(args)
+	-- body
+	self.systems.room:forward_room_rsp("over", args)
+end
+
+function RESPONSE:big2restart(args)
+	-- body
+	self.systems.room:forward_room_rsp("restart", args)
+end
+
+function RESPONSE:big2settle(args)
+	-- body
+	self.systems.room:forward_room_rsp("settle", args)
+end
+
+function RESPONSE:big2final_settle(args)
+	-- body
+	self.systems.room:forward_room_rsp("final_settle", args)
+end
+
+-- 大佬2响应模块
+------------------------------------------
 
 return RESPONSE

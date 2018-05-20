@@ -32,6 +32,9 @@ function cls:load_cache_to_data()
 	log.info("uid(%d) load_cache_to_data", uid)
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
+	if #res.db_user_rooms == 1 then
+		unpack_components.unpack_room_component(entity.room, res.db_user_rooms)
+	end
 	return true
 end
 
@@ -48,13 +51,13 @@ function cls:save_user(uid, entity)
 		log.error("pack_user_component failtrue.")
 		return false
 	end
-	-- ok, seg = pack_components.pack_room_component(entity.room)
-	-- if ok then
-	-- 	data.room = seg
-	-- else
-	-- 	log.error("pack_room_component failtrue.")
-	-- 	return false
-	-- end
+	ok, seg = pack_components.pack_room_component(entity.room, uid)
+	if ok then
+		data.db_user_room = seg
+	else
+		log.error("pack_room_component failtrue.")
+		return false
+	end
 	-- ok, seg = pack_components.pack_package_component(entity.package)
 	-- if ok then
 	-- 	data.package = seg

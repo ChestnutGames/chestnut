@@ -27,7 +27,7 @@ function _M.pack_account_component(component, ... )
 	return true, seg
 end
 
-function _M.pack_user_component(component, ... )
+function _M.pack_user_component(component)
 	-- body
 	assert(component.uid ~= nil)
 	local seg = {}
@@ -65,15 +65,17 @@ function _M.pack_package_component(component, ... )
 	return true, seg
 end
 
-function _M.pack_room_component(component, ... )
+function _M.pack_room_component(component, uid)
 	-- body
 	assert(component.isCreated ~= nil)
 	assert(component.joined ~= nil)
 	assert(component.id ~= nil)
+	assert(uid)
 	local seg = {}
-	seg.isCreated = component.isCreated
-	seg.id        =	component.id
-	seg.joined    = component.joined
+	seg.uid = uid
+	seg.created   = component.isCreated and 1 or 0
+	seg.roomid    =	component.id
+	seg.joined    = component.joined and 1 or 0
 	return true, seg
 end
 

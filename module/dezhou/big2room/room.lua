@@ -2,7 +2,7 @@ package.path = "./module/dezhou/big2room/?.lua;./module/dezhou/lualib/?.lua;"..p
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
-local context = require "RoomContext"
+local context = require "room_context"
 local CMD = require "cmd"
 local debug = debug
 

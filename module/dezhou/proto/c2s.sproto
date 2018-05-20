@@ -84,6 +84,26 @@
     id 0 : integer
 }
 
+####################################### 
+# big2 类
+.big2rule {
+    multi 0 : integer
+}
+
+.big2lead {
+    leadtype 0 : integer
+    cards 1 : *card
+}
+
+.big2player {
+    idx 0 : integer
+    cards 1 : *card         # 手上的牌
+    lead 2 : big2lead
+}
+
+# big2 类
+####################################### 
+
 
 ####################################### 基础模块
 handshake 1 {
@@ -106,44 +126,6 @@ inituser 3 {
 
 
 ####################################### 系统模块
-create 101 {
-    request {
-        provice    0 : integer
-        ju         1 : integer
-        overtype   2 : integer
-        sc         3 : crsc
-        sx         4 : crsx
-    }
-    response {
-        errorcode 0 : integer
-        roomid    1 : integer
-        room_max  2 : integer
-    }
-}
-
-join 102 {
-    request {
-        roomid 0 : integer
-    }
-    response {
-        errorcode 0 : integer
-        roomid    1 : integer
-        room_max  2 : integer
-        me        3 : player
-        rule      4 : rule
-        ps        5 : *player
-    }
-}
-
-leave 103 {
-    request {
-        idx 0 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
 # 第一条消息，主要是一个写个人信息
 first 104 {
     response {
@@ -239,34 +221,6 @@ room_info 114 {
         isCreated 1 : boolean
         joined    2 : boolean
         roomid    3 : integer
-    }
-}
-
-rejoin 115 {
-    response {
-        errorcode 0 : integer
-        roomid    1 : integer
-        room_max  2 : integer
-        me        3 : player
-        rule      4 : rule
-        ps        5 : *player
-    }
-}
-
-match 116 {
-    request {
-        rule 0 : integer
-        mode 1 : integer
-        scene 2 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
-cmatch 117 {
-    response {
-        errorcode 0 : integer
     }
 }
 
@@ -371,6 +325,55 @@ ready 510 {
     }
 }
 
+create 511 {
+    request {
+        provice    0 : integer
+        ju         1 : integer
+        overtype   2 : integer
+        sc         3 : crsc
+        sx         4 : crsx
+    }
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+    }
+}
+
+join 512 {
+    request {
+        roomid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+        me        3 : player
+        rule      4 : rule
+        ps        5 : *player
+    }
+}
+
+rejoin 513 {
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+        me        3 : player
+        rule      4 : rule
+        ps        5 : *player
+    }
+}
+
+leave 514 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
 ####################################### 大佬2协议 [600, 700)
 #大佬2决定
 big2call 600 {
@@ -387,7 +390,7 @@ big2lead 601 {
     request {
         idx        0 : integer
         leadtype   1 : integer
-        cards      2 : *integer
+        cards      2 : *card
     } 
     response {
         errorcode 0 : integer
@@ -420,6 +423,63 @@ big2ready 604 {
     response {
         errorcode 0 : integer
         idx 1 : integer
+    }
+}
+
+big2match 605 {
+    request {
+        rule 0 : integer
+        mode 1 : integer
+        scene 2 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2create 606 {
+    request {
+        provice    0 : integer
+        ju         1 : integer
+    }
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+    }
+}
+
+big2join 607 {
+    request {
+        roomid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+        rule      3 : big2rule
+        me        4 : big2player
+        ps        5 : *big2player
+    }
+}
+
+big2rejoin 608 {
+    response {
+        errorcode 0 : integer
+        roomid    1 : integer
+        room_max  2 : integer
+        rule      3 : big2rule
+        me        4 : big2player
+        ps        5 : *big2player
+    }
+}
+
+big2leave 609 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
     }
 }
 

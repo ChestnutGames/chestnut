@@ -47,6 +47,18 @@ function _M:read_user_by_uid(uid)
 	return res
 end
 
+function _M:read_user_room(uid)
+	-- body
+	local res = self.db:query(string_format("CALL sp_user_room_select(%d);", uid))
+	-- log.info(self.dump(res))
+	if res.mulitresultset then
+		return res[1]
+	else
+		log.error(self.dump(res))
+	end
+	return res
+end
+
 function _M:read_room(id)
 	-- body
 	local res = self.db:query(string_format("CALL sp_room_select(%d);", id))
@@ -70,5 +82,7 @@ function _M:read_room_users(id)
 		return {}
 	end
 end
+
+
 
 return _M

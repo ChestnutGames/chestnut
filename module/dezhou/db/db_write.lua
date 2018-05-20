@@ -17,6 +17,19 @@ function _M:write_user(db_user)
 	return res
 end
 
+function _M:write_user_room(db_user_room)
+	-- body
+	local sql = string_format([==[CALL
+	sp_user_room_insert_or_update(%d, %d, %d, %d);]==],
+	db_user_room.uid, db_user_room.roomid, db_user_room.created, db_user_room.joined)
+	-- log.info(sql)
+	local res = self.db:query(sql)
+	if res.errno then
+		log.info(self.dump(res))
+	end
+	return true
+end
+
 function _M:write_room_mgr_users(db_users)
 	-- body
 	for _,db_user in pairs(db_users) do
@@ -38,7 +51,6 @@ function _M:write_room_mgr_rooms(db_rooms)
 		local sql = string_format([==[CALL
 		sp_room_mgr_rooms_insert_or_update(%d, %d);]==],
 		db_room.id, db_room.host)
-		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
 			log.info(self.dump(res))

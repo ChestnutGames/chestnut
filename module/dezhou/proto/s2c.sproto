@@ -87,6 +87,26 @@
     player4       5 : string
 }
 
+####################################### 
+# big2 类
+.big2rule {
+    multi 0 : integer
+}
+
+.big2lead {
+    leadtype 0 : integer
+    cards 1 : *card
+}
+
+.big2player {
+    idx 0 : integer
+    cards 1 : *card         # 手上的牌
+    lead 2 : big2lead
+}
+
+# big2 类
+####################################### 
+
 ####################################### 一般模块 [1, 500)
 handshake 1 {
     response {
@@ -130,6 +150,8 @@ match 5 {
     }
 }
 
+####################################### 
+# 系统模块 [100, 500)
 rcard 101 {
     request {
         num       0 : integer
@@ -185,34 +207,8 @@ records 106 {
     }
 }
 
-rejoin 107 {
-    request {
-        p         0 : player
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
-join 108 {
-    request {
-        p         0 : player
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
-leave 109 {
-    request {
-        idx       0 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
-####################################### 麻将模块 [500, 600)
+####################################### 
+# 麻将模块 [500, 600)
 take_turn 500 {
     request {
         your_turn 0 : integer
@@ -451,7 +447,35 @@ take_card 521 {
     }
 }
 
-####################################### 大老二模块 [600, 700)
+rejoin 522 {
+    request {
+        p         0 : player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+join 523 {
+    request {
+        p         0 : player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+leave 524 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+####################################### 
+# 大老二模块 [600, 700)
 # 轮到你做出选择，是出牌还是放弃
 big2take_turn 600 {
     request {
@@ -491,8 +515,8 @@ big2shuffle 602 {
 big2lead 603 {
     request {
         idx       0 : integer
-        card      1 : integer
-        isHoldcard 2 : boolean
+        leadtype   1 : integer
+        cards      2 : *card
     } 
     response {
         errorcode 0 : integer
@@ -568,8 +592,48 @@ big2final_settle 610 {
     }
 }
 
+big2match 611 {
+    request {
+        roomid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
 
-####################################### 房间内聊天 [700, 720)
+big2rejoin 612 {
+    request {
+        p 0 : big2player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2join 613 {
+    request {
+        p 0 : big2player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+big2leave 614 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 大老二模块结束
+####################################### 
+
+
+####################################### 
+# 房间内聊天 [700, 720)
 rchat 513 {
     request {
         idx       0 : integer

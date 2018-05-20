@@ -144,8 +144,8 @@ function cls:join(args)
 	local xargs = {
 		uid   = uid,
 		agent = agent,
-		name  = assert(entity.account.nickname),
-		sex   = assert(entity.account.sex)
+		name  = assert(entity.user.nickname),
+		sex   = assert(entity.user.sex)
 	}
 	local res = skynet.call(".ROOM_MGR", "lua", "apply", args.roomid)
 	if res.errorcode ~= 0 then

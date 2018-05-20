@@ -65,21 +65,13 @@ function _M.unpack_package_component(component, seg, ... )
 	return true
 end
 
-function _M.unpack_room_component(component, seg, ... )
+function _M.unpack_room_component(component, seg)
 	-- body
-	assert(component and seg)
-	if seg.isCreated == nil then
-		seg.isCreated = false
-	end
-	if seg.joined == nil then
-		seg.joined = false
-	end
-	if seg.id == nil then
-		seg.id = 0
-	end
-	component.isCreated = seg.isCreated
-	component.joined = seg.joined
-	component.id = seg.id
+	assert(component)
+	assert(seg)
+	component.isCreated = (assert(seg.created) == 1) and true or false
+	component.joined = (assert(seg.joined) == 1) and true or false
+	component.id = assert(seg.roomid)
 	return true
 end
 

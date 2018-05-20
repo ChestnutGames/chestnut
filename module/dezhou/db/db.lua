@@ -115,6 +115,7 @@ function QUERY.read_user(uid)
 	-- body
 	local res = {}
 	res.db_users = db_read.read_user_by_uid(ctx, uid)
+	res.db_user_rooms = db_read.read_user_room(ctx, uid)
 	return res
 end
 
@@ -138,6 +139,7 @@ end
 function QUERY.write_user(data)
 	-- body
 	db_write.write_user(ctx, data.db_user)
+	db_write.write_user_room(ctx, data.db_user_room)
 	return true
 end
 

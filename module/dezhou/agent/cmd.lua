@@ -263,7 +263,7 @@ function CMD:roomover(args)
 end
 
 ------------------------------------------
--- 大佬2协议代理
+-- 大佬2协议发送代理
 
 function CMD:big2take_turn(args)
 	-- body

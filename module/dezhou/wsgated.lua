@@ -29,6 +29,12 @@ function server.login_handler(uid, secret)
     -- you can use a pool to alloc new agent
     -- local agent = skynet.newservice "agent"
     local agent = skynet.call(".AGENT_MGR", "lua", "enter", uid)
+    if agent == 0 or agent == -1 then
+        local res = {}
+        res.errorcode = servicecode.NOT_ENOUGH_AGENT
+        res.subid = id
+        return res
+    end
     local u = {
         username = username,
         agent = agent,

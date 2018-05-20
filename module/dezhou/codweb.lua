@@ -124,7 +124,7 @@ function CMD.sayhi()
 	end
 	log.info("sayhi over.")
 	-- begin to save data
-	skynet.timeout(100, function ()
+	skynet.timeout(100 * 60, function ()
 		-- body
 		while true do
 			channel:publish("save_data")

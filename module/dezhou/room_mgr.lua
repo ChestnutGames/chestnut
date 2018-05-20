@@ -1,4 +1,4 @@
-package.path = "./module/mahjong/lualib/?.lua;"..package.path
+package.path = "./module/dezhou/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
 local mc = require "skynet.multicast"
@@ -6,9 +6,8 @@ local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local queue = require "chestnut.queue"
 
-local channel_id
 local NORET = {}
-local users = {}   -- 玩家信息
+local users = {}   -- 玩家信息,玩家创建的房间
 local rooms = {}   -- 正在打牌的
 local num = 0      -- 正在打牌的桌子数
 local pool = {}    -- 闲置的大佬2桌子
@@ -37,25 +36,20 @@ end
 
 local CMD = {}
 
-function CMD.start(chan_id)
+function CMD.start(channel_id)
 	-- body
 	local channel = mc.new {
-		channel = chan_id,
+		channel = channel_id,
 		dispatch = function (_, _, cmd, ...)
 			-- body
 			local f = assert(CMD[cmd])
-			local r = f( ... )
-			if r ~= NORET then
-				if r ~= nil then
-					skynet.retpack(r)
-				else
-					log.error("subscribe cmd = %s not return", cmd)
-				end
+			local ok, err = pcall(f, ... )
+			if not ok then
+				log.error(err)
 			end
 		end
 	}
 	channel:subscribe()
-	channel_id = chan_id
 
 	-- 初始一些配置
 	MAX_ROOM_NUM = tonumber(ds.query('consts')['2']['Value'])
@@ -66,6 +60,7 @@ function CMD.start(chan_id)
 	for i=1,MAX_ROOM_NUM do
 		local roomid = bank + i
 		local addr = skynet.newservice("big2room/room", roomid)
+		skynet.call(addr, "lua", "start", channel_id)
 		pool[roomid] = { id = roomid, addr = addr }
 	end
 	return true
@@ -88,17 +83,17 @@ function CMD.init_data()
 			rooms[tonumber(room.id)] = room
 		end
 	end
-	-- 打开所有房间
-	for _,room in pairs(pool) do
-		local ok = skynet.call(room.addr, "lua", "start", channel_id)
-		if not ok then
-			log.error("start room id = %d failed.", room.id)
-		else
-			ok = skynet.call(room.addr, "lua", "init_data")
-			assert(ok)
-		end
+	-- 初始所有房间数据,当前房间是没有addr
+	for k,_ in pairs(rooms) do
+		local room = pool[k]
+		local ok = skynet.call(room.addr, "lua", "init_data")
+		assert(ok)
 	end
+	return true
+end
 
+function CMD.sayhi()
+	-- body
 	-- 验证mgr数据与room数据的一致
 	for k,v in pairs(rooms) do
 		local room = pool[k]
@@ -114,11 +109,6 @@ function CMD.init_data()
 			log.error("room data wrong.")
 		end
 	end
-	return true
-end
-
-function CMD.sayhi()
-	-- body
 	return true
 end
 
@@ -156,7 +146,7 @@ function CMD.kill()
 	skynet.exit()
 end
 
-
+------------------------------------------
 -- 匹赔
 function CMD.enqueue_agent(uid, agent, rule, mode, scene, ... )
 	-- body
@@ -241,6 +231,7 @@ end
 -- 查询房间地址
 function CMD.apply(roomid)
 	-- body
+	assert(roomid)
 	log.info("apply roomid: %d, return room addr", roomid)
 	local room = rooms[roomid]
 	if room then

@@ -241,6 +241,31 @@ function REQUEST:big2ready( ... )
 	return self.systems.room:forward_room("ready", ...)
 end
 
+function REQUEST:big2match( ... )
+	-- body
+	return self.systems.room:match(...)
+end
+
+function REQUEST:big2create( ... )
+	-- body
+	return self.systems.room:create(...)
+end
+
+function REQUEST:big2join( ... )
+	-- body
+	return self.systems.room:join(...)
+end
+
+function REQUEST:big2rejoin( ... )
+	-- body
+	return self.systems.room:rejoin(...)
+end
+
+function REQUEST:big2leave( ... )
+	-- body
+	return self.systems.room:leave(...)
+end
+
 ------------------------------------------
 -- 房间聊天协议
 function REQUEST:rchat(args, ... )
