@@ -179,6 +179,33 @@ function RESPONSE:big2final_settle(args)
 	self.systems.room:forward_room_rsp("final_settle", args)
 end
 
+function RESPONSE:big2match(args)
+	-- body
+	assert(self)
+	assert(args)
+	-- self.systems.room:forward_room_rsp("match", args)
+end
+
+function RESPONSE:big2rejoin(args)
+	-- body
+	self.systems.room:forward_room_rsp("rejoin", args)
+end
+
+function RESPONSE:big2join(args)
+	-- body
+	self.systems.room:forward_room_rsp("join", args)
+end
+
+function RESPONSE:big2leave(args)
+	-- body
+	self.systems.room:forward_room_rsp("leave", args)
+end
+
+function RESPONSE:big2take_ready(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_ready", args)
+end
+
 -- 大佬2响应模块
 ------------------------------------------
 

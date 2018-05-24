@@ -206,7 +206,7 @@ function cls:logout()
 	end
 	self.logined = false
 	log.info("uid(%d) logout", self.uid)
-	return true
+	return servicecode.SUCCESS
 end
 
 function cls:inituser()

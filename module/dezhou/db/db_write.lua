@@ -63,8 +63,8 @@ function _M:write_room_users(db_users)
 	-- body
 	for _,db_user in pairs(db_users) do
 		local sql = string_format([==[CALL
-		sp_room_users_insert_or_update(%d, %d, %d);]==],
-		db_user.uid, db_user.roomid, db_user.state)
+		sp_room_users_insert_or_update(%d, %d, '%s', %d, %d);]==],
+		db_user.uid, db_user.roomid, db_user.state, db_user.idx, db_user.chip)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
@@ -77,8 +77,8 @@ end
 function _M:write_room(db_room)
 	-- body
 	local sql = string_format([==[CALL
-	sp_room_insert_or_update(%d, %d, %d);]==],
-	db_room.id, db_room.host)
+	sp_room_insert_or_update(%d, %d, %d, %d, %d, %d, '%s', '%s');]==],
+	db_room.id, db_room.host, db_room.open, db_room.firstidx, db_room.curidx, db_room.ju, db_room.state, db_room.laststate)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then

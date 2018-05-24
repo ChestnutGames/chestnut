@@ -5,8 +5,10 @@ local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
 local fsm = require "chestnut.fsm"
 local opcode = require "opcode"
+local leadtype = require "lead_type"
 local Card = require "card"
 local Player = require "player"
+local traceback = debug.traceback
 
 local state = {}
 state.NONE       = "none"      -- 最初的状态
@@ -16,12 +18,16 @@ state.JOIN       = "join"      -- 此状态下会等待玩家加入
 state.READY      = "ready"     -- 此状态下等待玩家准备
 state.SHUFFLE    = "shuffle"   -- 此状态下洗牌
 state.DEAL       = "deal"      -- 此状态发牌
+state.FIRSTTURN  = "firstturn" -- 第一个人出牌
 state.TURN       = "turn"      -- 轮谁出牌
 state.LEAD       = "lead"      -- 玩家出牌，客户端都表现完后转移状态
 state.CALL       = "call"      -- 只有pass命令
 state.OVER       = "over"      -- 结束
 state.SETTLE     = "settle"    -- 结算
 state.RESTART    = "restart"   -- 重新开始
+state.ROOMOVER   = 'roomover'
+
+local MOCK = true
 
 local cls = class("RoomContext")
 
@@ -38,6 +44,7 @@ function cls:ctor()
 
 	-- rule
 	self.channel = nil
+	self.channelSubscribed = false
 	self.id = 0
 	self.open = false
 	self.host = nil
@@ -55,43 +62,16 @@ function cls:ctor()
 
 	self.firstidx = 0           -- 拿牌头家
 	self.curidx = 0             -- 玩家索引，当前轮到谁
+	self.ju = 0                -- ju 最开始是0
+	self.alert = nil
 
 	self.countdown = 20         -- 轮到玩家出牌或者选择的时候的倒计时
-	self._ju = 0                -- ju 最开始是0
-	self._overtimer = nil
+	self.overtimer = nil
 
 	-- 记录所有数据
 	self._stime = 0
 	self._record = {}
 
-	local alert = fsm.create({
-		initial = state.NONE,
-		events = {
-			{name = "ev_start",        from = state.NONE,    to = state.START},
-		    {name = "ev_join",         from = state.START,   to = state.JOIN},
-		    {name = "ev_ready",        from = state.JOIN,    to = state.READY},
-		    {name = "ev_shuffle",      from = state.READY,   to = state.SHUFFLE},
-		    {name = "ev_deal",         from = state.SHUFFLE, to = state.DEAL},
-		    {name = "ev_first_turn",    from = state.DEAL,    to = state.TURN},
-		    {name = "ev_turn_after_lead",    from = state.LEAD,    to = state.TURN},
-		    {name = "ev_turn_after_pass",    from = state.CALL,    to = state.TURN},
-		    {name = "ev_call",             from = state.TURN,    to = state.CALL},
-		    {name = "ev_lead",             from = state.TURN,    to = state.LEAD},
-		    {name = "ev_over",             from = state.LEAD,    to = state.OVER},
-		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
-		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
-		},
-		callbacks = {
-		    on_ready = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_shuffle = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_deal = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_turn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_call = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-			on_lead = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-			on_over = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		}
-	})
-	self.alert = alert
 	return self
 end
 
@@ -125,7 +105,7 @@ end
 
 function cls:find_noone()
 	-- body
-	if self._joined >= self._max then
+	if self.joined >= self.max then
 		return nil
 	end
 	for i=1,self.max do
@@ -147,34 +127,15 @@ function cls:init_cards()
 		for j=1,13 do
 			local cc = Card.new(i, j, 0)
 			table.insert(self._cards, cc)         -- 用于洗牌
-			self._kcards[cc.value] = cc     -- 用于查找
+			self._kcards[cc.value] = cc           -- 用于查找
 		end
 	end
-end
-
-function cls:clear_state(state, ... )
-	-- body
-	assert(state)
-	for i=1,4 do
-		self._players[i]._state = state
-	end
-end
-
-function cls:is_next_state(state)
-	-- body
-	for i=1,self.max do
-		local p = assert(self.players[i])
-		if not p.alert.is(state) then
-			return false
-		end
-	end
-	return true
 end
 
 function cls:push_client(name, args)
 	-- body
 	for i=1,self.max do
-		local p = self._players[i]
+		local p = self.players[i]
 		if not p:is_none() then
 			if p.online then
 				log.info("push protocol %s to idx %d.", name, i)
@@ -187,7 +148,7 @@ end
 function cls:push_client_idx(idx, name, args)
 	-- body
 	assert(idx and name and args)
-	local p = self._players[idx]
+	local p = self.players[idx]
 	if not p:is_none() and p.online then
 		log.info("push protocol %s to idx %d.", name, idx)
 		skynet.send(p.agent, "lua", name, args)
@@ -198,7 +159,7 @@ function cls:push_client_except_idx(idx, name, args)
 	-- body
 	for i=1,self.max do
 		if idx ~= i then
-			local p = self._players[i]
+			local p = self.players[i]
 			if not p:is_none() and p.online then
 				log.info("push protocol %s to idx %d.", name, i)
 				skynet.send(p.agent, "lua", name, args)
@@ -227,7 +188,14 @@ function cls:check_over()
 	end
 end
 
-function cls:transfer_player_state(event)
+function cls:check_roomover()
+	-- body
+	if self.ju >= 4 then
+		self.alert.ev_roomover(self)
+	end
+end
+
+function cls:emit_player_event(event)
 	-- body
 	for i=1,self.max do
 		local p = assert(self.players[i])
@@ -237,19 +205,68 @@ end
 
 function cls:on_state(event, from, to)
 	-- body
+	self.alert.last_state = from
 	if to == state.READY then
+		self:take_ready()
 	elseif to == state.SHUFFLE then
-		self:transfer_player_state("wait_shuffle")
+		local ok, err = xpcall(self.take_shuffle, traceback, self)
+		if not ok then
+			log.error(err)
+		end
 	elseif to == state.DEAL then
-		self:take_deal()
+		assert(self)
+		local ok, err = xpcall(self.take_deal, traceback, self)
+		if not ok then
+			log.error(err)
+		end
+	elseif to == state.FIRSTTURN then
+		self:take_firstturn()
 	elseif to == state.TURN then
-		self:take_turn()
+		if from == state.FIRSTTURN then
+			-- 不做任何处理
+		else
+			self:take_turn()
+		end
 	elseif to == state.LEAD then
 		self:take_lead()
 	elseif to == state.CALL then
-		self:take_call()
+		self:next_idx()
+		self.alert.ev_turn_after_pass(self)
 	elseif to == state.OVER then
-		self:take_over()
+		self:take_settle()
+	end
+end
+
+function cls:is_next_state(state)
+	-- body
+	assert(state)
+	for i=1,self.max do
+		local p = assert(self.players[i])
+		if not p.alert.is(state) then
+			return false
+		end
+	end
+	return true
+end
+
+function cls:on_next_state()
+	-- body
+	if self.alert.is(state.READY) then
+		if self:is_next_state(Player.state.READY) then
+			self.alert.ev_shuffle(self)
+		end
+	elseif self.alert.is(state.SHUFFLE) then
+		if self:is_next_state(Player.state.DEAL) then
+			self.alert.ev_first_turn(self)
+		end
+	elseif self.alert.is(state.RESTART) then
+		if self:is_next_state(Player.state.RESTART) then
+			self.alert.ev_shuffle(self)
+		end
+	elseif self.alert.is(state.ROOMOVER) then
+		if self:is_next_state(Player.state.ROOMOVER) then
+			skynet.send('.ROOM_MGR', 'lua', "dissolve", self.id)
+		end
 	end
 end
 
@@ -259,16 +276,6 @@ function cls:next_idx()
 	if self.curidx > self.max then
 		self.curidx = 1
 	end
-end
-
-function cls:next_idx_wait_turn()
-	-- body
-	self.curidx = self.curidx + 1
-	if self.curidx > self.max then
-		self.curidx = 1
-	end
-	local p = self.players[self.curidx]
-	p.alert.wait_turn()
 end
 
 function cls:incre_joined()
@@ -293,6 +300,57 @@ function cls:decre_online()
 	-- body
 	self.online = self.online - 1
 	assert(self.online >= 0)
+end
+
+function cls:create_alert(initial_state)
+	-- body
+	assert(self)
+	local alert = fsm.create({
+		initial = initial_state,
+		events = {
+			{name = "ev_start",        from = state.NONE,    to = state.START},
+		    {name = "ev_join",         from = state.NONE,   to = state.JOIN},
+		    {name = "ev_ready",        from = state.JOIN,    to = state.READY},
+		    {name = "ev_shuffle",      from = state.JOIN,   to = state.SHUFFLE},
+		    {name = "ev_deal",         from = state.SHUFFLE, to = state.DEAL},
+		    {name = "ev_first_turn",    from = state.SHUFFLE,    to = state.FIRSTTURN},
+		    {name = "ev_first_turn_to_turn",    from = state.FIRSTTURN,    to = state.TURN},
+		    {name = "ev_turn_after_lead",    from = state.LEAD,    to = state.TURN},
+		    {name = "ev_turn_after_pass",    from = state.CALL,    to = state.TURN},
+		    {name = "ev_call",             from = state.TURN,    to = state.CALL},
+		    {name = "ev_lead",             from = state.TURN,    to = state.LEAD},
+		    {name = "ev_over",             from = state.LEAD,    to = state.OVER},
+		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
+		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
+		    {name = "ev_roomover"          from = state.SETTLE,    to = state.ROOMOVER},
+		    {name = "ev_reset_join",       from = "*",   to = state.JOIN},               -- reset to join
+		    {name = "ev_reset_ready",      from = "*",   to = state.READY},               -- reset to join
+		    {name = "ev_reset_shuffle",    from = "*",   to = state.SHUFFLE},               -- reset to join
+		    {name = "ev_reset_deal",       from = "*",   to = state.DEAL},               -- reset to join
+		    {name = "ev_reset_turn",       from = "*",   to = state.TURN},               -- reset to join
+		    {name = "ev_reset_lead",       from = "*",   to = state.LEAD},               -- reset to join
+		    {name = "ev_reset_call",       from = "*",   to = state.CALL},               -- reset to join
+		},
+		callbacks = {
+			on_join = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_ready = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_shuffle = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_deal = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_firstturn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_turn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_call = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+			on_lead = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+			on_over = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		}
+	})
+	return alert
+end
+
+function cls:print_cards()
+	-- body
+	for i,v in ipairs(self._cards) do
+		print(v:describe())
+	end
 end
 
 ------------------------------------------
@@ -321,76 +379,41 @@ function cls:init_data()
 	-- body
 	local pack = skynet.call(".DB", "lua", "read_room", self.id)
 	if pack then
-		local db_room = pack.db_room
+		local db_rooms = pack.db_rooms
+		if #db_rooms <= 0 then
+			return true
+		end
+		local db_room = db_rooms[1]
 		local open = db_room.open
 		if not open then
 			return true
 		end
-		-- self._id = db_room.id
-	 --    self._host = db_room.host
-	 --    self._open = db_room.open
-	 --    self._local = db_room['local']
-	 --    self._overtype = db_room.overtype
-	 --    self._maxmultiple = db_room.maxmultiple
-	 --    self._hujiaozhuanyi = db_room.hujiaozhuanyi
-	 --    self._zimo = db_room.zimo
-	 --    self._dianganghua = db_room.dianganghua
-	 --    self._daiyaojiu = db_room.daiyaojiu
-	 --    self._duanyaojiu = db_room.duanyaojiu
-	 --    self._jiangdui = db_room.jiangdui
-	 --    self._tiandihu = db_room.tiandihu
-	 --    self._maxju = db_room.maxju
+	    self.host = db_room.host
+	    self.open = (db_room.open == 1) and true or false
+	    self.firstidx = db_room.firstidx
+	    self.curidx = db_room.curidx
+	    self.ju = db_room.ju
+		self.alert = self:create_alert(state.NONE)
+		local event = 'ev_reset_' .. db_room.state
+		self.alert[event](self)
+		self.alert.last_state = db_room.laststate
 
-	 --    -- gameplay data
-	 --    self._state = db_room.state
-	 --    self._laststate = db_room.last_state
-	 --    self._firsttake = db_room.firsttake
-	 --    self._firstidx = db_room.firstidx
-	 --    self._curtake = db_room.curtake
-	 --    self._curidx = db_room.curidx
-	 --    self._lastidx = db_room.lastidx
-		-- if db_room.lastcard then
-		-- 	self._lastcard = self._kcards[db_room.lastcard]
-		-- end
-	 --    self._firsthu = db_room.firsthu
-	 --    self._hucount = db_room.hucount
-	 --    self._ju = db_room.ju
+		-- 修改设置
+		if self.open and not self.channelSubscribed then
+			self.channelSubscribed = true
+			self.channel:subscribe()
+		end
 
-		-- for _,db_user in pairs(data.users) do
-		-- 	local player = self._players[db_user.idx]
-		-- 	player._uid = db_user.uid
-		-- 	player._idx = db_user.idx
-		-- 	player._chip = db_user.chip
-		-- 	player._state = db_user.state
-		-- 	player._laststate = db_user.last_state
-		-- 	player._que = db_user.que
-		-- 	player._takecardsidx = db_user.takecardsidx
-		-- 	player._takecardscnt = db_user.takecardscnt
-		-- 	player._takecardslen = db_user.takecardslen
-		-- 	for k,v in pairs(db_user.takecards) do
-		-- 		local cc = self._kcards[v]
-		-- 		cc:set_pos(tonumber(k))
-		-- 		player:insert_take_cards_with_pos(cc)
-		-- 	end
-		-- 	for k,v in pairs(db_user.cards) do
-		-- 		local cc = self._kcards[v]
-		-- 		cc:set_pos(tonumber(k))
-		-- 		player:insert_take_cards_with_pos(cc)
-		-- 	end
-		-- 	for k,v in pairs(db_user.leadcards) do
-		-- 		-- local cc = self._kcards[v]
-		-- 		-- cc:set_pos(tonumber(k))
-		-- 	end
-		-- 	for k,v in pairs(db_user.putcards) do
-		-- 		-- local cc = self._kcards[v]
-		-- 		-- cc:set_pos(tonumber(k))
-		-- 	end
-		-- 	player._putidx = db_user.putidx
-		-- 	player._holdcard = self._kcards[db_user.holdcard]
-		-- 	for k,v in pairs(db_user.hucards) do
-		-- 		print(k,v)
-		-- 	end
-		-- end
+		-- 初始化用户数据
+		for _,db_user in pairs(pack.db_users) do
+			local player = self.players[db_user.idx]
+			player.uid = assert(db_user.uid)
+			player.idx = assert(db_user.idx)
+			player.chip = assert(db_user.chip)
+			player:init_alert(db_user.state)
+			self.uplayers[player.uid] = player
+			self:incre_joined()
+		end
 	end
 	return true
 end
@@ -403,107 +426,48 @@ end
 
 function cls:save_data()
 	-- body
-	if not self._open then
+	if not self.open then
 		-- log.info("roomid = %d, save_data self._open is false", self._id)
 		return
 	end
-	-- local db_users = {}
-	-- local db_room = {}
-	-- for k,v in pairs(self._players) do
-	-- 	if v._uid > 0 then      -- > 0 才是有人加入
-	-- 		local db_user = {}
-	-- 		db_user.uid = assert(v._uid)
-	-- 		db_user.idx = assert(v._idx)
-	-- 		db_user.chip = assert(v._chip)
-	-- 		db_user.state = assert(v._state)
-	-- 		db_user.last_state   = assert(v._laststate)
-	-- 		db_user.que          = assert(v._que)
-	-- 		db_user.takecardsidx = assert(v._takecardsidx)
-	-- 		db_user.takecardscnt = assert(v._takecardscnt)
-	-- 		db_user.takecardslen = assert(v._takecardslen)
-	-- 		db_user.takecards = {}
-	-- 		for pos,card in pairs(v._takecards) do
-	-- 			db_user.takecards[string.format("%d", pos)] = card:get_value()
-	-- 		end
-	-- 		db_user.cards = {}
-	-- 		for pos,card in pairs(v._cards) do
-	-- 			db_user.cards[string.format("%d", pos)] = card:get_value()
-	-- 		end
-	-- 		db_user.leadcards = {}
-	-- 		for pos,card in pairs(v._leadcards) do
-	-- 			db_user.leadcards[string.format("%d", pos)] = card:get_value()
-	-- 		end
-	-- 		db_user.putcards = {}
-	-- 		for pos,card in pairs(v._putcards) do
-	-- 			db_user.putcards[string.format("%d", pos)] = card:get_value()
-	-- 		end
-	-- 		db_user.putidx = assert(v._putidx)
-	-- 		if v._holdcard then
-	-- 			db_user.holdcard = assert(v._holdcard:get_value())
-	-- 		end
-	-- 		db_user.hucards = {}
-	-- 		for pos,card in pairs(v._hucards) do
-	-- 			db_user.hucards[string.format("%d", pos)] = card:get_value()
-	-- 		end
-	-- 		db_users[string.format("%d", k)] = db_user
-	-- 	end
-	-- end
-	-- db_room.open = assert(self._open)
-	-- db_room.id = assert(self._id)
-	-- db_room.host = assert(self._host)
-	-- db_room['local'] = self._local
-	-- db_room.overtype = self._overtype
-	-- db_room.maxmultiple = self._maxmultiple
-	-- db_room.hujiaozhuanyi = self._hujiaozhuanyi
-	-- db_room.zimo = self._zimo
-	-- db_room.dianganghua = self._dianganghua
-	-- db_room.daiyaojiu = self._daiyaojiu
-	-- db_room.duanyaojiu = self._duanyaojiu
-	-- db_room.jiangdui = self._jiangdui
-	-- db_room.tiandihu = self._tiandihu
-	-- db_room.maxju = self._maxju
 
-	-- -- gameplay data
-	-- db_room.state      = assert(self._state)
-	-- db_room.last_state = assert(self._laststate)
-	-- db_room.firsttake  = assert(self._firsttake)
-	-- db_room.firstidx   = assert(self._firstidx)
-	-- db_room.curtake    = assert(self._curtake)
-	-- db_room.curidx     = assert(self._curidx)
-	-- db_room.lastidx    = assert(self._lastidx)
-	-- if self._lastcard then
-	-- 	db_room.lastcard = self._lastcard:get_value()
-	-- end
-	-- db_room.firsthu = self._firsthu
-	-- db_room.hucount = self._hucount
-	-- db_room.ju = self._ju
+	-- 打包用户数据
+	local db_users = {}
+	local db_room = {}
+	for k,v in pairs(self.players) do
+		if v.uid > 0 then      -- > 0 才是有人加入
+			local db_user = {}
+			db_user.uid = assert(v.uid)
+			db_user.roomid = self.id
+			db_user.idx = assert(v.idx)
+			db_user.chip = assert(v.chip)
+			db_user.state = assert(v.alert.current)
+			db_users[string.format("%d", k)] = db_user
+		end
+	end
 
-	-- local data = {}
-	-- data.users = db_users
-	-- data.room = db_room
-	-- local pack = json.encode(data)
-	-- redis:set(string.format("tb_room:%d", self._id), pack)
+	-- 打包房间数据
+	db_room.id = assert(self.id)
+	db_room.open = assert(self.open) and 1 or 0
+	db_room.host = assert(self.host)
+
+	-- gameplay data
+	db_room.state      = assert(self.alert.current)
+	db_room.laststate  = assert(self.alert.last_state)
+	db_room.firstidx   = assert(self.firstidx)
+	db_room.curidx     = assert(self.curidx)
+	db_room.ju         = assert(self.ju)
+
+	local data = {}
+	data.db_users = db_users
+	data.db_room = db_room
+	skynet.call(".DB", "lua", "write_room", data)
 end
 
 function cls:close()
 	-- body
 	assert(self)
 	-- self._open = false
-	return true
-end
-
-function cls:afk(uid)
-	-- body
-	log.info('roomid = %d, uid(%d) afk', self._id, uid)
-	local p = self:get_player_by_uid(uid)
-	assert(p)
-	p:set_online(false)
-	self:decre_online()
-	self._state = state.JOIN
-
-	local args = {}
-	args.idx = p:get_idx()
-	self:push_client_except_idx(p:get_idx(), "offline", args)
 	return true
 end
 
@@ -514,7 +478,6 @@ function cls:create(uid, args)
 	assert(uid)
 	assert(args)
 	self.host = uid
-	self.open = true
 
 	-- clear player
 	for i=1,self.max do
@@ -531,6 +494,15 @@ function cls:create(uid, args)
 	self._record = {}
 	self._ju = 0
 
+	self.alert = self:create_alert(state.NONE)
+	assert(self.alert.can('ev_join'))
+	self.alert.ev_join(self)
+
+	self.open = true
+	if self.open and not self.channelSubscribed then
+		self.channelSubscribed = true
+		self.channel:subscribe()
+	end
 	log.info("room create success.")
 	local res = {}
 	res.errorcode = 0
@@ -543,12 +515,12 @@ function cls:join(uid, agent, name, sex)
 	-- body
 	assert(uid and agent and name and sex)
 	local res = {}
-	if self._state ~= state.JOIN then
+	if not self.alert.is(state.JOIN) then
 		res.errorcode = 15
 		return res
 	end
 
-	if self._joined >= self._max then
+	if self.joined >= self.max then
 		res.errorcode = 16
 		return res
 	end
@@ -565,10 +537,16 @@ function cls:join(uid, agent, name, sex)
 	me.online = true
 	self:incre_joined()
 	self:incre_online()
+	self.uplayers[uid] = me
 
 	-- 返回给当前用户的信息
 	local p = {
 		idx   =  me.idx,
+		chip  =  me.chip,
+		sex   =  me.sex,
+		name  =  me.name,
+		state =  me.alert.current,
+		online = me.online,
 		cards = {},
 		lead = {}
 	}
@@ -583,6 +561,11 @@ function cls:join(uid, agent, name, sex)
 		if not v:is_none() and v.uid ~= uid then
 			local p = {
 				idx   =  v.idx,
+				chip  =  v.chip,
+				sex   =  v.sex,
+				name  =  v.name,
+				state =  v.alert.current,
+				online = v.online,
 				cards = {},
 				lead  = {}
 			}
@@ -593,12 +576,10 @@ function cls:join(uid, agent, name, sex)
 
 	local args = {}
 	args.p = p
-	self:push_client_except_idx(me:get_idx(), "join", args)
+	self:push_client_except_idx(me.idx, "big2join", args)
 
-	if self._joined >= self._max then
-		self.alert.ready(self)
-		self._state = state.READY
-		self:clear_state(player.state.WAIT_READY)
+	if self.joined >= self.max and self.online >= self.max then
+		self.alert.ev_shuffle(self)
 	end
 	return servicecode.NORET
 end
@@ -607,63 +588,44 @@ function cls:rejoin(uid, agent)
 	-- body
 	assert(uid and agent)
 	local res = { errorcode = 0 }
+	log.info("rejoin uid(%d)", uid)
 	local me = self:get_player_by_uid(uid)
 	if me == nil then
 		res.errorcode = 17
 		return res
 	end
 
-	assert(not me:get_online())
-	me:set_agent(agent)
-	me:set_online(true)
-	self._online = self._online + 1
+	assert(not me.online)
+	me.agent = agent
+	me.online = true
+	self:incre_online()
 
 	-- sync
 	local p = {
-		idx   =  me._idx,
-		chip  =  me._chip,
-		sex   =  me._sex,
-		name  =  me._name,
-		state =  me._state,
-		last_state   = me._laststate,
-		que          = me._que,
-		takecardsidx = me._takecardsidx,
-		takecardscnt = me._takecardscnt,
-		takecardslen = me._takecardslen,
-		takecards    = me:pack_takecards(),
-		cards        = me:pack_cards(),
-		leadcards    = me:pack_leadcards(),
-		putcards     = me:pack_putcards(),
-		putidx       = me._putidx,
-		hold_card    = me:pack_holdcard(),
-		hucards      = me:pack_hucards()
+		idx   =  me.idx,
+		chip  =  me.chip,
+		sex   =  me.sex,
+		name  =  me.name,
+		state =  me.alert.current,
+		online = me.online,
+		cards = {},
+		lead = {}
 	}
 
 	res.errorcode = 0
-	res.roomid = self._id
-	res.room_max = self._max
+	res.roomid = self.id
+	res.room_max = self.max
 	res.me = p
 	res.ps = {}
-	for _,v in ipairs(self._players) do
-		if not v:get_noone() and v:get_uid() ~= uid then
+	for _,v in ipairs(self.players) do
+		if not v:is_none() and v.uid ~= uid then
 			local p = {
-				idx   =  v._idx,
-				chip  =  v._chip,
-				sex   =  v._sex,
-				name  =  v._name,
-				state =  v._state,
-				last_state   = v._laststate,
-				que          = v._que,
-				takecardsidx = v._takecardsidx,
-				takecardscnt = v._takecardscnt,
-				takecardslen = v._takecardslen,
-				takecards    = v:pack_takecards(),
-				cards        = v:pack_cards(),
-				leadcards    = v:pack_leadcards(),
-				putcards     = v:pack_putcards(),
-				putidx       = v._putidx,
-				hold_card    = v:pack_holdcard(),
-				hucards      = v:pack_hucards()
+				idx   =  v.idx,
+				chip  =  v.chip,
+				sex   =  v.sex,
+				name  =  v.name,
+				state =  v.alert.current,
+				online = v.online,
 			}
 			table.insert(res.ps, p)
 		end
@@ -672,7 +634,13 @@ function cls:rejoin(uid, agent)
 
 	local args = {}
 	args.p = p
-	self:push_client_except_idx(me:get_idx(), "rejoin", args)
+	self:push_client_except_idx(me.idx, "big2rejoin", args)
+
+	-- if self.joined >= self.max and self.online >= self.max then
+	-- 	if self.alert.last_state == state.READY then
+	-- 		self.alert.ev_reset_ready(self)
+	-- 	end
+	-- end
 	return servicecode.NORET
 end
 
@@ -680,25 +648,51 @@ function cls:leave(uid)
 	-- body
 	local p = self:get_player_by_uid(uid)
 	assert(p)
-	local idx = p:get_idx()
-	p:set_online(false)
-	p:set_uid(0)
+	p.online = false
+	p.uid = 0
 	self:decre_online()
 	self:decre_joined()
-	self._state = state.JOIN
+	self.alert.ev_reset_join()
+
 	local res = {}
 	res.errorcode = 0
 	skynet.retpack(res)
 
 	local args = {}
-	args.idx = idx
-	self:push_client_except_idx(idx, "leave", args)
+	args.idx = p.idx
+	self:push_client_except_idx(p.idx, "big2leave", args)
 	return servicecode.NORET
+end
+
+function cls:afk(uid)
+	-- body
+	log.info('roomid = %d, uid(%d) afk', self.id, uid)
+	local p = self:get_player_by_uid(uid)
+	assert(p)
+	if p.online then
+		p.online = false
+		self:decre_online()
+		self.alert.ev_reset_join(self)
+
+		local args = {}
+		args.idx = p.idx
+		self:push_client_except_idx(p.idx, "offline", args)
+	else
+		log.error('roomid = %d, uid(%d) had afk', self.id, uid)
+	end
+	return true
+end
+
+function cls:recycle()
+	-- body
+	assert(self)
+	self.open = false
+	return true
 end
 
 ------------------------------------------
 -- 大佬2协议
-function cls:step(idx)
+function cls:step(idx, mock)
 	-- body
 	assert(idx)
 	local res = {}
@@ -725,26 +719,49 @@ function cls:step(idx)
 		res.errorcode = 1
 		return res
 	elseif self.alert.is(state.SHUFFLE) then
-		log.warning("step wrong state SHUFFLE")
-		res.errorcode = 1
-		return res
-	elseif self._state == state.DEAL then
+		log.info('step : shuffle')
+		if not mock then
+			log.info('mock retpack')
+			res.errorcode = 0
+			skynet.retpack(res)
+		end
+		-- 此玩家发牌完成
+		p.alert.ev_deal(p)
+	elseif self.alert.is(state.DEAL) then
 		res.errorcode = 0
 		skynet.retpack(res)
 		-- 此玩家发牌完成
-		p.alert.deal()
-	elseif self._state == state.LEAD then
-		res.errorcode = 0
-		skynet.retpack(res)
-		p.alert.lead()
-	elseif self._state == state.CALL then
-		res.errorcode = 0
-		skynet.retpack(res)
-		p.alert.call()
-	elseif self._state == state.OVER then
-		res.errorcode = 0
-		skynet.retpack(res)
-		p.alert.over()
+		p.alert.ev_deal(p)
+	elseif self.alert.is(state.LEAD) then
+		if not mock then
+			res.errorcode = 0
+			skynet.retpack(res)
+		end
+		self.alert.ev_turn(self)
+	elseif self.alert.is(state.CALL) then
+		if not mock then
+			res.errorcode = 0
+			skynet.retpack(res)
+		end
+		p.alert.ev_call(p)
+	elseif self.alert.is(state.OVER) then
+		if not mock then
+			res.errorcode = 0
+			skynet.retpack(res)
+		end
+		p.alert.ev_over(p)
+	elseif self.alert.is(state.SETTLE) then
+		if not mock then
+			res.errorcode = 0
+			skynet.retpack(res)
+		end
+		p.alert.ev_settle(p)
+	elseif self.alert.is(state.ROOMOVER)
+		if not mock then
+			res.errorcode = 0
+			skynet.retpack(res)
+		end
+		p.alert.ev_roomover(p)
 	end
 	return servicecode.NORET
 end
@@ -757,83 +774,88 @@ function cls:ready(idx)
 		return res
 	end
 	if not self.alert.is(state.READY) then
-		res.errorcode = errorcode.WRONG_STATE
+		res.errorcode = 5
 		res.idx = idx
 		return res
 	end
 	local p = self.players[idx]
 	if p == nil then
-		res.errorcode = errorcode.FAIL 
+		res.errorcode = 1
 		return res
 	end
-	if not p.alert.is(player.state.WAIT_READY) then
-		res.errorcode = errorcode.WRONG_STATE
+	if not p.alert.is(Player.state.WAIT_READY) then
+		res.errorcode = 19
 		res.idx = idx
 		return res
 	end
+	-- 推送准备状态
+
 	-- 转移状态
-	p.alert.ready()
 	res.errorcode = 0
 	res.idx = idx
 	skynet.retpack(res)
 
-	if self:is_next_state(player.state.READY) then
-		self:take_shuffle()
-	end
+	p.alert.ev_ready()
 	return servicecode.NORET
 end
 
-function cls:lead(idx, leadtype, cards)
+function cls:lead(idx, ltype, cards, mock)
 	-- body
-	assert(idx)
-	local res = {}
-	if not self.open then
-		res.errorcode = 1
-		return res
-	end
-	if idx < 1 or idx > self.max then
-		res.errorcode = 1
-		return res
-	end
-	-- 检测此玩家是否
-	local p = self.players[idx]
-	if p:is_none() then
-		res.errorcode = 1
-		return res
-	end
-	local errorcode = p:lead(leadtype, cards)
-	if errorcode == 0 then
-		res.errorcode = errorcode
-		skynet.retpack(res)
-		self:take_lead()
-		return servicecode.NORET
+	if mock then
+		assert(idx == self.curidx)
+		local p = assert(self.players[idx])
+		assert(p:lead(ltype, cards) == 0)
+		self.alert.ev_lead(self)
 	else
-		res.errorcode = errorcode
-		return res
+		assert(idx)
+		local res = {}
+		if not self.open then
+			res.errorcode = 1
+			return res
+		end
+		if idx ~= self.curidx then
+			res.errorcode = 1
+			return res
+		end
+		-- 检测此玩家是否
+		local p = self.players[idx]
+		if p:is_none() then
+			res.errorcode = 1
+			return res
+		end
+		-- 真正出牌的地方
+		local errorcode = p:lead(leadtype, cards)
+		if errorcode == 0 then
+			res.errorcode = errorcode
+			skynet.retpack(res)
+			self.alert.ev_lead(self)
+			return servicecode.NORET
+		else
+			res.errorcode = errorcode
+			return res
+		end
 	end
 end
 
-function cls:call(idx, opcode)
+function cls:call(idx, code, mock)
 	-- body
-	local res = {}
-	if not self.open then
-		res.errorcode = 1
-		return res
+	if mock then
+	else
+		local res = {}
+		if not self.open then
+			res.errorcode = 1
+			return res
+		end
+		assert(opcode)
+		local p = self.players[idx]
+		p.pass = true
+
+		res.errorcode = 0
+		skynet.retpack(res)
+
+		self.alert.ev_call()
+		return servicecode.NORET
 	end
-	assert(opcode)
-	local p = self.players[idx]
-	p.pass = true
-
-	res.errorcode = 0
-	skynet.retpack(res)
-
-	self:take_call()
-	return servicecode.NORET
-end
-
-function cls:timeout_call(opinfo, ... )
-	-- body
-	self:call(opinfo)
 end
 
 function cls:restart(idx, ... )
@@ -851,291 +873,227 @@ function cls:restart(idx, ... )
 	end
 end
 
-function cls:timeout_restart(idx, ... )
+-- turn state
+function cls:take_ready()
 	-- body
+	self:emit_player_event("ev_wait_ready")
+	self:push_client("big2take_ready")
 end
 
--- turn state
 function cls:take_shuffle()
 	-- body
-	assert(self.alert.is(state.READY))
-	self.alert.shuffle(self)
+	assert(self.alert.is(state.SHUFFLE))
 
 	-- 开始洗牌后才开始计算消耗品
-	self._ju = self._ju + 1
-	if self._ju == 1 then
+	self.ju = self.ju + 1
+	if self.ju == 1 then
 		-- send agent
-		local p = self:get_player_by_uid(self._host)
-		local addr = p:get_agent()
-		local ok = skynet.call(addr, "lua", "alter_rcard", -1)
-		assert(ok)
+		-- local p = self:get_player_by_uid(self.host)
+		-- local addr = p:get_agent()
+		-- local ok = skynet.call(addr, "lua", "alter_rcard", -1)
+		-- assert(ok)
 	end
 
 	-- 记录所有消息
 	self._stime = skynet.now()
 	self._record = {}
 
-	-- record 
-	local args = {}
-	for i=1,self._max do
-		local p = {}
-		p.idx = self._players[i]:get_idx()
-		p.uid = self._players[i]:get_uid()
-		table.insert(args, p)
-	end
-	self:record("players", args)
-
-	if self._ju == 1 then
-		self._firstidx = self:get_player_by_uid(self._host):get_idx()
+	if self.ju == 1 then
+		self.firstidx = 1
 	else
-		self._firstidx = self._lastfirsthu
+		self.firstidx = 1
 	end
-	self._curidx = self._firstidx
+	self.curidx = self.firstidx
 
-	for i=1,self._cardssz do
-		self._cards[i]:clear()
-	end
+	-- for i=1,self._cardssz do
+	-- 	self._cards[i]:clear()
+	-- end
 
 	-- 洗牌算法
-	assert(#self._cards == 108)
-	for i=107,1,-1 do
-		local swp = math.floor(math.random(1, 1000)) % 108 + 1
+	assert(#self._cards == self._cardssz)
+	for i=self._cardssz-1,1,-1 do
+		local swp = math.floor(math.random(1, 1000)) % self._cardssz + 1
 		while swp == i do
-			swp = math.floor(math.random(1, 1000)) % 108 + 1
+			swp = math.floor(math.random(1, 1000)) % self._cardssz + 1
 		end
 		local tmp = assert(self._cards[i])
 		self._cards[i] = assert(self._cards[swp], swp)
 		self._cards[swp] = tmp
 	end
-	assert(#self._cards == 108)
+	assert(#self._cards == self._cardssz)
+	-- self:print_cards()
 
-	self:record("shuffle", args)
-	self:push_client("shuffle", args)
+	-- self:record("shuffle", args)
+	-- self.alert.ev_deal(self)
+	self:take_deal()
 end
 
 function cls:take_deal()
 	-- body
 	-- 发牌
-	self:transfer_player_state(Player.state.WAIT_DEAL)
-	for i=1,4 do
+	-- self:print_cards()
+	local event = 'ev_' .. Player.state.WAIT_DEAL
+	self:emit_player_event(event)
+	for i=1,52,4 do
 		for j=1,4 do
-			local p = self._players[self._curidx]
-			if i == 4 then
-				local ok, card = self:take_card()
-				assert(ok)
-				p:insert(card)
-			else
-				for i=1,4 do
-					local ok, card = self:take_card()
-					assert(ok)
-					p:insert(card)	
-				end
-			end
-			self._curidx = self:next_idx()
+			local card = self._cards[i]
+			local p = self.players[j]
+			p:insert(card)
+			i = i + 1
 		end
 	end
 
-	for i=1,self._max do
-		self._players[i]:print_cards()
-	end
-
-	-- take first card
-	local ok, card = self:take_card()
-	assert(ok and self._curidx == self._firstidx)
-	self._players[self._curidx]:take_turn_card(card)
-
-	local p1 = self._players[1]:get_cards_value()
-	local p2 = self._players[2]:get_cards_value()
-	local p3 = self._players[3]:get_cards_value()
-	local p4 = self._players[4]:get_cards_value()
+	local p1 = self.players[1]:pack_cards()
+	local p2 = self.players[2]:pack_cards()
+	local p3 = self.players[3]:pack_cards()
+	local p4 = self.players[4]:pack_cards()
 
 	local args = {}
-	args.firstidx  = self._firstidx
-	args.firsttake = self._firsttake
-	args.p1 = p1
-	args.p2 = p2
-	args.p3 = p3
-	args.p4 = p4
-	args.card = self._curcard:get_value()
+	args.firstidx  = self.firstidx
+	args.firsttake = self.firstidx
+	args.deal = {}
+	table.insert(args.deal, { idx = 1, cards = p1 })
+	table.insert(args.deal, { idx = 2, cards = p2 })
+	table.insert(args.deal, { idx = 3, cards = p3 })
+	table.insert(args.deal, { idx = 4, cards = p4 })
 
-	self:record("deal", args)
-	self:push_client("deal", args)
+	self:record("big2deal", args)
+	self:push_client("big2deal", args)
+
+	-- 如果断连后
+	if MOCK then
+		skynet.timeout(100 * 20, function ()
+			-- body
+			for i=1,4 do
+				self:step(i, true)
+			end
+		end)
+	end
 end
 
--- 当前用户需要出牌，可能摸了一个牌，也可能是其他
-function cls:take_turn()
+function cls:take_firstturn()
 	-- body
-	self:next_idx_wait_turn()
-
-	-- 暂时取消倒计时
-	-- local card = self._players[self._curidx]:take_turn_after_peng()
-	-- assert(self._players[self._curidx]._holdcard)
-	-- self._players[self._curidx]:timeout(self._countdown * 100)
+	assert(self.alert.is(state.FIRSTTURN))
+	self.alert.ev_first_turn_to_turn(self)
+	self.curidx = self.firstidx
 
 	local args = {}
 	args.your_turn = self.curidx
 	args.countdown = self.countdown
 	-- self:record("take_turn", args)
-	self:push_client("take_turn", args)
+	self:push_client("big2take_turn", args)
+
+	if MOCK then
+		skynet.timeout(100 * 20, function ()
+			-- body
+			local p = self.players[self.curidx]
+			local card = p.cards[1]
+			self:lead(self.curidx, leadtype.SINGLE, {{pos=card.pos, value=card.value}}, true)
+		end)
+	end
+end
+
+-- 当前用户需要出牌，可能摸了一个牌，也可能是其他
+function cls:take_turn()
+	-- body
+	assert(self.alert.is(state.TURN))
+	self:next_idx()
+	local p = self.players[self.curidx]
+	while p.pass do
+		self:next_idx()
+		local p = self.players[self.curidx]
+	end
+
+	local args = {}
+	args.your_turn = self.curidx
+	args.countdown = self.countdown
+	-- self:record("take_turn", args)
+	self:push_client("big2take_turn", args)
+
+	if MOCK then
+		skynet.timeout(100 * 20, function ()
+			-- body
+			local p = self.players[self.curidx]
+			local card = p.cards[1]
+			self:lead(self.curidx, leadtype.SINGLE, {{pos=card.pos, value=card.value}}, true)
+		end)
+	end
 end
 
 function cls:take_lead()
 	-- body
-	assert(self.alert.is(state.TURN))
-	self.alert.lead()
+	assert(self.alert.is(state.LEAD))
+
 	local p = assert(self.players[self.curidx])
 	assert(p)
+	p.alert.ev_wait_lead_after_wait_turn(p)
+
+	for i=1,self.max do
+		if i ~= self.curidx then
+			local p = assert(self.players[i])
+			assert(p)
+			p.alert.ev_wait_call_after_watch(p)
+		end
+	end
+
 	local args = {}
 	args.idx = self.curidx
 	args.leadtype = 0
 	args.cards = {}
 	self:push_client("big2lead", args)
+
+	if MOCK then
+		skynet.timeout(100 * 20, function ()
+			-- body
+			for i=1,self.max do
+				self:step(i, true)
+			end
+		end)
+	end
 end
 
 function cls:take_call()
 	-- body
 	assert(self.alert.is(state.CALL))
 	local p = assert(self.players[self.curidx])
+	p.alert.ev_wait_call_after_wait_turn(p)
+
+	for i=1,self.max do
+		if i ~= self.curidx then
+			local p = assert(self.players[i])
+			p.alert.ev_wait_call_after_watch(p)
+		end
+	end
+
 	assert(p)
 	local args = {}
 	args.idx = self.curidx
 	self:push_client("big2call", args)
+
+	if MOCK then
+		skynet.timeout(100 * 20, function ()
+			-- body
+			for i=1,self.max do
+				self:step(i, true)
+			end
+		end)
+	end
 end
 
 function cls:take_over()
 	-- body
-	self._state = state.OVER
-	self:clear_state(player.state.WAIT_OVER)
+	assert(self.alert.is(state.OVER))
+	self:emit_player_event('ev_wait_over')
 
-	-- 检查没有胡玩家的是否有叫，
-	-- 1. 没有叫并且刚过，退税
-	-- 2. 没有叫给有叫的赔
-
-	local settles = {}
-	local wuhu = 0
-	for i=1,self._max do
-		if not self._players[i]:hashu() then
-			wuhu = wuhu + 1
-		end
-	end
-	if wuhu > 1 then
-		-- check hua zhu
-		local huazhus = {}
-		local wudajiaos = {}
-		local dajiaos = {}
-		for i=1,self._max do
-			if self._players[i]:hashu() then
-			else
-				if self._players[i]:check_que() then
-					local res = self._players[i]:check_jiao()
-					res.idx = i
-					if res.code ~= hutype.NONE then
-						table.insert(dajiaos, res)
-					else
-						table.insert(wudajiaos, res)
-					end
-				else
-					table.insert(huazhus, { idx = i })
-				end
-			end
-		end
-		-- tuisui
-		if #huazhus > 0 then
-			for k,v in pairs(huazhus) do
-				local settle = {}
-				self._players[v.idx]:tuisui(settle)
-				table.insert(settles, settle)
-			end
-		end
-
-		if #dajiaos == wuhu then
-		elseif #dajiaos > 0 then
-
-			for k,v in pairs(dajiaos) do
-				local settle = {}
-
-				local base = self._humultiple(v.code, jiaotype.PINGFANG, v.gang)
-				local total = 0
-				local lose = {}
-				local win = {}
-
-				table.insert(win, v.idx)
-				for k,h in pairs(wudajiaos) do
-					total = total + base
-					table.insert(lose, h.idx)
-
-					local litem = {}
-					litem.idx  = h.idx
-					litem.chip = -base
-					litem.left = self._players[litem.idx]:settle(litem.chip)
-
-					litem.win  = win
-					litem.lose = lose
-					litem.gang = opcode.none
-					litem.hucode = v.code
-					litem.hujiao = jiaotype.PINGFANG
-					litem.hugang = v.gang
-					litem.huazhu = 0
-					litem.dajiao = 1
-					litem.tuisui = 0
-
-					self:insert_settle(settle, litem.idx, litem)
-					self._players[litem.idx]:record_settle(litem)
-				end
-				for k,h in pairs(huazhus) do						
-					total = total + base
-					table.insert(lose, h.idx)
-
-					local litem = {}
-					litem.idx = h.idx
-					litem.chip = -base
-					litem.left = self._players[litem.idx]:settle(litem.chip)
-
-					litem.win = win
-					litem.lose = lose
-					litem.gang = opcode.none
-					litem.hucode = v.code
-					litem.hujiao = hutype.PINGFANG
-					litem.hugang = v.gang
-					litem.huazhu = 1
-					litem.dajiao = 0
-					litem.tuisui = 0
-
-					self:insert_settle(settle, litem.idx, litem)
-					self._players[h.idx]:record_settle(litem)
-				end	
-
-				local witem = {}
-				witem.idx = v.idx
-				witem.chip = total
-				witem.left = self._players[v.idx]:settle(witem.chip)
-
-				witem.win  = win
-				witem.lose = lose
-				witem.gang = opcode.none
-				witem.hucode = v.code
-				witem.hujiao = jiaotype.PINGFANG
-				witem.hugang = v.gang
-
-				witem.huazhu = 0
-				witem.dajiao = 1
-				witem.tuisui = 0
-				self:insert_settle(settle, witem.idx, witem)
-				self._players[v.idx]:record_settle(witem)
-			end
-		end
-	end
-
-	self:record("over")
-	self:push_client("over")
+	self:record("big2over")
+	self:push_client("big2over")
 end
 
-function cls:take_settle( ... )
+-- 结算会检查是重新开始一局，还是房间结束
+function cls:take_settle()
 	-- body
-	self._state = state.SETTLE
-	self:clear_state(player.state.WAIT_SETTLE)
+	assert(self.alert.is(state.SETTLE))
 
-	
 	local args = {}
 	args.settles = settles
 
@@ -1143,50 +1101,11 @@ function cls:take_settle( ... )
 	self:push_client("settle", args)
 end
 
-function cls:take_final_settle( ... )
-	-- body
-	self._state = state.FINAL_SETTLE
-	self:clear_state(player.state.FINAL_SETTLE)
-
-	local over = false
-	if self._ju == self._maxju then
-		-- over
-		over = true
-		skynet.send(".ROOM_MGR", "lua", "enqueue_room", self._id)
-		for i=1,self._max do
-			local addr = self._players[i]:get_agent()
-			skynet.send(addr, "lua", "room_over")
-		end
-	end
-
-	local args = {}
-	args.p1 = self._players[1]._chipli
-	args.p2 = self._players[2]._chipli
-	args.p3 = self._players[3]._chipli
-	args.p4 = self._players[4]._chipli
-	args.settles = settles
-	args.over = over
-
-	self:record("final_settle", args)
-	local recordid = skynet.call(".RECORD_MGR", "lua", "register", cjson.encode(self._record))
-	self._record = {}
-	local names = {}
-	for i=1,self._max do
-		table.insert(names, self._players[i]:get_name())
-	end
-	for i=1,self._max do
-		local addr = self._players[i]:get_agent()
-		skynet.send(addr, "lua", "record", recordid, names)
-	end
-
-	self:push_client("final_settle", args)
-end
-
 function cls:take_restart()
 	-- body
-	self._state = state.RESTART
-	self:clear_state(player.state.WAIT_RESTART)
+	assert(self.alert.is(state.RESTART))
 
+	-- 可能有什么需要清理
 	self:clear()
 
 	for i=1,self._max do
@@ -1196,29 +1115,9 @@ function cls:take_restart()
 	self:push_client("take_restart")
 end
 
-function cls:take_roomover( ... )
+function cls:take_roomover()
 	-- body
-end
-
-function cls:insert_settle(settle, idx, item, ... )
-	-- body
-	assert(settle and idx and item)
-	assert(idx > 0 and idx <= self._max)
-	if idx == 1 then
-		assert(settle.p1 == nil)
-		settle.p1 = item
-	elseif idx == 2 then
-		assert(settle.p2 == nil)
-		settle.p2 = item
-	elseif idx == 3 then
-		assert(settle.p3 == nil)
-		settle.p3 = item
-	elseif idx == 4 then
-		assert(settle.p4 == nil)
-		settle.p4 = item
-	else
-		assert(false)
-	end
+	assert(self.alert.is(state.ROOMOVER))
 end
 
 return cls

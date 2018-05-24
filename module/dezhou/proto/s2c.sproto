@@ -100,8 +100,18 @@
 
 .big2player {
     idx 0 : integer
-    cards 1 : *card         # 手上的牌
-    lead 2 : big2lead
+    chip 1 : integer
+    sex 2 : integer
+    name 3 : string
+    state 4 : string
+    online 5 : boolean
+    cards 6 : *card         # 手上的牌
+    lead 7 : big2lead
+}
+
+.big2playerdeal {
+    idx 0 : integer
+    cards 1 : *card
 }
 
 # big2 类
@@ -528,11 +538,7 @@ big2deal 604 {
     request {
         firstidx  0 : integer
         firsttake 1 : integer
-        p1        2 : *integer
-        p2        3 : *integer
-        p3        4 : *integer
-        p4        5 : *integer
-        card      6 : integer
+        deal      2 : *big2playerdeal
     }
     response {
         errorcode 0 : integer
@@ -626,6 +632,15 @@ big2leave 614 {
     response {
         errorcode 0 : integer
     }
+}
+
+big2take_ready 615 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }   
 }
 
 # 大老二模块结束

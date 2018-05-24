@@ -46,9 +46,7 @@ function cls:afk()
 	local uid   = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
-	print(entity.room.joined)
-	if entity.room.joined then
-		print(entity.room.addr)
+	if entity.room.joined and entity.room.online then
 		local ok = skynet.call(entity.room.addr, "lua", "afk", uid)
 		assert(ok)
 		entity.room.online = false
@@ -178,8 +176,8 @@ function cls:rejoin()
 	local xargs = {
 		uid   = uid,
 		agent = agent,
-		name  = assert(entity.account.nickname),
-		sex   = assert(entity.account.sex)
+		name  = assert(entity.user.nickname),
+		sex   = assert(entity.user.sex)
 	}
 	local res = skynet.call(".ROOM_MGR", "lua", "apply", entity.room.id)
 	if res.errorcode ~= 0 then

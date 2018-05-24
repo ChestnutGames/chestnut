@@ -33,7 +33,7 @@ function cls:load_cache_to_data()
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
 	if #res.db_user_rooms == 1 then
-		unpack_components.unpack_room_component(entity.room, res.db_user_rooms)
+		unpack_components.unpack_room_component(entity.room, res.db_user_rooms[1])
 	end
 	return true
 end

@@ -130,12 +130,18 @@ end
 function QUERY.read_room(id)
 	-- body
 	local res = {}
-	res.db_room = db_read.read_room(ctx, id)
+	res.db_rooms = db_read.read_room(ctx, id)
 	res.db_users = db_read.read_room_users(ctx, id)
 	return res
 end
 
 ----------------------------------------------------------write
+function QUERY.write_new_user(db_user)
+	-- body
+	db_write.write_user(ctx, db_user)
+	return true
+end
+
 function QUERY.write_user(data)
 	-- body
 	db_write.write_user(ctx, data.db_user)

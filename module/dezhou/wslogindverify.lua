@@ -5,12 +5,11 @@ local log = require "chestnut.skynet.log"
 local httpsc = require "chestnut.https.httpc"
 local guid = require "chestnut.guid"
 
+local NORET = {}
 local server_win = { ["sample1"] = true }
 local server_adr = { ["sample"]  = true }
 local appid  = "wx3207f9d59a3e3144"
 local secret = "d4b630461cbb9ebb342a8794471095cd"
-
-local signupd_name = skynet.getenv "signupd_name"
 
 local function gen_uid()
 	-- body
@@ -45,6 +44,18 @@ end
 
 local function auth_win_myself(username, password)
 	-- body
+	if type(username) ~= 'string' then
+		error('username is not string.')
+	end
+	if type(username) == 'string' and #username <= 0 then
+		error("length of username less than 0")
+	end
+	if type(password) ~= 'string' then
+		error('password is not string.')
+	end
+	if type(password) == 'string' and #username <= 0 then
+		error("length of username less than 0")
+	end
 	local res = skynet.call(".DB", "lua", "read_account_by_username", username, password)
 	if #res.accounts == 1 then
 		local uid = res.accounts[1].uid
@@ -74,7 +85,7 @@ local function auth_win_myself(username, password)
 			db_user.headimg = ""
 			db_user.openid = 0
 			db_user.nameid = 0
-			skynet.call(".DB", "lua", "write_user", db_user)
+			skynet.call(".DB", "lua", "write_new_user", db_user)
 		end
 		return uid
 	else
@@ -156,17 +167,17 @@ end
 
 local CMD = {}
 
-function CMD.start( ... )
+function CMD.start()
 	-- body
 	return true
 end
 
-function CMD.close( ... )
+function CMD.close()
 	-- body
 	return true
 end
 
-function CMD.kill( ... )
+function CMD.kill()
 	-- body
 	skynet.exit()
 end
@@ -202,15 +213,14 @@ function CMD.signup(server, code, ... )
 	end
 end
 
-skynet.start(function ( ... )
+skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function (_, _, cmd, ... )
 		-- body
 		local f = assert(CMD[cmd])
 		local r = f( ... )
-		if r ~= noret then
+		if r ~= NORET then
 			skynet.retpack(r)
 		end
 	end)
-	skynet.register("." .. signupd_name)
 end)

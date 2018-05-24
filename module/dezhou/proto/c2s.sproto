@@ -97,10 +97,19 @@
 
 .big2player {
     idx 0 : integer
-    cards 1 : *card         # 手上的牌
-    lead 2 : big2lead
+    chip 1 : integer
+    sex 2 : integer
+    name 3 : string
+    state 4 : string
+    online 5 : boolean
+    cards 6 : *card         # 手上的牌
+    lead 7 : big2lead
 }
 
+.big2playerdeal {
+    idx 0 : integer
+    cards 1 : *card
+}
 # big2 类
 ####################################### 
 

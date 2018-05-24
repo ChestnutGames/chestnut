@@ -4,28 +4,27 @@ local vector = require "chestnut.sortedvector"
 local fsm = require "chestnut.fsm"
 
 local state = {}
-state.NONE           = "NONE"
-state.WAIT_JOIN      = "WAIT_JOIN"
-state.JOIN           = "JOIN"
-state.WAIT_READY     = "WAIT_READY"
-state.READY          = "READY"
-state.WAIT_SHUFFLE   = "WAIT_SHUFFLE"
-state.SHUFFLE        = "SHUFFLE"
-state.WAIT_DEAL      = "WAIT_DEAL"
-state.DEAL       	 = "DEAL"
-state.WATCH          = "WATCH"          -- 观看状态，此时没有关于他的事物
-state.PASS           = "PASS"           -- 当你选择PASS,会进此状态，会
-state.WAIT_TURN      = "WAIT_TURN"      -- 轮到你做出选择
+state.NONE           = "none"
+state.WAIT_JOIN      = "wait_join"
+state.JOIN           = "join"
+state.WAIT_READY     = "wait_ready"
+state.READY          = "ready"
+state.WAIT_SHUFFLE   = "wait_shuffle"
+state.SHUFFLE        = "shuffle"
+state.WAIT_DEAL      = "wait_deal"      -- 以上状态都没有用
+state.DEAL       	 = "deal"
+state.WATCH          = "watch"          -- 观看状态，此时没有关于他的事物
+state.WAIT_TURN      = "wait_turn"      -- 轮到你做出选择
 -- state.TURN       = 15   -- 此状态可能不会出现
-state.WAIT_LEAD      = "WAIT_LEAD"
-state.LEAD           = "LEAD"
-state.WAIT_CALL      = "WAIT_CALL"
-state.CALL           = "CALL"
-state.WAIT_OVER      = "WAIT_OVER"
-state.OVER           = "OVER"
-state.WAIT_SETTLE    = "WAIT_SETTLE"
-state.SETTLE         = "SETTLE"
-state.WAIT_RESTART   = "WAIT_RESTART"
+state.WAIT_LEAD      = "wait_lead"
+state.LEAD           = "lead"
+state.WAIT_CALL      = "wait_call"
+state.CALL           = "call"
+state.WAIT_OVER      = "wait_over"
+state.OVER           = "over"
+state.WAIT_SETTLE    = "wait_settle"
+state.SETTLE         = "settle"
+state.WAIT_RESTART   = "wait_restart"
 -- state.RESTART    = 27
 
 local cls = class("player")
@@ -47,52 +46,24 @@ function cls:ctor(env, uid, agent)
 	self.robot  = false  -- user
 
 	-- play
-	self.cards  = vector()
+	self.cards  = vector(function (l, r)
+		-- body
+		return l:mt(r)
+	end)()
 	self.colorcards = {}
 	self.pass = false
 
 	self._cancelcd = nil
 	self._chipli = {}   -- { code,dian,chip}
 
-	local alert = fsm.create({
-		initial = state.NONE,
-		events = {
-			{name = "waitJoin",         from = state.NONE,    to = state.WAIT_JOIN},
-		    {name = "join",             from = state.START,   to = state.JOIN},
-		    {name = "ready",            from = state.WAIT_READY,    to = state.READY},
-		    {name = "shuffle",          from = state.READY,   to = state.SHUFFLE},
-		    {name = "deal",             from = state.SHUFFLE, to = state.DEAL},
-		    {name = "firstTurn",        from = state.DEAL,    to = state.TURN},
-		    {name = "turnAfterLead",    from = state.LEAD,    to = state.TURN},
-		    {name = "turnAfterPass",    from = state.CALL,    to = state.TURN},
-		    {name = "call",             from = state.TURN,    to = state.CALL},
-		    {name = "lead",             from = state.TURN,    to = state.LEAD},
-		    {name = "over",             from = state.LEAD,    to = state.OVER},
-		    {name = "settle",           from = state.OVER,    to = state.SETTLE},
-		    {name = "restart",          from = state.SETTLE,    to = state.RESTART},
-		},
-		callbacks = {
-		    -- on_panic = function(self, event, from, to, msg) print('panic! ' .. msg)  end,
-		    -- on_clear = function(self, event, from, to, msg) print('phew... ' .. msg) end
-		}
-	})
-	self.alert = alert
+	self.alert = nil
+	self:init_alert(state.NONE)
 	return self
 end
 
 function cls:is_none()
 	-- body
 	return (self.uid == 0)
-end
-
-function cls:get_cards_value()
-	-- body
-	local cards = {}
-	for i,card in ipairs(self.cards) do
-		local v = card:get_value()
-		cards[i] = v
-	end
-	return cards
 end
 
 function cls:clear()
@@ -111,34 +82,73 @@ function cls:print_cards()
 	log.info("player %d end print cards", self._idx)
 end
 
+function cls:init_alert(initial_state)
+	-- body
+	local alert = fsm.create({
+		initial = initial_state,
+		events = {
+			{name = "ev_wait_join",     from = state.NONE,    to = state.WAIT_JOIN},
+		    {name = "ev_join",          from = state.WAIT_JOIN,   to = state.JOIN},
+		    {name = "ev_wait_ready",    from = state.NONE,    to = state.WAIT_READY},
+		    {name = "ev_ready",         from = state.WAIT_READY,     to = state.READY},
+		    {name = "ev_wait_deal",     from = state.NONE,          to = state.WAIT_DEAL},
+		    {name = "ev_deal",          from = state.WAIT_DEAL,      to = state.DEAL},
+		    {name = "ev_watch_after_deal",         from = state.DEAL,    to = state.WATCH},
+		    {name = "ev_watch_after_lead",         from = state.LEAD,    to = state.WATCH},
+		    {name = "ev_watch_after_call",         from = state.CALL,    to = state.WATCH},
+		    {name = "ev_wait_turn_after_deal",     from = state.DEAL,    to = state.WAIT_TURN},
+		    {name = "ev_wait_turn_after_lead",     from = state.LEAD,    to = state.WAIT_TURN},
+		    {name = "ev_wait_turn_after_call",     from = state.CALL,    to = state.WAIT_TURN},
+		    {name = "ev_wait_lead_after_watch",         from = state.WATCH,    to = state.WAIT_LEAD},
+		    {name = "ev_wait_lead_after_wait_turn",     from = state.WAIT_TURN,    to = state.WAIT_LEAD},
+		    {name = "ev_wait_call_after_watch",         from = state.WATCH,    to = state.WAIT_CALL},
+		    {name = "ev_wait_call_after_wait_turn",     from = state.WAIT_TURN,    to = state.WAIT_CALL},
+
+		    {name = "ev_lead",             from = state.WAIT_LEAD,    to = state.LEAD},
+		    {name = "ev_call",             from = state.WAIT_CALL,    to = state.CALL},
+		    {name = "ev_wait_over",        from = state.LEAD,         to = state.WAIT_OVER},
+		    {name = "ev_over",             from = state.WAIT_OVER,    to = state.OVER},
+		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
+		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
+		},
+		callbacks = {
+		    on_ready = function(self, event, from, to, obj, msg) assert(obj) obj:on_state(event, from, to, msg) end,
+		    on_deal = function(self, event, from, to, obj, msg) assert(obj) obj:on_state(event, from, to, msg) end,
+		    on_lead = function(self, event, from, to, obj, msg) assert(obj) obj:on_state(event, from, to, msg) end,
+		    on_call = function(self, event, from, to, obj, msg) assert(obj) obj:on_state(event, from, to, msg) end,
+		    -- on_clear = function(self, event, from, to, msg) print('phew... ' .. msg) end
+		}
+	})
+	self.alert = alert
+end
+
+function cls:on_state(event, from, to)
+	-- body
+	if to == state.READY then
+	elseif to == state.SHUFFLE then
+	elseif to == state.DEAL then
+		log.info('player : deal')
+		self.env:on_next_state()
+	elseif to == state.TURN then
+		self:take_turn()
+	elseif to == state.LEAD then
+		self:take_lead()
+	elseif to == state.CALL then
+		self:take_call()
+	elseif to == state.OVER then
+		self:take_over()
+	end
+end
+
 ------------------------------------------
 -- 发牌的时候直接插入
 function cls:insert(card)
 	-- body
 	assert(card)
-	local len = #self._cards
-	for i=1,len do
-		if self._cards[i]:mt(card) then
-			for j=len,i,-1 do
-				self._cards[j + 1] = self._cards[j]
-				self._cards[j + 1]:set_pos(j + 1)
-			end
-			self._cards[i] = card
-			self._cards[i]:set_pos(i)
-			return i
-		end
-	end
-	self._cards[len+1] = card
-	self._cards[len+1]:set_pos(len + 1)
-	return len + 1
+	self.cards:push(card)
 end
 
-function cls:insert_with_pos(card)
-	-- body
-	assert(self and card)
-end
-
-function cls:remove(card, ... )
+function cls:remove(card)
 	-- body
 	return self:remove_pos(card._pos)
 end
@@ -146,8 +156,8 @@ end
 function cls:pack_cards()
 	-- body
 	local ccs = {}
-	for _,card in pairs(self._cards) do
-		local cc = { pos = card:get_pos(), value = card:get_value() }
+	for _,card in pairs(self.cards) do
+		local cc = { pos = card.pos, value = card.value }
 		table.insert(ccs, cc)
 	end
 	return ccs

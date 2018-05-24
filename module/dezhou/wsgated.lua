@@ -171,6 +171,11 @@ function handler.on_close(ws, code, reason)
     server.disconnect_handler(ws.id)
 end
 
+function handler.on_socket_close(id)
+    -- body
+    server.disconnect_handler(id)
+end
+
 local function handle_socket(id)
     -- limit request body size to 8192 (you can pass nil to unlimit)
     local code, url, method, header, body = httpd.read_request(sockethelper.readfunc(id), 8192)

@@ -5,9 +5,14 @@ local debug = debug
 
 local CMD = {}
 
-function CMD:start(reload, ... )
+function CMD:start(channel_id, ... )
 	-- body
-	return self:start(reload, ... )
+	return self:start(channel_id, ... )
+end
+
+function CMD:sayhi(reload)
+	-- body
+	return self:sayhi(reload)
 end
 
 function CMD:close()
@@ -69,7 +74,6 @@ end
 function CMD:test()
 	-- body
 	assert(self)
-	log.info('---------------------test')
 end
 
 function CMD:info()
@@ -328,6 +332,36 @@ end
 function CMD:big2final_settle(args)
 	-- body
 	self:send_request_gate("big2final_settle", args)
+	return servicecode.NORET
+end
+
+function CMD:big2match(args)
+	-- body
+	self:send_request_gate("big2match", args)
+	return servicecode.NORET
+end
+
+function CMD:big2rejoin(args)
+	-- body
+	self:send_request_gate("big2rejoin", args)
+	return servicecode.NORET
+end
+
+function CMD:big2join(args)
+	-- body
+	self:send_request_gate("big2rejoin", args)
+	return servicecode.NORET
+end
+
+function CMD:big2leave(args)
+	-- body
+	self:send_request_gate("big2rejoin", args)
+	return servicecode.NORET
+end
+
+function CMD:big2take_ready(args)
+	-- body
+	self:send_request_gate("big2rejoin", args)
 	return servicecode.NORET
 end
 

@@ -30,35 +30,37 @@ function cls:ctor( ... )
 	local uid_primary_index = PrimaryEntityIndex.new(UserComponent, userGroup, 'uid')
 	self.context:add_entity_index(uid_primary_index)
 	self.reload = false
-	self.initdataed = false
 	self.channel = nil
 	self.channelSubscribed = false
 	return self
 end
 
-function cls:start(reload, channel_id, ... )
+function cls:start(channel_id, ... )
 	-- body
-	if not cls.super.start(self, reload, channel_id, ... ) then
+	if not cls.super.start(self, channel_id, ... ) then
 		return false
 	end
-	self.reload = reload
-	if self.reload then
-		-- subscribe channel
-		local channel = mc.new {
+	-- subscribe channel
+	local channel = mc.new {
 		channel = channel_id,
-		dispatch = function (_, source, cmd, ...)
+		dispatch = function (_, _, cmd, ...)
 			-- body
-				local f = assert(CMD[cmd])
-				local ok, err = pcall(f, self, source, ... )
-				if not ok then
-					log.error("subscribe cmd = %s, error =[%s]", cmd, err)
-				end
+			local f = assert(CMD[cmd])
+			local ok, err = pcall(f, self, ... )
+			if not ok then
+				log.error("subscribe cmd = %s, error =[%s]", cmd, err)
 			end
-		}
-		channel:subscribe()
-		self.channelSubscribed = true
-		self.channel = channel
-	end
+		end
+	}
+	-- channel:subscribe()
+	-- self.channelSubscribed = true
+	self.channel = channel
+	return true
+end
+
+function cls:sayhi(reload)
+	-- body
+	self.reload = reload
 	return true
 end
 
@@ -78,17 +80,17 @@ function cls:init_data(uid)
 		entity:add(RoomComponent, 0, 0, false, false, false)
 	end
 
+	-- 重新加载数据
 	local ok, err = pcall(self.systems.db.load_cache_to_data, self.systems.db)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR
 	end
-	self.initdataed = true
 end
 
 function cls:save_data()
 	-- body
-	if self.logined and self.initdataed then
+	if self.logined then
 		local ok, err = pcall(self.systems.db.save_data_to_cache, self.systems.db)
 		if not ok then
 			log.error(err)
@@ -107,7 +109,7 @@ function cls:login(gate, uid, subid, secret)
 	if not ok then
 		return servicecode.FAIL
 	end
-	if self.reload then
+	if self.logined and self.reload then
 		self:init_data(uid)
 	end
 	return servicecode.SUCCESS
@@ -115,18 +117,20 @@ end
 
 function cls:logout( ... )
 	-- body
-	self.initdataed = false
-	if self.channelSubscribed then
-		self.channelSubscribed = false
-		self.channel:unsubscribe()
+	if self.logined then
+		if self.authed then
+			self:afk()
+		end
+		return cls.super.logout(self, ... )
+	else
+		return servicecode.FAIL
 	end
-	self:save_data()
-	return cls.super.logout(self, ... )
 end
 
 function cls:auth(args)
 	-- body
 	if not self.channelSubscribed then
+		log.info("uid(%d) subscribe channel_id", self.uid)
 		self.channelSubscribed = true
 		self.channel:subscribe()
 	end
@@ -135,19 +139,23 @@ end
 
 function cls:afk()
 	-- body
-	log.info("uid(%d) systems begin-------------------------------------afk", self.uid)
-	local traceback = debug.traceback
-	local ok, err = xpcall(self.systems.afk, traceback, self.systems)
-	if not ok then
-		log.error(err)
+	if self.authed then
+		log.info("uid(%d) systems begin-------------------------------------afk", self.uid)
+		local traceback = debug.traceback
+		local ok, err = xpcall(self.systems.afk, traceback, self.systems)
+		if not ok then
+			log.error(err)
+		end
+		log.info("uid(%d) systems end-------------------------------------afk", self.uid)
+		if self.channelSubscribed then
+			self.channelSubscribed = false
+			self.channel:unsubscribe()
+		end
+		self:save_data()
+		return cls.super.afk(self)
+	else
+		return servicecode.NOT_AUTHED
 	end
-	log.info("uid(%d) systems end-------------------------------------afk", self.uid)
-	if self.channelSubscribed then
-		self.channelSubscribed = false
-		self.channel:unsubscribe()
-	end
-	self:save_data()
-	return cls.super.afk(self)
 end
 
 function cls:inituser()

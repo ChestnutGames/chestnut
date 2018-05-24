@@ -216,47 +216,34 @@ lpush_asc(lua_State *L) {
 	if (n < 2) {
 		luaL_error(L, "param must be more than 2.");
 	}
-	lua_settop(L, 3);
 	lua_rawgeti(L, 1, 0);
+	lua_Integer idx = 0;
 	lua_Integer sparselen = luaL_checkinteger(L, -1);
-	for (lua_Integer i = sparselen; i >= 1; --i) {
-		lua_getfield(L, 1, "__comp");
-		lua_rawgeti(L, 1, i);  // l
-		lua_pushvalue(L, 2);   // r
-		lua_call(L, 2, 1);
-		lua_Integer r = luaL_checkinteger(L, -1);
-		if (r > 0) {
-			lua_rawgeti(L, 1, i); 
-			lua_rawseti(L, 1, i + 1);
-			if (lua_type(L, 3) == LUA_TFUNCTION) {
-				lua_pushvalue(L, 3);
-				lua_rawgeti(L, 1, i + 1);
-				lua_pushinteger(L, i + 1);
-				lua_call(L, 2, 1);
-			}
-		} else {
-			if (i < sparselen) {
-				lua_pushvalue(L, 2);
+	if (sparselen <= 0) {
+		idx = 1;
+	} else {
+		idx = sparselen + 1;
+		for (lua_Integer i = sparselen; i >= 1; --i) {
+			lua_getfield(L, 1, "__comp");
+			lua_rawgeti(L, 1, i);  // l
+			lua_pushvalue(L, 2);   // r
+			lua_call(L, 2, 1);
+			lua_Integer r = luaL_checkinteger(L, -1);
+			if (r > 0) {
+				// 交换
+				lua_rawgeti(L, 1, i);
 				lua_rawseti(L, 1, i + 1);
-				lua_pushinteger(L, sparselen + 1);
-				lua_rawseti(L, 1, 0);
-				lua_pushinteger(L, i + 1);
-				return 1;
+				idx = i;
 			} else {
-				lua_pushvalue(L, 2);
-				lua_rawseti(L, 1, sparselen + 1);
-				lua_pushinteger(L, sparselen + 1);
-				lua_rawseti(L, 1, 0);
-				lua_pushinteger(L, sparselen + 1);
-				return 1;
 			}
 		}
 	}
+	
 	lua_pushvalue(L, 2);
-	lua_rawseti(L, 1, 1);
+	lua_rawseti(L, 1, idx);
 	lua_pushinteger(L, sparselen + 1);
 	lua_rawseti(L, 1, 0);
-	lua_pushinteger(L, 1);
+	lua_pushinteger(L, idx);
 	return 1;
 }
 

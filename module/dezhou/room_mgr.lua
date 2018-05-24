@@ -244,14 +244,13 @@ end
 -- 解散房间 call by room
 function CMD.dissolve(roomid)
 	-- body
-	local room = rooms[roomid]
-	assert(room)
+	local room = assert(rooms[roomid])
+	skynet.call(room.addr, 'lua', 'recycle')
 	rooms[roomid] = nil
 	assert(pool[roomid] == nil)
 	pool[roomid] = room
-	return true
+	return NORET
 end
-
 
 skynet.start(function ()
 	-- body

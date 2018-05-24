@@ -340,7 +340,8 @@ function ws:start()
     while true do
         local message, err = self:recv()
         if not message then
-            --print('recv eror:', message, err)
+            -- print('recv eror:', message, err, self.id)
+            self.handler.on_socket_close(self.id)
             socket.close(self.id)
         end
     end

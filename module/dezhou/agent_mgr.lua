@@ -72,9 +72,11 @@ function CMD.enter(uid)
 	local u = users[uid]
 	assert(not u)
 	if u and u.addr then
+		assert(false)
 		if u.cancel then
 			u.cancel()
 		end
+		skynet.call(u.addr, "lua", "sayhi", false)
 		return 0
 	else
 		if #leisure_agent <= 0 then
@@ -84,6 +86,7 @@ function CMD.enter(uid)
 			agent.uid = uid
 			agent.cancel = nil
 			users[uid] = agent
+			skynet.call(agent.addr, "lua", "sayhi", true)
 			return agent.addr
 		end
 	end
@@ -95,10 +98,10 @@ function CMD.exit(uid)
 	assert(uid)
 	local u = users[uid]
 	if u then
-		local cancel = util.set_timeout(100 * 60 * 60, function ( ... )
+		local cancel = util.set_timeout(100 * 60 * 60, function ()
 			-- body
 			cs(enqueue, u.addr)
-			users[uid] = nil		
+			users[uid] = nil
 		end)
 		u.cancel = cancel
 		return true

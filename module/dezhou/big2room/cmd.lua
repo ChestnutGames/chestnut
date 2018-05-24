@@ -38,46 +38,70 @@ function CMD:kill()
 	skynet.exit()
 end
 
-function CMD:afk(uid)
-	-- body
-	return self:afk(uid)
-end
-
 -- end
 ------------------------------------------
 
 ------------------------------------------
 -- 房间协议
+-- call by room_mgr
 function CMD:create(uid, args)
 	-- body
 	return self:create(uid, args)
 end
 
+-- call by agent
 function CMD:on_join(agent)
 	-- body
 	local res = self:join(agent.uid, agent.agent, agent.name, agent.sex)
 	return res
 end
 
-function CMD:join(args, ... )
+-- call by agent
+function CMD:join(args)
 	-- body
+	assert(self)
 	assert(args.errorcode == 0)
 	return servicecode.NORET
 end
 
+-- call by agent
 function CMD:on_rejoin(args)
 	-- body
 	return self:rejoin(args.uid, args.agent)
 end
 
+-- call by agent
+function CMD:rejoin(args)
+	-- body
+	assert(self)
+	assert(args.errorcode == 0)
+	return servicecode.NORET
+end
+
+-- call by agent
 function CMD:on_leave(uid)
 	-- body
 	return self:leave(uid)
 end
 
-function CMD:leave(args, ... )
+-- call by agent
+function CMD:leave(args)
 	-- body
+	assert(self)
 	assert(args.servicecode == servicecode.SUCCESS)
+	return servicecode.NORET
+end
+
+-- call by agent
+function CMD:afk(uid)
+	-- body
+	return self:afk(uid)
+end
+
+-- call by room_mgr
+function CMD:recycle(args)
+	-- body
+	return self:recycle(args)
 end
 
 -- 结束协议
@@ -103,7 +127,7 @@ end
 
 function CMD:on_step(args)
 	-- body
-	local ok, res = xpcall(context.step, debug.msgh, self, args.idx)
+	local ok, res = xpcall(self.step, debug.msgh, self, args.idx)
 	if not ok then
 		log.error(res)
 		local res = {}
