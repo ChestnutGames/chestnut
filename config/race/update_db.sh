@@ -1,1 +1,0 @@
-mysql -uroot -proot -h127.0.0.1 -D race < ./create_db.sql
