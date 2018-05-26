@@ -66,6 +66,11 @@ function CMD.start()
 	table.insert(init_data_servers, record_mgr)
 	log.info("record_mgr start success.")
 
+	local offagent = skynet.uniqueservice("offagent")
+	skynet.call(offagent, "lua", "start", channel.channel)
+	table.insert(services, offagent)
+	log.info("offagent start success.")
+
 	local agent_mgr = skynet.uniqueservice("agent_mgr")
 	skynet.call(agent_mgr, "lua", "start", channel.channel, 5)
 	table.insert(services, agent_mgr)
@@ -136,12 +141,12 @@ end
 
 function CMD.kill()
 	-- body
-	for _,v in pairs(servers) do
+	for _,v in pairs(services) do
 		skynet.call(v, "lua", "close")
 	end
-
+	log.info('kill services')
 	-- skynet.exit()
-	skynet.abort()
+	-- skynet.abort()
 end
 
 skynet.start( function ()
@@ -153,5 +158,5 @@ skynet.start( function ()
 			skynet.ret(skynet.pack(r))
 		end
 	end)
-	skynet.register ".CODWEB"
+	skynet.register "CODWEB"
 end)

@@ -16,9 +16,9 @@ function CMD:init_data()
 	return self:init_data()
 end
 
-function CMD:sayhi()
+function CMD:sayhi(host)
 	-- body
-	return self:sayhi()
+	return self:sayhi(host)
 end
 
 function CMD:save_data()

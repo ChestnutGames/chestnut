@@ -1,22 +1,23 @@
 local skynet = require "skynet"
 require "skynet.manager"
 
-local users = {}
-local rooms = {}
+local users = {}          -- 全服聊天
+local rooms = {}          -- 房间聊天
 local CMD = {}
 
-function CMD.start( ... )
+function CMD.start()
 	-- body
 	return true
 end
 
-function CMD.close( ... )
+function CMD.close()
 	-- body
 	return true
 end
 
-function CMD.kill( ... )
+function CMD.kill()
 	-- body
+	skynet.exit()
 end
 
 function CMD.checkin(uid, agent)
@@ -34,17 +35,50 @@ function CMD.afk(uid)
 	users[uid] = nil
 end
 
-function CMD.room_checkin(room_id, addr, users, ... )
+function CMD.room_create(room_id, addr)
 	-- body
 	if not rooms[room_id] then
 		rooms[room_id] = {}
 	end
 	rooms[room_id].addr  = addr
-	rooms[room_id].users = users
+	rooms[room_id].users = {}
+	return true
 end
 
-function CMD.room_afk(room_id)
+function CMD.room_join(room_id, uid, agent)
 	-- body
+	local room = rooms[room_id]
+	room.users[uid] = { uid = uid, agent = agent, online = true }
+	return true
+end
+
+function CMD.room_rejoin(room_id, uid)
+	-- body
+	local room = rooms[room_id]
+	local user = room.users[uid]
+	user.online = true
+	return true
+end
+
+function CMD.room_afk(room_id, uid)
+	-- body
+	local room = rooms[room_id]
+	local user = room.users[uid]
+	user.online = false
+	return true
+end
+
+function CMD.room_leave(room_id, uid)
+	-- body
+	local room = rooms[room_id]
+	room.users[uid] = nil
+	return true
+end
+
+function CMD.room_recycle(room_id)
+	-- body
+	rooms[room_id] = nil
+	return true
 end
 
 function CMD.say(from, to, word)
@@ -70,5 +104,5 @@ skynet.start(function ()
 			end
 		end
 	end)
-	skynet.register ".CHAT"
+	skynet.register ".CHATD"
 end)

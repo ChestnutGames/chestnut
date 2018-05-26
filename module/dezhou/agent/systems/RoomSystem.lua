@@ -210,6 +210,17 @@ function cls:leave(args)
 	end
 end
 
+function cls:roomover()
+	-- body
+	local uid   = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	entity.room.roomid = 0
+	entity.room.joined = false
+	entity.room.isCreated = false
+	return true
+end
+
 function cls:forward_room(name, args)
 	-- body
 	if self.joined then

@@ -88,9 +88,9 @@ function CMD:alter_rcard(args)
 	return M:alter_rcard(args)
 end
 
-function CMD:room_over()
+function CMD:roomover()
 	-- body
-	self:set_room(nil)
+	return self.systems.room:roomover()
 end
 
 function CMD:record(recordid, names)

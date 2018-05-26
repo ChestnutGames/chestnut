@@ -1,5 +1,6 @@
 -- local log = require "log"
 local assert = assert
+local comp_num = require "comp_num"
 
 local TYPE_SHIFT = 8
 local NUM_SHIFT = 4
@@ -13,7 +14,6 @@ cls.type.CLUBS    = 1       -- 梅花
 cls.type.DIANMOND = 2       -- 方块
 cls.type.HEART    = 3       -- 红心
 cls.type.SPADE    = 4       -- 黑桃
-
 
 function cls:ctor(t, num, idx)
 	-- body
@@ -32,20 +32,19 @@ function cls:clear()
 	assert(self)
 end
 
--- 比较单牌,这里只比较数字
+-- 比较单牌
 function cls:mt(o)
 	-- body
-	return (self.value - o.value)
-end
-
-function cls:eq(o)
-	-- body
-	return (self.value == o.value)
+	local r = comp_num.mt(self.num, o.num)
+	if r == 0 then
+		return self.type - o.type
+	end
+	return r
 end
 
 function cls:lt(o)
 	-- body
-	return (self.value - o.value)
+	return not self:mt(o)
 end
 
 function cls:describe()

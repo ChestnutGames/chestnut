@@ -2,17 +2,17 @@ local skynet = require "skynet"
 
 local util = {}
 
-function util.set_timeout(ti, f, ... )
+function util.set_timeout(ti, f)
 	-- body
 	assert(ti and f)
-	local function cb( ... )
+	local function cb()
 		-- body
 		if f then
 			f()
 		end
 	end
 	skynet.timeout(ti, cb)
-	return function ( ... )
+	return function ()
 		-- body
 		f = nil
 	end
@@ -28,7 +28,7 @@ function util.cm_sec()
 	return os.time(t), nt.month
 end
 
-function util.cd_sec( ... )
+function util.cd_sec()
 	-- body
 	local nt = os.date("*t")
 	local t = {}

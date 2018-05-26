@@ -135,7 +135,8 @@ function QUERY.read_room(id)
 	return res
 end
 
-----------------------------------------------------------write
+------------------------------------------
+-- 写数据
 function QUERY.write_new_user(db_user)
 	-- body
 	db_write.write_user(ctx, db_user)
@@ -160,6 +161,14 @@ function QUERY.write_room(data)
 	-- body
 	db_write.write_room_users(ctx, data.db_users)
 	db_write.write_room(ctx, data.db_room)
+	return true
+end
+
+------------------------------------------
+-- 修改离线数据
+function QUERY.write_offuser_room(db_user_room)
+	-- body
+	db_write.write_user_room(ctx, db_user_room)
 	return true
 end
 

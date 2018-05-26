@@ -101,6 +101,7 @@ end
 
 function cls:close( ... )
 	-- body
+	self:save_data()
 	return cls.super.close(self, ... )
 end
 

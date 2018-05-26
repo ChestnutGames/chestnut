@@ -1,5 +1,6 @@
 local _M = {}
 
+_M.NONE   = 0   -- 无
 _M.SINGLE = 1   -- 单练
 _M.COUPLE = 2   -- 一对
 _M.SHUNZI = 3   -- 顺子

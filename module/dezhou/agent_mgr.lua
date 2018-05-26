@@ -10,6 +10,7 @@ local NORET = {}
 local cs = skynet_queue()
 local leisure_agent = queue()     -- 未用的agent
 local users = {}                  -- 已经用了的agent
+local offusers = {}               -- 离线的agent
 
 
 local function enqueue(agent)
@@ -56,6 +57,10 @@ end
 
 function CMD.close()
 	-- body
+	-- 存在线数据
+	for _,v in pairs(users) do
+		skynet.call(v.addr, 'lua', 'close')
+	end
 	return true
 end
 

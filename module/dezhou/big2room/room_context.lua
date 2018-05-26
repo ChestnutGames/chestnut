@@ -12,6 +12,7 @@ local traceback = debug.traceback
 
 local state = {}
 state.NONE       = "none"      -- 最初的状态
+state.INITDB     = "initdb"
 state.START      = "start"
 state.CREATE     = "create"
 state.JOIN       = "join"      -- 此状态下会等待玩家加入
@@ -62,8 +63,8 @@ function cls:ctor()
 
 	self.firstidx = 0           -- 拿牌头家
 	self.curidx = 0             -- 玩家索引，当前轮到谁
-	self.ju = 0                -- ju 最开始是0
-	self.alert = nil
+	self.alert = self:create_alert(state.NONE)
+	self.alert.ev_join(self)
 
 	self.countdown = 20         -- 轮到玩家出牌或者选择的时候的倒计时
 	self.overtimer = nil
@@ -190,17 +191,64 @@ end
 
 function cls:check_roomover()
 	-- body
-	if self.ju >= 4 then
+	local ok = skynet.call('.ROOM_MGR', 'lua', 'room_check_nextju', self.id)
+	if not ok then
 		self.alert.ev_roomover(self)
 	end
 end
 
+-- 所有玩家都转移状态
 function cls:emit_player_event(event)
 	-- body
 	for i=1,self.max do
 		local p = assert(self.players[i])
 		p.alert[event](p)
 	end
+end
+
+-- 创建状态机
+function cls:create_alert(initial_state)
+	-- body
+	assert(self)
+	local alert = fsm.create({
+		initial = initial_state,
+		events = {
+			{name = "ev_start",        from = state.NONE,    to = state.START},
+		    {name = "ev_join",         from = state.NONE,   to = state.JOIN},
+		    {name = "ev_ready",        from = state.JOIN,    to = state.READY},
+		    {name = "ev_shuffle",      from = state.JOIN,   to = state.SHUFFLE},
+		    {name = "ev_deal",         from = state.SHUFFLE, to = state.DEAL},
+		    {name = "ev_first_turn",    from = state.SHUFFLE,    to = state.FIRSTTURN},
+		    {name = "ev_first_turn_to_turn",    from = state.FIRSTTURN,    to = state.TURN},
+		    {name = "ev_turn_after_lead",    from = state.LEAD,    to = state.TURN},
+		    {name = "ev_turn_after_pass",    from = state.CALL,    to = state.TURN},
+		    {name = "ev_call",             from = state.TURN,    to = state.CALL},
+		    {name = "ev_lead",             from = state.TURN,    to = state.LEAD},
+		    {name = "ev_over",             from = state.LEAD,    to = state.OVER},
+		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
+		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
+		    {name = "ev_roomover",         from = state.SETTLE,    to = state.ROOMOVER},
+		    {name = "ev_reset_join",       from = "*",   to = state.JOIN},               -- reset to join
+		    {name = "ev_reset_ready",      from = "*",   to = state.READY},               -- reset to join
+		    {name = "ev_reset_shuffle",    from = "*",   to = state.SHUFFLE},               -- reset to join
+		    {name = "ev_reset_deal",       from = "*",   to = state.DEAL},               -- reset to join
+		    {name = "ev_reset_turn",       from = "*",   to = state.TURN},               -- reset to join
+		    {name = "ev_reset_lead",       from = "*",   to = state.LEAD},               -- reset to join
+		    {name = "ev_reset_call",       from = "*",   to = state.CALL},               -- reset to join
+		},
+		callbacks = {
+			on_join = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_ready = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_shuffle = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_deal = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_firstturn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_turn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_call = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+			on_lead = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+			on_over = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		}
+	})
+	return alert
 end
 
 function cls:on_state(event, from, to)
@@ -302,50 +350,6 @@ function cls:decre_online()
 	assert(self.online >= 0)
 end
 
-function cls:create_alert(initial_state)
-	-- body
-	assert(self)
-	local alert = fsm.create({
-		initial = initial_state,
-		events = {
-			{name = "ev_start",        from = state.NONE,    to = state.START},
-		    {name = "ev_join",         from = state.NONE,   to = state.JOIN},
-		    {name = "ev_ready",        from = state.JOIN,    to = state.READY},
-		    {name = "ev_shuffle",      from = state.JOIN,   to = state.SHUFFLE},
-		    {name = "ev_deal",         from = state.SHUFFLE, to = state.DEAL},
-		    {name = "ev_first_turn",    from = state.SHUFFLE,    to = state.FIRSTTURN},
-		    {name = "ev_first_turn_to_turn",    from = state.FIRSTTURN,    to = state.TURN},
-		    {name = "ev_turn_after_lead",    from = state.LEAD,    to = state.TURN},
-		    {name = "ev_turn_after_pass",    from = state.CALL,    to = state.TURN},
-		    {name = "ev_call",             from = state.TURN,    to = state.CALL},
-		    {name = "ev_lead",             from = state.TURN,    to = state.LEAD},
-		    {name = "ev_over",             from = state.LEAD,    to = state.OVER},
-		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
-		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
-		    {name = "ev_roomover"          from = state.SETTLE,    to = state.ROOMOVER},
-		    {name = "ev_reset_join",       from = "*",   to = state.JOIN},               -- reset to join
-		    {name = "ev_reset_ready",      from = "*",   to = state.READY},               -- reset to join
-		    {name = "ev_reset_shuffle",    from = "*",   to = state.SHUFFLE},               -- reset to join
-		    {name = "ev_reset_deal",       from = "*",   to = state.DEAL},               -- reset to join
-		    {name = "ev_reset_turn",       from = "*",   to = state.TURN},               -- reset to join
-		    {name = "ev_reset_lead",       from = "*",   to = state.LEAD},               -- reset to join
-		    {name = "ev_reset_call",       from = "*",   to = state.CALL},               -- reset to join
-		},
-		callbacks = {
-			on_join = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_ready = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_shuffle = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_deal = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_firstturn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_turn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_call = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-			on_lead = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-			on_over = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		}
-	})
-	return alert
-end
-
 function cls:print_cards()
 	-- body
 	for i,v in ipairs(self._cards) do
@@ -377,50 +381,67 @@ end
 
 function cls:init_data()
 	-- body
-	local pack = skynet.call(".DB", "lua", "read_room", self.id)
-	if pack then
-		local db_rooms = pack.db_rooms
-		if #db_rooms <= 0 then
-			return true
-		end
-		local db_room = db_rooms[1]
-		local open = db_room.open
-		if not open then
-			return true
-		end
-	    self.host = db_room.host
-	    self.open = (db_room.open == 1) and true or false
-	    self.firstidx = db_room.firstidx
-	    self.curidx = db_room.curidx
-	    self.ju = db_room.ju
-		self.alert = self:create_alert(state.NONE)
-		local event = 'ev_reset_' .. db_room.state
-		self.alert[event](self)
-		self.alert.last_state = db_room.laststate
+	assert(self)
+	-- 一局的数据无法恢复
+	-- local pack = skynet.call(".DB", "lua", "read_room", self.id)
+	-- if pack then
+	-- 	local db_rooms = pack.db_rooms
+	-- 	if #db_rooms <= 0 then
+	-- 		return true
+	-- 	end
+	-- 	local db_room = db_rooms[1]
+	-- 	local open = db_room.open
+	-- 	if not open then
+	-- 		return true
+	-- 	end
+	--     self.host = db_room.host
+	--     self.open = (db_room.open == 1) and true or false
+	--     self.firstidx = db_room.firstidx
+	--     self.curidx = db_room.curidx
+	--     self.ju = db_room.ju
+	-- 	self.alert = self:create_alert(state.INITDB)
+	-- 	local event = 'ev_reset_' .. db_room.state
+	-- 	self.alert[event](self)
+	-- 	self.alert.last_state = db_room.laststate
 
-		-- 修改设置
-		if self.open and not self.channelSubscribed then
-			self.channelSubscribed = true
-			self.channel:subscribe()
-		end
+	-- 	-- 修改设置
+	-- 	if self.open and not self.channelSubscribed then
+	-- 		self.channelSubscribed = true
+	-- 		self.channel:subscribe()
+	-- 	end
 
-		-- 初始化用户数据
-		for _,db_user in pairs(pack.db_users) do
-			local player = self.players[db_user.idx]
-			player.uid = assert(db_user.uid)
-			player.idx = assert(db_user.idx)
-			player.chip = assert(db_user.chip)
-			player:init_alert(db_user.state)
-			self.uplayers[player.uid] = player
-			self:incre_joined()
-		end
-	end
+	-- 	-- 初始化用户数据
+	-- 	for _,db_user in pairs(pack.db_users) do
+	-- 		local player = self.players[db_user.idx]
+	-- 		player.uid = assert(db_user.uid)
+	-- 		player.idx = assert(db_user.idx)
+	-- 		player.chip = assert(db_user.chip)
+	-- 		player:init_alert(Player.state.INITDB)
+	-- 		local event = 'ev_reset_' .. db_user.state
+	-- 		player.alert[event](player)
+	-- 		self.uplayers[player.uid] = player
+	-- 		self:incre_joined()
+	-- 	end
+	-- end
 	return true
 end
 
-function cls:sayhi()
+function cls:sayhi(host, users)
 	-- body
 	assert(self)
+	self.host = host
+	self.open = true
+	if self.open and not self.channelSubscribed then
+		self.channelSubscribed = true
+		self.channel:subscribe()
+	end
+	for _,user in pairs(users) do
+		local player = self.players[user.idx]
+		player.uid = assert(user.uid)
+		player.chip = assert(user.chip)
+		self.uplayers[player.uid] = player
+		self:incre_joined()
+	end
 	return true
 end
 
@@ -449,14 +470,14 @@ function cls:save_data()
 	-- 打包房间数据
 	db_room.id = assert(self.id)
 	db_room.open = assert(self.open) and 1 or 0
-	db_room.host = assert(self.host)
+	db_room.host = 0
 
 	-- gameplay data
 	db_room.state      = assert(self.alert.current)
 	db_room.laststate  = assert(self.alert.last_state)
 	db_room.firstidx   = assert(self.firstidx)
 	db_room.curidx     = assert(self.curidx)
-	db_room.ju         = assert(self.ju)
+	db_room.ju         = 0
 
 	local data = {}
 	data.db_users = db_users
@@ -492,12 +513,12 @@ function cls:create(uid, args)
 
 	self._stime = 0
 	self._record = {}
-	self._ju = 0
 
 	self.alert = self:create_alert(state.NONE)
 	assert(self.alert.can('ev_join'))
 	self.alert.ev_join(self)
 
+	skynet.call('.CHATD', 'lua', 'room_create', self.id)
 	self.open = true
 	if self.open and not self.channelSubscribed then
 		self.channelSubscribed = true
@@ -538,6 +559,10 @@ function cls:join(uid, agent, name, sex)
 	self:incre_joined()
 	self:incre_online()
 	self.uplayers[uid] = me
+
+	-- 把信息存到room_mgr与chatd
+	skynet.call('.ROOM_MGR', "lua", "room_join", self.id, uid, agent, me.idx, me.chip)
+	skynet.call('.CHATD', "lua", "room_join", self.id, uid, agent)
 
 	-- 返回给当前用户的信息
 	local p = {
@@ -600,6 +625,10 @@ function cls:rejoin(uid, agent)
 	me.online = true
 	self:incre_online()
 
+	-- 把信息存到
+	skynet.call('.ROOM_MGR', "lua", "room_rejoin", self.id, uid, agent)
+	skynet.call('.CHATD', "lua", "room_rejoin", self.id, uid, agent)
+
 	-- sync
 	local p = {
 		idx   =  me.idx,
@@ -652,7 +681,11 @@ function cls:leave(uid)
 	p.uid = 0
 	self:decre_online()
 	self:decre_joined()
-	self.alert.ev_reset_join()
+	-- self.alert.ev_reset_join()
+
+	-- 把信息存到
+	skynet.call('.ROOM_MGR', "lua", "room_leave", self.id, uid)
+	skynet.call('.CHATD', "lua", "room_leave", self.id, uid)
 
 	local res = {}
 	res.errorcode = 0
@@ -668,24 +701,24 @@ function cls:afk(uid)
 	-- body
 	log.info('roomid = %d, uid(%d) afk', self.id, uid)
 	local p = self:get_player_by_uid(uid)
-	assert(p)
-	if p.online then
-		p.online = false
-		self:decre_online()
-		self.alert.ev_reset_join(self)
+	assert(p.online)
+	p.online = false
+	self:decre_online()
+	-- self.alert.ev_reset_join(self)
+	-- 把信息存到
+	skynet.call('.ROOM_MGR', "lua", "room_afk", self.id, uid)
+	skynet.call('.CHATD', "lua", "room_afk", self.id, uid)
 
-		local args = {}
-		args.idx = p.idx
-		self:push_client_except_idx(p.idx, "offline", args)
-	else
-		log.error('roomid = %d, uid(%d) had afk', self.id, uid)
-	end
+	local args = {}
+	args.idx = p.idx
+	self:push_client_except_idx(p.idx, "offline", args)
 	return true
 end
 
 function cls:recycle()
 	-- body
 	assert(self)
+	skynet.call('.CHATD', 'lua', 'room_recycle', self.id)
 	self.open = false
 	return true
 end
@@ -756,7 +789,7 @@ function cls:step(idx, mock)
 			skynet.retpack(res)
 		end
 		p.alert.ev_settle(p)
-	elseif self.alert.is(state.ROOMOVER)
+	elseif self.alert.is(state.ROOMOVER) then
 		if not mock then
 			res.errorcode = 0
 			skynet.retpack(res)
@@ -885,8 +918,9 @@ function cls:take_shuffle()
 	assert(self.alert.is(state.SHUFFLE))
 
 	-- 开始洗牌后才开始计算消耗品
-	self.ju = self.ju + 1
-	if self.ju == 1 then
+	local ok = skynet.call('.ROOM_MGR', 'lua', 'room_is_1stju')
+	if ok then
+		-- 消耗房主的门票
 		-- send agent
 		-- local p = self:get_player_by_uid(self.host)
 		-- local addr = p:get_agent()
@@ -898,48 +932,44 @@ function cls:take_shuffle()
 	self._stime = skynet.now()
 	self._record = {}
 
-	if self.ju == 1 then
-		self.firstidx = 1
-	else
-		self.firstidx = 1
-	end
-	self.curidx = self.firstidx
-
 	-- for i=1,self._cardssz do
 	-- 	self._cards[i]:clear()
 	-- end
 
 	-- 洗牌算法
-	assert(#self._cards == self._cardssz)
-	for i=self._cardssz-1,1,-1 do
-		local swp = math.floor(math.random(1, 1000)) % self._cardssz + 1
-		while swp == i do
-			swp = math.floor(math.random(1, 1000)) % self._cardssz + 1
-		end
-		local tmp = assert(self._cards[i])
-		self._cards[i] = assert(self._cards[swp], swp)
-		self._cards[swp] = tmp
-	end
-	assert(#self._cards == self._cardssz)
+	-- assert(#self._cards == self._cardssz)
+	-- for i=self._cardssz-1,1,-1 do
+	-- 	local swp = math.floor(math.random(1, 1000)) % self._cardssz + 1
+	-- 	while swp == i do
+	-- 		swp = math.floor(math.random(1, 1000)) % self._cardssz + 1
+	-- 	end
+	-- 	local tmp = assert(self._cards[i])
+	-- 	self._cards[i] = assert(self._cards[swp], swp)
+	-- 	self._cards[swp] = tmp
+	-- end
+	-- assert(#self._cards == self._cardssz)
 	-- self:print_cards()
 
 	-- self:record("shuffle", args)
 	-- self.alert.ev_deal(self)
+
 	self:take_deal()
 end
 
 function cls:take_deal()
 	-- body
+
 	-- 发牌
 	-- self:print_cards()
 	local event = 'ev_' .. Player.state.WAIT_DEAL
 	self:emit_player_event(event)
 	for i=1,52,4 do
+		local k = i
 		for j=1,4 do
-			local card = self._cards[i]
+			local card =  assert(self._cards[k])
 			local p = self.players[j]
 			p:insert(card)
-			i = i + 1
+			k = k + 1
 		end
 	end
 
@@ -960,7 +990,7 @@ function cls:take_deal()
 	self:record("big2deal", args)
 	self:push_client("big2deal", args)
 
-	-- 如果断连后
+	-- 超时断连后
 	if MOCK then
 		skynet.timeout(100 * 20, function ()
 			-- body
@@ -974,8 +1004,21 @@ end
 function cls:take_firstturn()
 	-- body
 	assert(self.alert.is(state.FIRSTTURN))
+	-- 把房间状态转移到turn
 	self.alert.ev_first_turn_to_turn(self)
+
+	-- 玩家状态转移
 	self.curidx = self.firstidx
+	local p = self.players[self.curidx]
+	assert(p.alert.can('ev_wait_turn_after_deal'))
+	p.alert.ev_wait_turn_after_deal(p)
+
+	for i=1,self.max do
+		if i ~= self.curidx then
+			local p = self.players[self.curidx]
+			p.alert.ev_watch_after_deal(p)
+		end
+	end
 
 	local args = {}
 	args.your_turn = self.curidx
@@ -996,12 +1039,14 @@ end
 -- 当前用户需要出牌，可能摸了一个牌，也可能是其他
 function cls:take_turn()
 	-- body
-	assert(self.alert.is(state.TURN))
-	self:next_idx()
-	local p = self.players[self.curidx]
-	while p.pass do
+	if self.alert.last_state ~= state.INITDB then
+		assert(self.alert.is(state.TURN))
 		self:next_idx()
 		local p = self.players[self.curidx]
+		while p.pass do
+			self:next_idx()
+			local p = self.players[self.curidx]
+		end
 	end
 
 	local args = {}
@@ -1118,6 +1163,15 @@ end
 function cls:take_roomover()
 	-- body
 	assert(self.alert.is(state.ROOMOVER))
+	for i=1,self.max do
+		local p = self.players[i]
+		if p.online then
+			skynet.call(p.agent, 'lua', 'roomover')
+		else
+			skynet.call('.OFFAGENT', 'lua', 'write_offuser_room', p.uid)
+		end
+	end
+	skynet.send('.ROOM_MGR', 'lua', 'dissolve', self.id)
 end
 
 return cls
