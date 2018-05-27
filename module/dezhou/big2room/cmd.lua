@@ -16,9 +16,9 @@ function CMD:init_data()
 	return self:init_data()
 end
 
-function CMD:sayhi(host)
+function CMD:sayhi(host, users)
 	-- body
-	return self:sayhi(host)
+	return self:sayhi(host, users)
 end
 
 function CMD:save_data()
@@ -115,35 +115,19 @@ function CMD:on_ready(args)
 	return self:ready(args.idx)
 end
 
-function CMD:on_lead(args)
-	-- body
-	return self:lead(args.idx, args.card, args.isHoldcard)
-end
-
 function CMD:on_call(args)
 	-- body
-	return self:call(args.op)
+	return self:call(args.idx, args)
 end
 
 function CMD:on_step(args)
 	-- body
-	local ok, res = xpcall(self.step, debug.msgh, self, args.idx)
-	if not ok then
-		log.error(res)
-		local res = {}
-		res.servicecode = servicecode.SERVER_ERROR
-		return res
-	else
-		return res
-	end
+	return self:step(args.idx, args.opcode, args)
 end
 
 function CMD:on_restart(args)
 	-- body
-	self:restart(args.idx)
-	local res = {}
-	res.servicecode = servicecode.SUCCESS
-	return res
+	return self:restart(args.idx)
 end
 
 -- 结束协议

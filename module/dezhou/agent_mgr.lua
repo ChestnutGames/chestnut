@@ -5,6 +5,7 @@ local log = require "chestnut.skynet.log"
 local skynet_queue = require "skynet.queue"
 local queue = require "chestnut.queue"
 local util = require "chestnut.time_utils"
+local traceback = debug.traceback
 
 local NORET = {}
 local cs = skynet_queue()
@@ -127,9 +128,13 @@ skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function(_,_, cmd, ...)
 		local f = CMD[cmd]
-		local r = f( ... )
-		if r ~= NORET then
-			skynet.ret(skynet.pack(r))
+		local ok, err = xpcall(f, traceback, ... )
+		if ok then
+			if err ~= NORET then
+				skynet.ret(skynet.pack(err))
+			end
+		else
+			log.error(err)
 		end
 	end)
 	skynet.register ".AGENT_MGR"

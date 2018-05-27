@@ -5,6 +5,7 @@ local servicecode = require "chestnut.servicecode"
 local context = require "room_context"
 local CMD = require "cmd"
 local debug = debug
+local traceback = debug.traceback
 
 local id = tonumber(...)
 local ctx
@@ -12,12 +13,7 @@ local ctx
 skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function(_, _, cmd, ...)
-		local f = CMD[cmd]
-		if not f then
-			log.error("room cmd [%s] not found.", cmd)
-			return
-		end
-		local traceback = debug.traceback
+		local f = assert(CMD[cmd])
 		local ok, err = xpcall(f, traceback, ctx, ...)
 		if ok then
 			if err ~= servicecode.NORET then

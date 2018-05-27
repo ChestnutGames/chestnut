@@ -6,6 +6,8 @@ local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local queue = require "chestnut.queue"
 local json = require "rapidjson"
+local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local users = {}   -- 玩家信息,玩家创建的房间
@@ -91,7 +93,7 @@ function CMD.init_data()
 					user.uid = assert(v.uid)
 					user.idx = assert(v.idx)
 					user.chip = assert(v.chip)
-					room.users[k] = user
+					room.users[tonumber(k)] = user
 				end
 				room.ju = assert(db_room.ju)
 				rooms[tonumber(room.id)] = room
@@ -113,7 +115,7 @@ function CMD.sayhi()
 	for k,v in pairs(rooms) do
 		if v.ju < 1 then
 			local room = pool[k]
-			local ok = skynet.call(room.addr, "lua", "sayhi", v.host, v.users)
+			local ok = skynet.call(room.addr, "lua", "sayhi", v.host, assert(v.users))
 			if ok then
 				v.addr = room.addr
 				pool[k] = nil
@@ -121,6 +123,8 @@ function CMD.sayhi()
 				if k > id then
 					id = k
 				end
+				skynet.call('.CHATD', 'lua', 'room_create', v.id, v.addr)
+				skynet.call('.CHATD', 'lua', 'room_init_users', v.id, v.users)
 			else
 				log.error("room data wrong.")
 			end
@@ -156,7 +160,7 @@ function CMD.save_data()
 			user.uid = assert(v.uid)
 			user.idx = assert(v.idx)
 			user.chip = assert(v.chip)
-			xusers[k] = user
+			xusers[tostring(k)] = user
 		end
 		db_room.users = json.encode(xusers)
 		db_room.ju = v.ju
@@ -315,6 +319,7 @@ end
 
 function CMD.room_rejoin(roomid, uid, agent)
 	-- body
+	assert(roomid and uid and agent)
 	local room = assert(rooms[roomid])
 	local user = room.users[uid]
 	user.agent = agent
@@ -323,6 +328,7 @@ end
 
 function CMD.room_afk(roomid, uid)
 	-- body
+	assert(roomid and uid)
 	local room = rooms[roomid]
 	local user = room.users[uid]
 	user.agent = nil
@@ -331,6 +337,7 @@ end
 
 function CMD.room_leave(roomid, uid)
 	-- body
+	assert(roomid and uid)
 	local room = rooms[roomid]
 	room.users[uid] = nil
 	return true
@@ -338,6 +345,7 @@ end
 
 function CMD.room_check_nextju(roomid)
 	-- body
+	assert(roomid)
 	local room = assert(rooms[roomid])
 	if room.ju >= 1 then
 		return false
@@ -347,6 +355,7 @@ end
 
 function CMD.room_incre_ju(roomid)
 	-- body
+	assert(roomid)
 	local room = assert(rooms[roomid])
 	if room.ju >= 1 then
 		return false
@@ -357,6 +366,7 @@ end
 
 function CMD.room_is_1stju(roomid)
 	-- body
+	assert(roomid)
 	local room = assert(rooms[roomid])
 	if room.ju == 0 then
 		return true
@@ -369,12 +379,14 @@ skynet.start(function ()
 	skynet.dispatch("lua", function ( _, _, cmd, ... )
 		-- body
 		local f = assert(CMD[cmd])
-		local r = f( ... )
-		if r ~= NORET then
-			if r ~= nil then
-				skynet.retpack(r)
-			else
-				log.error("ROOM_MGR cmd = %s not return", cmd)
+		local ok, err = xpcall(f, traceback, ...)
+		if ok then
+			if err ~= NORET then
+				if err ~= nil then
+					skynet.retpack(err)
+				else
+					log.error("ROOM_MGR cmd = %s not return", cmd)
+				end
 			end
 		end
 	end)

@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local vector = require "chestnut.vector"
 local sortedvector = require "chestnut.sortedvector"
 
-skynet.start(function ( ... )
+skynet.start(function ()
 	-- body
 	local ok, err = pcall(function ( ... )
 		-- body
@@ -25,7 +25,7 @@ skynet.start(function ( ... )
 			print(i,v)
 		end
 
-		print('sortedvector ---------------')
+		print('sortedvector ---------------begin')
 		local b = sortedvector(function (l, r, ... )
 			-- body
 			return l - r;
@@ -35,18 +35,27 @@ skynet.start(function ( ... )
 			print("push", rand)
 			b:push(rand)
 		end
-		print('sortedvector show ---------------')
+		print('sortedvector ---------------pairs')
 		for i,v in pairs(b) do
 			print(i,v)
 		end
-		print('sortedvector show i ---------------')
 
+		b:erase(148)
+		print('sortedvector ---------------ipairs')
 		for i,v in ipairs(b) do
 			print(i,v)
 		end
+		b:eraseat(3)
+		print('sortedvector ---------------ipairs')
+		for i,v in ipairs(b) do
+			print(i,v)
+		end
+		print('indexof')
+		print('index of 175', b:indexof(175))
+
+		print('sortedvector ---------------end')
 	end)
 	if not ok then
 		print(err)
 	end
-	
 end)

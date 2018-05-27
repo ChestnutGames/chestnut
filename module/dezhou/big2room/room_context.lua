@@ -9,6 +9,7 @@ local leadtype = require "lead_type"
 local Card = require "card"
 local Player = require "player"
 local traceback = debug.traceback
+local leadcards = require "leadcards"
 
 local state = {}
 state.NONE       = "none"      -- 最初的状态
@@ -18,17 +19,16 @@ state.CREATE     = "create"
 state.JOIN       = "join"      -- 此状态下会等待玩家加入
 state.READY      = "ready"     -- 此状态下等待玩家准备
 state.SHUFFLE    = "shuffle"   -- 此状态下洗牌
-state.DEAL       = "deal"      -- 此状态发牌
+state.DEAL       = "deal"      -- 此状态发牌        (deprecated)
 state.FIRSTTURN  = "firstturn" -- 第一个人出牌
-state.TURN       = "turn"      -- 轮谁出牌
-state.LEAD       = "lead"      -- 玩家出牌，客户端都表现完后转移状态
+state.TURN       = "turn"      -- 轮谁出牌          (麻将只是可以多人同时turn call)
 state.CALL       = "call"      -- 只有pass命令
 state.OVER       = "over"      -- 结束
 state.SETTLE     = "settle"    -- 结算
 state.RESTART    = "restart"   -- 重新开始
 state.ROOMOVER   = 'roomover'
 
-local MOCK = true
+local MOCK = false
 
 local cls = class("RoomContext")
 
@@ -62,6 +62,7 @@ function cls:ctor()
 	self:init_cards()
 
 	self.firstidx = 0           -- 拿牌头家
+	self.previdx = 0            -- 上一个玩家出牌
 	self.curidx = 0             -- 玩家索引，当前轮到谁
 	self.alert = self:create_alert(state.NONE)
 	self.alert.ev_join(self)
@@ -219,14 +220,13 @@ function cls:create_alert(initial_state)
 		    {name = "ev_shuffle",      from = state.JOIN,   to = state.SHUFFLE},
 		    {name = "ev_deal",         from = state.SHUFFLE, to = state.DEAL},
 		    {name = "ev_first_turn",    from = state.SHUFFLE,    to = state.FIRSTTURN},
-		    {name = "ev_first_turn_to_turn",    from = state.FIRSTTURN,    to = state.TURN},
-		    {name = "ev_turn_after_lead",    from = state.LEAD,    to = state.TURN},
-		    {name = "ev_turn_after_pass",    from = state.CALL,    to = state.TURN},
+		    {name = "ev_turn_after_firstturn",    from = state.FIRSTTURN,    to = state.TURN},
+		    {name = "ev_turn_after_call",         from = state.CALL,    to = state.TURN},
 		    {name = "ev_call",             from = state.TURN,    to = state.CALL},
-		    {name = "ev_lead",             from = state.TURN,    to = state.LEAD},
-		    {name = "ev_over",             from = state.LEAD,    to = state.OVER},
+		    {name = "ev_over",             from = state.CALL,    to = state.OVER},
 		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
 		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
+		    {name = "ev_shuffle_after_restart",          from = state.RESTART,    to = state.SHUFFLE},
 		    {name = "ev_roomover",         from = state.SETTLE,    to = state.ROOMOVER},
 		    {name = "ev_reset_join",       from = "*",   to = state.JOIN},               -- reset to join
 		    {name = "ev_reset_ready",      from = "*",   to = state.READY},               -- reset to join
@@ -323,6 +323,15 @@ function cls:next_idx()
 	self.curidx = self.curidx + 1
 	if self.curidx > self.max then
 		self.curidx = 1
+	end
+end
+
+function cls:prev_idx()
+	-- body
+	if self.curidx == 1 then
+		return 4
+	else
+		return self.curidx - 1
 	end
 end
 
@@ -493,7 +502,7 @@ function cls:close()
 end
 
 ------------------------------------------
--- 协议
+-- 房间协议
 function cls:create(uid, args)
 	-- body
 	assert(uid)
@@ -573,6 +582,7 @@ function cls:join(uid, agent, name, sex)
 		state =  me.alert.current,
 		online = me.online,
 		cards = {},
+		opcode = opcode.NONE,
 		lead = {}
 	}
 
@@ -592,6 +602,7 @@ function cls:join(uid, agent, name, sex)
 				state =  v.alert.current,
 				online = v.online,
 				cards = {},
+				opcode = opcode.NONE,
 				lead  = {}
 			}
 			table.insert(res.ps, p)
@@ -637,8 +648,9 @@ function cls:rejoin(uid, agent)
 		name  =  me.name,
 		state =  me.alert.current,
 		online = me.online,
-		cards = {},
-		lead = {}
+		cards  = me:pack_cards(),
+		opcode = me.opcode,
+		lead   = me:pack_leadcards()
 	}
 
 	res.errorcode = 0
@@ -655,6 +667,9 @@ function cls:rejoin(uid, agent)
 				name  =  v.name,
 				state =  v.alert.current,
 				online = v.online,
+				cards  = v:pack_cards(),
+				opcode = v.opcode,
+				lead   = v:pack_leadcards()
 			}
 			table.insert(res.ps, p)
 		end
@@ -665,11 +680,11 @@ function cls:rejoin(uid, agent)
 	args.p = p
 	self:push_client_except_idx(me.idx, "big2rejoin", args)
 
-	-- if self.joined >= self.max and self.online >= self.max then
-	-- 	if self.alert.last_state == state.READY then
-	-- 		self.alert.ev_reset_ready(self)
-	-- 	end
-	-- end
+	if self.joined >= self.max and self.online >= self.max then
+		if self.alert.is(state.JOIN) then
+			self.alert.ev_shuffle(self)
+		end
+	end
 	return servicecode.NORET
 end
 
@@ -770,7 +785,7 @@ function cls:step(idx, mock)
 			res.errorcode = 0
 			skynet.retpack(res)
 		end
-		self.alert.ev_turn(self)
+		p.alert.ev_lead(p)
 	elseif self.alert.is(state.CALL) then
 		if not mock then
 			res.errorcode = 0
@@ -832,7 +847,7 @@ function cls:ready(idx)
 	return servicecode.NORET
 end
 
-function cls:lead(idx, ltype, cards, mock)
+function cls:lead(idx, xleadcards, mock)
 	-- body
 	if mock then
 		assert(idx == self.curidx)
@@ -840,7 +855,6 @@ function cls:lead(idx, ltype, cards, mock)
 		assert(p:lead(ltype, cards) == 0)
 		self.alert.ev_lead(self)
 	else
-		assert(idx)
 		local res = {}
 		if not self.open then
 			res.errorcode = 1
@@ -857,20 +871,37 @@ function cls:lead(idx, ltype, cards, mock)
 			return res
 		end
 		-- 真正出牌的地方
-		local errorcode = p:lead(leadtype, cards)
-		if errorcode == 0 then
-			res.errorcode = errorcode
-			skynet.retpack(res)
-			self.alert.ev_lead(self)
-			return servicecode.NORET
+		local xcards = {}
+		for i,v in ipairs(xleadcards.cards) do
+			local card = self._kcards[v.value]
+			table.insert(xcards, card)
+		end
+		local aLeadcards = leadcards.new(xleadcards.leadtype, xcards)
+		if self.previdx ~= 0 then
+			local prevp = self.players[self.previdx]
+			if aLeadcards:mt(prevp.leadcards) then
+				local errorcode = p:lead(aLeadcards)
+				if errorcode == 0 then
+					res.errorcode = errorcode
+					skynet.retpack(res)
+					self.alert.ev_lead(self)
+					return servicecode.NORET
+				else
+					res.errorcode = errorcode
+					return res
+				end
+			else
+				res.errorcode = 1
+				return res
+			end
 		else
-			res.errorcode = errorcode
+			res.errorcode = 1
 			return res
 		end
 	end
 end
 
-function cls:call(idx, code, mock)
+function cls:call(idx, code, args, mock)
 	-- body
 	if mock then
 	else
@@ -879,13 +910,26 @@ function cls:call(idx, code, mock)
 			res.errorcode = 1
 			return res
 		end
-		assert(opcode)
+		if idx ~= self.curidx then
+			res.errorcode = 1
+			return res
+		end
 		local p = self.players[idx]
-		p.pass = true
-
-		res.errorcode = 0
-		skynet.retpack(res)
-
+		if p.opcode == opcode.PASS then
+			res.errorcode = 1
+			return res
+		end
+		if code == opcode.PASS then
+			p.opcode = code
+			res.errorcode = 0
+			skynet.retpack(res)
+		elseif code == opcode.LEAD then
+			p.opcode = code
+			return self:lead(idx, args.lead)
+		else
+			res.errorcode = 1
+			return res
+		end
 		self.alert.ev_call()
 		return servicecode.NORET
 	end
@@ -906,6 +950,7 @@ function cls:restart(idx, ... )
 	end
 end
 
+------------------------------------------
 -- turn state
 function cls:take_ready()
 	-- body
@@ -918,7 +963,7 @@ function cls:take_shuffle()
 	assert(self.alert.is(state.SHUFFLE))
 
 	-- 开始洗牌后才开始计算消耗品
-	local ok = skynet.call('.ROOM_MGR', 'lua', 'room_is_1stju')
+	local ok = skynet.call('.ROOM_MGR', 'lua', 'room_is_1stju', self.id)
 	if ok then
 		-- 消耗房主的门票
 		-- send agent
@@ -972,6 +1017,8 @@ function cls:take_deal()
 			k = k + 1
 		end
 	end
+
+	self.players[1]:print_cards()
 
 	local p1 = self.players[1]:pack_cards()
 	local p2 = self.players[2]:pack_cards()
@@ -1039,14 +1086,28 @@ end
 -- 当前用户需要出牌，可能摸了一个牌，也可能是其他
 function cls:take_turn()
 	-- body
-	if self.alert.last_state ~= state.INITDB then
-		assert(self.alert.is(state.TURN))
-		self:next_idx()
-		local p = self.players[self.curidx]
-		while p.pass do
-			self:next_idx()
-			local p = self.players[self.curidx]
+	assert(self.alert.is(state.TURN))
+	-- 选择下一个
+	local who = 0
+	for i=1,3 do
+		local idx = self.curidx + i
+		if idx > self.max then
+			idx = 1
 		end
+		local p = self.players[idx]
+		if not p.pass then
+			who = idx
+		end
+	end
+	if who then
+		-- 清理这一轮玩家状态
+		for i=1,self.max do
+			local p = self.players[i]
+			p.pass = false
+		end
+		self.previdx = 0
+	else
+		self.curidx = who
 	end
 
 	local args = {}
@@ -1070,13 +1131,11 @@ function cls:take_lead()
 	assert(self.alert.is(state.LEAD))
 
 	local p = assert(self.players[self.curidx])
-	assert(p)
 	p.alert.ev_wait_lead_after_wait_turn(p)
 
 	for i=1,self.max do
 		if i ~= self.curidx then
 			local p = assert(self.players[i])
-			assert(p)
 			p.alert.ev_wait_call_after_watch(p)
 		end
 	end
@@ -1110,9 +1169,9 @@ function cls:take_call()
 		end
 	end
 
-	assert(p)
 	local args = {}
 	args.idx = self.curidx
+	args.opcode = 0
 	self:push_client("big2call", args)
 
 	if MOCK then

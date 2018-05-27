@@ -106,7 +106,8 @@
     state 4 : string
     online 5 : boolean
     cards 6 : *card         # 手上的牌
-    lead 7 : big2lead
+    opcode 7 : integer
+    lead 8 : big2lead
 }
 
 .big2playerdeal {
@@ -500,8 +501,9 @@ big2take_turn 600 {
 # 
 big2call 601 {
     request {
-        opcodes   0 : *opinfo
-        countdown  1 : integer
+        idx        0 : integer
+        opcode     1 : integer
+        lead       2 : big2lead
     }
     response {
         errorcode 0 : integer
@@ -522,16 +524,17 @@ big2shuffle 602 {
     }
 }
 
-big2lead 603 {
-    request {
-        idx       0 : integer
-        leadtype   1 : integer
-        cards      2 : *card
-    } 
-    response {
-        errorcode 0 : integer
-    }
-}
+# (deprecated)
+# big2lead 603 {
+#     request {
+#         idx       0 : integer
+#         leadtype   1 : integer
+#         cards      2 : *card
+#     } 
+#     response {
+#         errorcode 0 : integer
+#     }
+# }
 
 # 发牌
 big2deal 604 {

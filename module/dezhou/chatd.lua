@@ -1,6 +1,9 @@
 local skynet = require "skynet"
 require "skynet.manager"
+local log = require "chestnut.skynet.log"
+local traceback = debug.traceback
 
+local NORET = {}
 local users = {}          -- 全服聊天
 local rooms = {}          -- 房间聊天
 local CMD = {}
@@ -37,39 +40,51 @@ end
 
 function CMD.room_create(room_id, addr)
 	-- body
-	if not rooms[room_id] then
-		rooms[room_id] = {}
-	end
+	assert(room_id and addr)
+	assert(rooms[room_id] == nil)
+	rooms[room_id] = {}
 	rooms[room_id].addr  = addr
 	rooms[room_id].users = {}
+	return true
+end
+
+function CMD.room_init_users(room_id, users )
+	-- body
+	local room = rooms[room_id]
+	for k,v in pairs(users) do
+		room.users[k] = { uid = v.uid }
+	end
 	return true
 end
 
 function CMD.room_join(room_id, uid, agent)
 	-- body
 	local room = rooms[room_id]
-	room.users[uid] = { uid = uid, agent = agent, online = true }
+	room.users[uid] = { uid = uid, agent = agent }
 	return true
 end
 
-function CMD.room_rejoin(room_id, uid)
+function CMD.room_rejoin(room_id, uid, agent)
 	-- body
-	local room = rooms[room_id]
-	local user = room.users[uid]
-	user.online = true
+	assert(room_id and uid and agent)
+	local room = assert(rooms[room_id])
+	local user = assert(room.users[uid])
+	user.agent = agent
 	return true
 end
 
 function CMD.room_afk(room_id, uid)
 	-- body
-	local room = rooms[room_id]
-	local user = room.users[uid]
-	user.online = false
+	assert(room_id and uid)
+	local room = assert(rooms[room_id])
+	local user = assert(room.users[uid])
+	user.agent = nil
 	return true
 end
 
 function CMD.room_leave(room_id, uid)
 	-- body
+	assert(room_id and uid)
 	local room = rooms[room_id]
 	room.users[uid] = nil
 	return true
@@ -95,13 +110,15 @@ function CMD.say(from, to, word)
 end
 
 skynet.start(function ()
-	skynet.dispatch( "lua" , function( _, _, cmd, subcmd, ... )
-		local f = CMD[cmd]
-		if f then
-			local r = f(subcmd, ...)
-			if r ~= nil then
-				skynet.retpack(r)
+	skynet.dispatch( "lua" , function( _, _, cmd, ... )
+		local f = assert(CMD[cmd])
+		local ok, err = xpcall(f, traceback, ...)
+		if ok then
+			if err ~= NORET then
+				skynet.retpack(err)
 			end
+		else
+			log.error(err)
 		end
 	end)
 	skynet.register ".CHATD"

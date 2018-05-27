@@ -103,7 +103,8 @@
     state 4 : string
     online 5 : boolean
     cards 6 : *card         # 手上的牌
-    lead 7 : big2lead
+    opcode 7 : integer
+    lead 8 : big2lead
 }
 
 .big2playerdeal {
@@ -387,24 +388,25 @@ leave 514 {
 #大佬2决定
 big2call 600 {
     request {
-        op        0 : opinfo         # {放弃}
+        idx       0 : integer
+        opcode    1 : integer
+        lead      2 : big2lead
     }
     response {
         errorcode 0 : integer
     }
 }
 
-# 大佬2出牌
-big2lead 601 {
-    request {
-        idx        0 : integer
-        leadtype   1 : integer
-        cards      2 : *card
-    } 
-    response {
-        errorcode 0 : integer
-    }
-}
+# 大佬2出牌 (deprecated)
+# big2lead 601 {
+#     request {
+#         idx        0 : integer
+#         lead      2 : big2lead
+#     } 
+#     response {
+#         errorcode 0 : integer
+#     }
+# }
 
 # 确认四个玩家都呈现完毕后，状态转移
 big2step 602 {

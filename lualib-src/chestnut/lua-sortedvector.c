@@ -49,7 +49,7 @@ lclear(lua_State *L) {
 
 
 /*
-** @breif 
+** @breif
 ** @param #1 table
 ** @param #2 element
 ** @return 0
@@ -60,11 +60,31 @@ lerase(lua_State *L) {
 	if (lua_type(L, 2) == LUA_TNIL) {
 		return luaL_error(L, "the param #2 is nil");
 	}
+	size_t idx = 0;
+	lua_rawgeti(L, 1, 0);
+	lua_Integer sparselen = luaL_checkinteger(L, -1);
+	for (size_t i = 1; i <= sparselen; i++) {
+		lua_rawgeti(L, 1, i);
+		if (lua_rawequal(L, -1, 2)) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx != 0) {
+		for (size_t i = idx; i < sparselen; i++) {
+			lua_rawgeti(L, 1, i + 1);
+			lua_rawseti(L, 1, i);
+		}
+		lua_pushnil(L);
+		lua_rawseti(L, 1, sparselen);
+		lua_pushinteger(L, sparselen - 1);
+		lua_rawseti(L, 1, 0);
+	}
 	return 0;
 }
 
 /*
-** @breif 
+** @breif
 ** @param #1 table
 ** @param #2 index
 ** @return 0
@@ -73,7 +93,6 @@ static int
 leraseat(lua_State *L) {
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_Integer idx = luaL_checkinteger(L, 2);
-
 	if (idx <= 0) {
 		return luaL_error(L, "The index should be positive (%d)", (int)idx);
 	}
@@ -82,16 +101,12 @@ leraseat(lua_State *L) {
 	if (idx >= sparselen + 1) {
 		return luaL_error(L, "The index should be less then (%d)", (int)sparselen + 1);
 	}
-	if (idx < sparselen) {
-		lua_Integer pos = idx + 1;
-		for (; pos <= sparselen; ++pos) {
-			lua_rawgeti(L, 1, pos);
-			lua_rawseti(L, 1, pos - 1);
-		}
-	} else {
-		lua_pushnil(L);
-		lua_rawseti(L, 1, idx);
+	for (size_t i = idx; i < sparselen; i++) {
+		lua_rawgeti(L, 1, i + 1);
+		lua_rawseti(L, 1, i);
 	}
+	lua_pushnil(L);
+	lua_rawseti(L, 1, sparselen);
 	lua_pushinteger(L, sparselen - 1);
 	lua_rawseti(L, 1, 0);
 	return 0;
@@ -117,28 +132,28 @@ lpush_asc(lua_State *L) {
 	if (sparselen <= 0) {
 		idx = 1;
 	} else {
-		idx = sparselen;
-		for (; idx >= 1; --idx) {
+		idx = sparselen + 1;
+		int i = sparselen;
+		for (; i >= 1; --i) {
 			lua_getfield(L, 1, "__comp");
-			lua_rawgeti(L, 1, idx);  // l
+			lua_rawgeti(L, 1, i);  // l
 			lua_pushvalue(L, 2);   // r
-			lua_call(L, 2, 1, 0);
-			/*int b = lua_toboolean(L, -1);
-			if (b) {*/
-				lua_Integer r = luaL_checkinteger(L, -2);
-				if (r > 0) {
-					// 交换
-					lua_rawgeti(L, 1, idx);
-					lua_rawseti(L, 1, idx + 1);
-				} else {
-					break;
-				}
-			/*} else {
-				return 0;
-			}*/
+			lua_call(L, 2, 1);
+			lua_Integer r = luaL_checkinteger(L, -1);
+			if (r > 0) {
+				// 交换
+				lua_rawgeti(L, 1, i);
+				lua_rawseti(L, 1, i + 1);
+			} else {
+				idx = i + 1;
+				break;
+			}
+		}
+		if (i == 0) {
+			idx = 1;
 		}
 	}
-	
+
 	lua_pushvalue(L, 2);
 	lua_rawseti(L, 1, idx);
 	lua_pushinteger(L, sparselen + 1);
@@ -216,63 +231,57 @@ lbinarysearch(lua_State *L) {
 static int
 lindexof(lua_State *L) {
 	luaL_checktype(L, 1, LUA_TTABLE);
-	lua_Integer n = lua_gettop(L);
-	if (n < 2) {
-		luaL_error(L, "param must be more than 2.");
+	if (lua_type(L, 2) == LUA_TNIL) {
+		return luaL_error(L, "the param #2 is nil");
 	}
-	int t = lua_type(L, 2);
-	if (t == LUA_TNIL || t == LUA_TBOOLEAN) {
-		luaL_error(L, "param must be more than 2.");
-	} else if (t == LUA_TNUMBER || t == LUA_TSTRING) {
-	} else {
-		if (n < 3) {
-			luaL_error(L, "param must be more than 3.");
-		}
-		luaL_checktype(L, 3, LUA_TFUNCTION);
-	}
+	lua_settop(L, 2);
+	size_t idx = 0;
 	lua_rawgeti(L, 1, 0);
 	lua_Integer sparselen = luaL_checkinteger(L, -1);
-	if (sparselen < 0) {
-		lua_pushinteger(L, 0);
-		return 1;
-	}
-
-	// binary search
-	lua_Integer begin = 1, end = sparselen;
-	while (begin < end) {
-		lua_Integer mid = (begin + end) / 2;
-		lua_rawgeti(L, 1, mid);
-		if (t == LUA_TNUMBER) {
-			if (lua_isinteger(L, -1)) {
-
-			} else if (lua_isnumber(L, -1)) {
-
-			} else {
-				luaL_error(L, "member of vector is not number.");
-			}
-		} else if (t == LUA_TSTRING) {
-
-		} else {
-
-		}
-		/*lua_Integer v = luaL_checkinteger(L, -1);
-		lua_pop(L, 1);
-		if (v > idx) {
-			end = mid;
-		} else if (v < idx) {
-			begin = mid + 1;
-		} else {
-			begin = mid;
+	for (size_t i = 1; i <= sparselen; i++) {
+		lua_rawgeti(L, 1, i);
+		if (lua_rawequal(L, -1, 2)) {
+			idx = i;
 			break;
-		}*/
+		}
 	}
-	return 0;
+	lua_pushinteger(L, idx);
+	return 1;
+}
+
+/*
+** @breif 加入一个元素，
+** @param #1 table
+** @param #2 element
+** @return 1 (boolean)
+*/
+static int
+lcontains(lua_State *L) {
+	luaL_checktype(L, 1, LUA_TTABLE);
+	if (lua_type(L, 2) == LUA_TNIL) {
+		return luaL_error(L, "the param #2 is nil");
+	}
+	lua_settop(L, 2);
+	size_t idx = 0;
+	lua_rawgeti(L, 1, 0);
+	lua_Integer sparselen = luaL_checkinteger(L, -1);
+	for (size_t i = 1; i <= sparselen; i++) {
+		lua_rawgeti(L, 1, i);
+		if (lua_rawequal(L, -1, 2)) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx == 0)
+		lua_pushboolean(L, 0);
+	else
+		lua_pushboolean(L, 1);
+	return 1;
 }
 
 static int
 lnewindex(lua_State *L) {
-	luaL_error(L, "not support newindex.");
-	return 0;
+	return luaL_error(L, "not support newindex.");
 }
 
 static int
@@ -289,7 +298,7 @@ lnext(lua_State *L) {
 	}
 	lua_rawgeti(L, 1, 0);
 	lua_Integer sparselen = luaL_checkinteger(L, -1);
-	if (idx <= sparselen ) {
+	if (idx <= sparselen) {
 		lua_pushinteger(L, idx);
 		lua_rawgeti(L, 1, idx);
 		return 2;
@@ -349,6 +358,7 @@ lnewsortedvector(lua_State *L) {
 		{ "eraseat", leraseat },
 		{ "push", lpush_asc },
 		{ "indexof", lindexof },
+		{ "contains", lcontains },
 		{ NULL, NULL },
 	};
 	lua_createtable(L, 0, 7);
