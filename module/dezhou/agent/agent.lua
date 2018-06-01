@@ -6,9 +6,9 @@ local context = require "AgentContext"
 local REQUEST = require "request"
 local RESPONSE = require "response"
 local CMD = require "cmd"
-
+local traceback = debug.traceback
 local assert = assert
-local pcall = skynet.pcall
+
 local ctx
 
 local function request(name, args, response)
@@ -79,9 +79,7 @@ skynet.register_protocol {
 
 skynet.start(function()
 	skynet.dispatch("lua", function(_, _, cmd, ...)
-		log.info("agent cmd [%s] is called", cmd)
 		local f = assert(CMD[cmd])
-		local traceback = debug.traceback
 		local ok, err = xpcall(f, traceback, ctx, ...)
 		if ok then
 			if err ~= servicecode.NORET then

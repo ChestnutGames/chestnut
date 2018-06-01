@@ -221,11 +221,6 @@ function REQUEST:big2call( ... )
 	return self.systems.room:forward_room("call", ...)
 end
 
-function REQUEST:big2lead( ... )
-	-- body
-	return self.systems.room:forward_room("lead", ...)
-end
-
 function REQUEST:big2step( ... )
 	-- body
 	return self.systems.room:forward_room("step", ...)
@@ -272,6 +267,53 @@ function REQUEST:rchat(args, ... )
 	-- body
 	local M = self.systems.room
 	return M:forward_room("rchat", args, ...)
+end
+
+------------------------------------------
+-- 德州协议
+function REQUEST:pokercall( ... )
+	-- body
+	return self.systems.room:forward_room("call", ...)
+end
+
+function REQUEST:pokerstep( ... )
+	-- body
+	return self.systems.room:forward_room("step", ...)
+end
+
+function REQUEST:pokerrestart( ... )
+	-- body
+	return self.systems.room:forward_room("restart", ...)
+end
+
+function REQUEST:pokerready( ... )
+	-- body
+	return self.systems.room:forward_room("ready", ...)
+end
+
+function REQUEST:pokermatch( ... )
+	-- body
+	return self.systems.room:match(...)
+end
+
+function REQUEST:pokercreate( ... )
+	-- body
+	return self.systems.room:create(...)
+end
+
+function REQUEST:pokerjoin( ... )
+	-- body
+	return self.systems.room:join(...)
+end
+
+function REQUEST:pokerrejoin( ... )
+	-- body
+	return self.systems.room:rejoin(...)
+end
+
+function REQUEST:pokerleave( ... )
+	-- body
+	return self.systems.room:leave(...)
 end
 
 return REQUEST

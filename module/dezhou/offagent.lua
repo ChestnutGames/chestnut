@@ -4,6 +4,8 @@ local mc = require "skynet.multicast"
 -- local sd = require "skynet.sharedata"
 local log = require "chestnut.skynet.log"
 local json = require "rapidjson"
+local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local CMD = {}
@@ -53,14 +55,18 @@ skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function (_, _, cmd, ... )
 		-- body
-		local f = CMD[cmd]
-		local r = f(...)
-		if r ~= NORET then
-			if r ~= nil then
-				skynet.retpack(r)
-			else
-				log.error("affagent cmd = %s no ret", cmd)
+		local f = assert(CMD[cmd])
+		local ok, err = xpcall(f, traceback, ...)
+		if ok then
+			if err ~= NORET then
+				if err ~= nil then
+					skynet.retpack(err)
+				else
+					log.error("affagent cmd = %s no ret", cmd)
+				end
 			end
+		else
+			log.error(err)
 		end
 	end)
 	skynet.register ".OFFAGENT"

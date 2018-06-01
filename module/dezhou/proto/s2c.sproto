@@ -490,7 +490,7 @@ leave 524 {
 # 轮到你做出选择，是出牌还是放弃
 big2take_turn 600 {
     request {
-        your_turn 0 : integer
+        idx       0 : integer
         countdown 1 : integer
     }
     response {
@@ -663,3 +663,155 @@ rchat 513 {
         errorcode 0 : integer
     }
 }
+
+####################################### 
+# 大老二模块 [720, 800)
+# 轮到你做出选择，是出牌还是放弃
+pokertake_turn 720 {
+    request {
+        idx       0 : integer
+        countdown 1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokercall 721 {
+    request {
+        idx        0 : integer
+        opcode     1 : integer
+        coin       2 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 洗牌
+pokershuffle 722 {
+    request {
+        first     0 : integer
+        p1        1 : *integer
+        p2        2 : *integer
+        p3        3 : *integer
+        p4        4 : *integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 发牌
+pokerdeal 723 {
+    request {
+        firstidx  0 : integer
+        firsttake 1 : integer
+        deal      2 : *big2playerdeal
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerready 724 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerover 725 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerrestart 726 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+# 请求确认重新开始
+pokertake_restart 727 {
+    response { 
+        errorcode 0 : integer
+    }
+}
+
+# 结算
+pokersettle 728 {
+    request {
+        settles 0 : *settle
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerfinal_settle 729 {
+    request {
+        p1 0 : *settlementitem
+        p2 1 : *settlementitem
+        p3 2 : *settlementitem
+        p4 3 : *settlementitem
+        over    4 : boolean
+    } 
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokermatch 730 {
+    request {
+        roomid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerrejoin 731 {
+    request {
+        p 0 : big2player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerjoin 732 {
+    request {
+        p 0 : big2player
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerleave 733 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokertake_ready 734 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }   
+}
+
+# 德州模块结束
+####################################### 

@@ -6,6 +6,7 @@ local skynet_queue = require "skynet.queue"
 local queue = require "chestnut.queue"
 local util = require "chestnut.time_utils"
 local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local cs = skynet_queue()
@@ -46,13 +47,14 @@ end
 
 function CMD.init_data()
 	-- body
-end
-
-function CMD.save_data()
-	-- body
+	return true
 end
 
 function CMD.sayhi()
+	-- body
+end
+
+function CMD.save_data()
 	-- body
 end
 
@@ -127,7 +129,7 @@ end
 skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function(_,_, cmd, ...)
-		local f = CMD[cmd]
+		local f = assert(CMD[cmd])
 		local ok, err = xpcall(f, traceback, ... )
 		if ok then
 			if err ~= NORET then

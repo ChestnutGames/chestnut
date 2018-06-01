@@ -5,6 +5,8 @@ local mysql = require "skynet.db.mysql"
 local log = require "chestnut.skynet.log"
 local db_read = require "db_read"
 local db_write = require "db_write"
+local traceback = debug.traceback
+local assert = assert
 
 local mode = ...
 
@@ -180,8 +182,9 @@ skynet.start(function ()
 	ctx = { db=db, dump=dump }
 	skynet.dispatch( "lua" , function( _, _, cmd, ... )
 		local f = assert(QUERY[cmd])
-		local ok, err = pcall(f, ...)
+		local ok, err = xpcall(f, traceback, ...)
 		if ok then
+			assert(err)
 			skynet.retpack(err)
 		else
 			log.error(err)
@@ -199,7 +202,6 @@ skynet.start(function ()
 	local balance = 1
 	skynet.dispatch( "lua" , function( _, _, ... )
 		local r = skynet.call(agent[balance], "lua", ... )
-		assert(r)
 		skynet.retpack(r)
 		balance = balance + 1
 		if balance > #agent then

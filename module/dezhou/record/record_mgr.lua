@@ -6,6 +6,8 @@ local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 -- local json = require "rapidjson"
 local servicecode = require "chestnut.servicecode"
+local traceback = debug.traceback
+local assert = assert
 
 
 local records = {}
@@ -111,15 +113,12 @@ skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function (_, _, cmd, ...)
 		-- body
-		log.info("cmd = %s begin.", cmd)
 		local f = assert(CMD[cmd])
-		local traceback = debug.traceback
 		local ok, err = xpcall(f, traceback, ...)
 		if ok then
 			if err ~= servicecode.NORET then
 				if err ~= nil then
 					skynet.retpack(err)
-					log.info("cmd = %s end.", cmd)
 				else
 					log.error("cmd = %s not return", cmd)
 				end

@@ -139,14 +139,15 @@ function RESPONSE:big2take_turn(args)
 	self.systems.room:forward_room_rsp("take_turn", args)
 end
 
+function RESPONSE:big2call(args)
+	-- body
+	self.systems.room:forward_room_rsp("call", args)
+end
+
+-- 此协议已经(deprecated)
 function RESPONSE:big2shuffle(args)
 	-- body
 	self.systems.room:forward_room_rsp("shuffle", args)
-end
-
-function RESPONSE:big2lead(args)
-	-- body
-	self.systems.room:forward_room_rsp("lead", args)
 end
 
 function RESPONSE:big2deal(args)
@@ -202,6 +203,84 @@ function RESPONSE:big2leave(args)
 end
 
 function RESPONSE:big2take_ready(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_ready", args)
+end
+
+-- 大佬2响应模块
+------------------------------------------
+
+------------------------------------------
+-- 德州响应模块
+function RESPONSE:pokertake_turn(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_turn", args)
+end
+
+function RESPONSE:pokercall(args)
+	-- body
+	self.systems.room:forward_room_rsp("call", args)
+end
+
+-- (deprecated)
+function RESPONSE:pokershuffle(args)
+	-- body
+	self.systems.room:forward_room_rsp("shuffle", args)
+end
+
+function RESPONSE:pokerdeal(args)
+	-- body
+	self.systems.room:forward_room_rsp("deal", args)
+end
+
+function RESPONSE:pokerready(args)
+	-- body
+	self.systems.room:forward_room_rsp("ready", args)
+end
+
+function RESPONSE:pokerover(args)
+	-- body
+	self.systems.room:forward_room_rsp("over", args)
+end
+
+function RESPONSE:pokerrestart(args)
+	-- body
+	self.systems.room:forward_room_rsp("restart", args)
+end
+
+function RESPONSE:pokersettle(args)
+	-- body
+	self.systems.room:forward_room_rsp("settle", args)
+end
+
+function RESPONSE:pokerfinal_settle(args)
+	-- body
+	self.systems.room:forward_room_rsp("final_settle", args)
+end
+
+function RESPONSE:pokermatch(args)
+	-- body
+	assert(self)
+	assert(args)
+	-- self.systems.room:forward_room_rsp("match", args)
+end
+
+function RESPONSE:pokerrejoin(args)
+	-- body
+	self.systems.room:forward_room_rsp("rejoin", args)
+end
+
+function RESPONSE:pokerjoin(args)
+	-- body
+	self.systems.room:forward_room_rsp("join", args)
+end
+
+function RESPONSE:pokerleave(args)
+	-- body
+	self.systems.room:forward_room_rsp("leave", args)
+end
+
+function RESPONSE:pokertake_ready(args)
 	-- body
 	self.systems.room:forward_room_rsp("take_ready", args)
 end

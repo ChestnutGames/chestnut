@@ -4,8 +4,9 @@ require "skynet.manager"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local redis = require "chestnut.redis"
-local AppConfig = require "AppConfig"
 local json = require "rapidjson"
+local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local refreshs = {}
@@ -15,12 +16,6 @@ local CMD = {}
 
 function CMD.start(channel_id)
 	-- body
-	if not config:LoadFile() then
-		return false
-	end
-	if not config:CheckConfig() then
-		return false
-	end
 	local channel = mc.new {
 		channel = channel_id,
 		dispatch = function (_, _, cmd, ...)
@@ -98,17 +93,20 @@ end
 
 skynet.start(function ()
 	-- body
-	config = AppConfig.new()
 	skynet.dispatch("lua", function ( _, _, cmd, ... )
 		-- body
 		local f = assert(CMD[cmd])
-		local r = f( ... )
-		if r ~= NORET then
-			if r ~= nil then
-				skynet.retpack(r)
-			else
-				log.error("REFRESH_MGR cmd = %d  not return", cmd)
+		local ok, err = xpcall(f, traceback, ... )
+		if ok then
+			if err ~= NORET then
+				if err ~= nil then
+					skynet.retpack(err)
+				else
+					log.error("REFRESH_MGR cmd = %d  not return", cmd)
+				end
 			end
+		else
+			log.error(err)
 		end
 	end)
 	skynet.register ".REFRESH_MGR"

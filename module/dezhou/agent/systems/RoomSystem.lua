@@ -223,11 +223,14 @@ end
 
 function cls:forward_room(name, args)
 	-- body
-	if self.joined then
-		local command = "on_"..name
-		local addr = self.addr
-		log.info("route request command %s agent to room", command)
-		return skynet.call(addr, "lua", command, args)
+	local uid   = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if entity.room.joined then
+		local cmd = "on_"..name
+		local addr = entity.room.addr
+		log.info("route request command %s agent to room", cmd)
+		return skynet.call(addr, "lua", cmd, args)
 	else
 		local res = {}
 		res.errorcode = 15
@@ -237,11 +240,14 @@ end
 
 function cls:forward_room_rsp(name, args)
 	-- body
-	if self.joined then
-		local command = name
-		local addr = self.addr
-		log.info("route response command %s agent to room", command)
-		skynet.send(addr, "lua", command, args)
+	local uid   = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if entity.room.joined then
+		local cmd = name
+		local addr = entity.room.addr
+		log.info("route response command %s agent to room", cmd)
+		skynet.send(addr, "lua", cmd, args)
 	end
 end
 

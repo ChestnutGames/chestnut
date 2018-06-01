@@ -6,6 +6,8 @@ local log = require "chestnut.skynet.log"
 local zset = require "chestnut.zset"
 local redis = require "chestnut.redis"
 local json = require "rapidjson"
+local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local users = {}
@@ -166,20 +168,22 @@ function CMD.new_mail(title, content, appendix, to, ... )
 	return NORET
 end
 
-skynet.start(function ( ... )
+skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function (_, _, cmd, ... )
 		-- body
-		log.info("sysemaild cmd = %s", cmd)
-		local f = CMD[cmd]
-		local r = f(...)
-		if r ~= NORET then
-			if r ~= nil then
-				skynet.retpack(r)
-				log.info("sysemaild cmd = %s work over.", cmd)
-			else
-				log.error("sysemaild cmd = %s no ret", cmd)
+		local f = assert(CMD[cmd])
+		local ok, err = xpcall(f, traceback, ...)
+		if ok then
+			if err ~= NORET then
+				if err ~= nil then
+					skynet.retpack(err)
+				else
+					log.error("sysemaild cmd = %s no ret", cmd)
+				end
 			end
+		else
+			log.error(err)
 		end
 	end)
 	skynet.register ".SYSEMAIL"

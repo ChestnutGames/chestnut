@@ -2,6 +2,7 @@ local skynet = require "skynet"
 require "skynet.manager"
 local log = require "chestnut.skynet.log"
 local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local users = {}          -- 全服聊天
@@ -48,10 +49,10 @@ function CMD.room_create(room_id, addr)
 	return true
 end
 
-function CMD.room_init_users(room_id, users )
+function CMD.room_init_users(room_id, xusers)
 	-- body
 	local room = rooms[room_id]
-	for k,v in pairs(users) do
+	for k,v in pairs(xusers) do
 		room.users[k] = { uid = v.uid }
 	end
 	return true
