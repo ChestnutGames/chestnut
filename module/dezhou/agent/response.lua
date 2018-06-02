@@ -233,6 +233,11 @@ function RESPONSE:pokerdeal(args)
 	self.systems.room:forward_room_rsp("deal", args)
 end
 
+function RESPONSE:pokertake_ready(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_ready", args)
+end
+
 function RESPONSE:pokerready(args)
 	-- body
 	self.systems.room:forward_room_rsp("ready", args)
@@ -241,6 +246,11 @@ end
 function RESPONSE:pokerover(args)
 	-- body
 	self.systems.room:forward_room_rsp("over", args)
+end
+
+function RESPONSE:pokertake_restart(args)
+	-- body
+	self.systems.room:forward_room_rsp("take_restart", args)
 end
 
 function RESPONSE:pokerrestart(args)
@@ -253,16 +263,9 @@ function RESPONSE:pokersettle(args)
 	self.systems.room:forward_room_rsp("settle", args)
 end
 
-function RESPONSE:pokerfinal_settle(args)
-	-- body
-	self.systems.room:forward_room_rsp("final_settle", args)
-end
-
 function RESPONSE:pokermatch(args)
 	-- body
-	assert(self)
-	assert(args)
-	-- self.systems.room:forward_room_rsp("match", args)
+	self.systems.room:forward_room_rsp("match", args)
 end
 
 function RESPONSE:pokerrejoin(args)
@@ -278,11 +281,6 @@ end
 function RESPONSE:pokerleave(args)
 	-- body
 	self.systems.room:forward_room_rsp("leave", args)
-end
-
-function RESPONSE:pokertake_ready(args)
-	-- body
-	self.systems.room:forward_room_rsp("take_ready", args)
 end
 
 -- 大佬2响应模块

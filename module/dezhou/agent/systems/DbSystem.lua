@@ -11,7 +11,13 @@ function cls:ctor(context)
 	-- body
 	self.agentContext = assert(context)
 	self.context = nil
+	self.agentSystems = nil
 	return self
+end
+
+function cls:set_agent_systems(agentSystems)
+	-- body
+	self.agentSystems = agentSystems
 end
 
 function cls:_on_user_born()
@@ -32,8 +38,14 @@ function cls:load_cache_to_data()
 	log.info("uid(%d) load_cache_to_data", uid)
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
+	unpack_components.unpack_package_component(entity.package, res.db_package)
 	if #res.db_user_rooms == 1 then
 		unpack_components.unpack_room_component(entity.room, res.db_user_rooms[1])
+	end
+	-- 判断是否是新用户
+	if entity.user.newUser == 1 then
+		self:_on_user_born()
+		entity.user.newUser = 0
 	end
 	return true
 end

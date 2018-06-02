@@ -129,6 +129,15 @@
     lead 8 : big2lead
 }
 
+.perflop_card {
+    idx 0 : integer
+    cards 1 : *card
+}
+
+.pokerrule {
+}
+
+
 # poker
 ####################################### 
 
@@ -575,9 +584,7 @@ pokerready 723 {
 
 pokermatch 724 {
     request {
-        rule 0 : integer
-        mode 1 : integer
-        scene 2 : integer
+        mode 0 : integer
     }
     response {
         errorcode 0 : integer
@@ -605,9 +612,9 @@ pokerjoin 726 {
         roomid    1 : integer
         room_max  2 : integer
         state     3 : string
-        rule      4 : big2rule
-        me        5 : big2player
-        ps        6 : *big2player
+        rule      4 : pokerrule
+        me        5 : pokerplayer
+        ps        6 : *pokerplayer
     }
 }
 
@@ -617,9 +624,9 @@ pokerrejoin 727 {
         roomid    1 : integer
         room_max  2 : integer
         state     3 : string
-        rule      4 : big2rule
-        me        5 : big2player
-        ps        6 : *big2player
+        rule      4 : pokerrule
+        me        5 : pokerplayer
+        ps        6 : *pokerplayer
     }
 }
 
@@ -631,3 +638,6 @@ pokerleave 728 {
         errorcode 0 : integer
     }
 }
+
+# 德州协议 [720, 800)
+####################################### 

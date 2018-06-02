@@ -70,7 +70,8 @@ function CMD:save_data()
 	end
 end
 
-----------------------------called by room------------------
+------------------------------------------
+-- called by room
 function CMD:test()
 	-- body
 	assert(self)
@@ -268,7 +269,6 @@ end
 
 ------------------------------------------
 -- 大佬2协议发送代理
-
 function CMD:big2take_turn(args)
 	-- body
 	self:send_request_gate("big2take_turn", args)
@@ -364,5 +364,103 @@ function CMD:big2take_ready(args)
 	self:send_request_gate("big2rejoin", args)
 	return servicecode.NORET
 end
+-- 大佬2协议发送代理
+------------------------------------------
+
+------------------------------------------
+-- 德扑发送代理
+function CMD:pokertake_turn(args)
+	-- body
+	self:send_request_gate("pokertake_turn", args)
+	return servicecode.NORET
+end
+
+function CMD:pokercall(args)
+	-- body
+	self:send_request_gate("pokercall", args)
+	return servicecode.NORET
+end
+
+function CMD:pokershuffle(args)
+	-- body
+	self:send_request_gate("pokershuffle", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerdeal(args)
+	-- body
+	self:send_request_gate("pokerdeal", args)
+	return servicecode.NORET
+end
+
+function CMD:pokertake_ready(args)
+	-- body
+	self:send_request_gate("pokerrejoin", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerready(args)
+	-- body
+	self:send_request_gate("pokerready", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerover(args)
+	-- body
+	self:send_request_gate("pokerready", args)
+	return servicecode.NORET
+end
+
+function CMD:pokertake_restart(args)
+	-- body
+	self:send_request_gate("big2take_restart", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerrestart(args)
+	-- body
+	self:send_request_gate("pokerrestart", args)
+	return servicecode.NORET
+end
+
+function CMD:pokersettle(args)
+	-- body
+	self:send_request_gate("pokersettle", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerfinal_settle(args)
+	-- body
+	self:send_request_gate("pokerfinal_settle", args)
+	return servicecode.NORET
+end
+
+function CMD:pokermatch(args)
+	-- body
+	self:send_request_gate("big2match", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerrejoin(args)
+	-- body
+	self:send_request_gate("pokerrejoin", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerjoin(args)
+	-- body
+	self:send_request_gate("pokerrejoin", args)
+	return servicecode.NORET
+end
+
+function CMD:pokerleave(args)
+	-- body
+	self:send_request_gate("pokerrejoin", args)
+	return servicecode.NORET
+end
+
+-- 德扑发送代理
+------------------------------------------
+
 
 return CMD

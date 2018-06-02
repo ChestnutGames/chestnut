@@ -29,6 +29,15 @@ state.SETTLE     = "settle"    -- 结算
 state.RESTART    = "restart"   -- 重新开始
 state.ROOMOVER   = 'roomover'
 
+local gameplay = {}
+gameplay.NONE             = "none"
+gameplay.PERFLOPSBLIND    = "perflopsblind"
+gameplay.PERFLOPBBLIND    = "perflopbblind"
+gameplay.PERFLOP          = "perflop"
+gameplay.FLOP             = "flop"
+gameplay.TURN             = "turn"
+gameplay.RIVER            = "river"
+
 local MOCK = false
 
 local cls = class("RoomContext")
@@ -38,7 +47,7 @@ function cls:ctor()
 
 	-- players
 	self.players = {}
-	for i=1,4 do
+	for i=1,9 do
 		local tmp = Player.new(self, 0, 0)
 		tmp.idx = i
 		self.players[i] = tmp
@@ -50,23 +59,28 @@ function cls:ctor()
 	self.id = 0
 	self.open = false
 	self.host = nil
-	self.max = 4          -- 玩家数
+	self.max = 5          -- 玩家数
 	self.joined = 0
 	self.online = 0
 	self.maxju = 0        -- 玩的局数
 	self.uplayers = {}
+	self.rule = {}        -- 房间规则
 
 	-- play
 	self._cards = {}         -- 洗牌
 	self._cardssz = 52
+	self._dealcardidx = 1
 	self._kcards = {}
 	self:init_cards()
 
 	self.firstidx = 0           -- 拿牌头家
+	self.sblindidx = 0          -- 小盲注索引
+	self.bblindidx = 0          -- 大盲注索引
 	self.previdx = 0            -- 上一个玩家出牌
 	self.curidx = 0             -- 玩家索引，当前轮到谁
 	self.alert = self:create_alert(state.NONE)
 	self.alert.ev_join(self)
+	self.playalert = self:create_gameplay_alert(gameplay.NONE)
 	self.settles = {}           -- 在结束的时候已经完成
 
 	-- 记录所有数据
@@ -308,9 +322,22 @@ function cls:on_next_state()
 		if self:is_next_state(Player.state.DEAL) then
 			self.alert.ev_first_turn(self)
 		end
+	elseif self.alert.is(state.DEAL) then
+		if self:is_next_state(Player.state.DEAL) then
+			if self.playalert.is(gameplay.PERFLOP) then
+				-- 最开是没人发三张牌，
+				self.alert.ev_first_turn()
+			end
+		end
 	elseif self.alert.is(state.CALL) then
 		if self:is_next_state(Player.state.CALL) then
-			self.alert.ev_turn_after_call(self)
+			if self.playalert.is(gameplay.PERFLOPSBLIND) then
+				self.playalert.ev_perflopbblind(self)
+			elseif self.playalert.is(gameplay.PERFLOPBBLIND) then
+				self.playalert.ev_perflop(self)
+			else
+				self.alert.ev_turn_after_call(self)
+			end
 		end
 	elseif self.alert.is(state.OVER) then
 		if self:is_next_state(Player.state.OVER) then
@@ -330,6 +357,45 @@ function cls:on_next_state()
 		if self:is_next_state(Player.state.ROOMOVER) then
 			skynet.send('.ROOM_MGR', 'lua', "dissolve", self.id)
 		end
+	end
+end
+
+-- 创建gameplay状态机
+function cls:create_gameplay_alert(initial_state)
+	-- body
+	assert(self)
+	local alert = fsm.create({
+		initial = initial_state,
+		events = {
+			{name = "ev_perflopsblind",        from = gameplay.NONE,             to = gameplay.PERFLOPSBLIND},
+		    {name = "ev_perflopbblind",        from = gameplay.PERFLOPSBLIND,    to = gameplay.PERFLOPBBLIND},
+		    {name = "ev_perflop",              from = gameplay.PERFLOPBBLIND,    to = gameplay.PERFLOP},
+		    {name = "ev_flop",                 from = gameplay.PERFLOP,          to = gameplay.FLOP},
+		    {name = "ev_turn",                 from = gameplay.FLOP,             to = gameplay.TURN},
+			{name = "ev_river",                from = gameplay.TURN,             to = gameplay.RIVER},
+		},
+		callbacks = {
+			on_perflopsblind = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
+		    on_perflopbblind = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
+		    on_perflop = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
+		    on_perflop = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
+		    on_deal = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
+		    on_firstturn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_turn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		    on_call = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+			on_lead = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+			on_over = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
+		}
+	})
+	return alert
+end
+
+function cls:on_gameplay_state(event, from, to)
+	-- body
+	if to == gameplay.PERFLOPSBLIND then
+		self:take_perflopsblind()
+	elseif to == gameplay.PERFLOPBBLIND then
+		self:take_perflopbblind()
 	end
 end
 
@@ -450,7 +516,7 @@ function cls:init_data()
 	return true
 end
 
-function cls:sayhi(host, users)
+function cls:sayhi(host, users, rule)
 	-- body
 	assert(self)
 	self.host = host
@@ -466,6 +532,7 @@ function cls:sayhi(host, users)
 		self.uplayers[player.uid] = player
 		self:incre_joined()
 	end
+	self.rule = rule
 	return true
 end
 
@@ -1019,7 +1086,15 @@ end
 
 function cls:take_deal()
 	-- body
+	-- 最开阶段发牌，每个人发两张牌
+	if self.playalert.is(gameplay.PERFLOP) then
 
+	elseif self.playalert.is(gameplay.FLOP) then
+		-- 公共发三张牌
+	elseif self.playalert.is(gameplay.TURN) then
+	elseif self.playalert.is(gameplay.RIVER) then
+	end
+	assert(self.assert())
 	-- 发牌
 	-- self:print_cards()
 	local event = 'ev_' .. Player.state.WAIT_DEAL
@@ -1050,8 +1125,8 @@ function cls:take_deal()
 	table.insert(args.deal, { idx = 3, cards = p3 })
 	table.insert(args.deal, { idx = 4, cards = p4 })
 
-	self:record("big2deal", args)
-	self:push_client("big2deal", args)
+	self:record("pokerdeal", args)
+	self:push_client("pokerdeal", args)
 
 	-- 超时断连后
 	if MOCK then
@@ -1070,8 +1145,12 @@ function cls:take_firstturn()
 	-- 把房间状态转移到turn
 	self.alert.ev_turn_after_firstturn(self)
 
-	-- 玩家状态转移
-	self.curidx = 1
+	if self.playalert.is(gameplay.PERFLOP) then
+		-- 玩家状态转移
+		self.curidx = 1
+		
+	elseif self.playalert.is(gameplay.FLOP) then
+	end
 	local p = self.players[self.curidx]
 	assert(p.alert.can('ev_wait_turn_after_deal'))
 	p.alert.ev_wait_turn_after_deal(p)
@@ -1087,7 +1166,7 @@ function cls:take_firstturn()
 	args.idx = self.curidx
 	args.countdown = self.countdown
 	-- self:record("take_turn", args)
-	self:push_client("big2take_turn", args)
+	self:push_client("pokertake_turn", args)
 
 	if MOCK then
 		skynet.timeout(100 * 20, function ()
@@ -1231,6 +1310,45 @@ function cls:take_roomover()
 		end
 	end
 	skynet.send('.ROOM_MGR', 'lua', 'dissolve', self.id)
+end
+
+------------------------------------------
+-- turn gameplay state
+function cls:take_perflopsblind()
+	-- body
+	assert(self.playalert.is(gameplay.PERFLOPSBLIND))
+
+	local args = {}
+	args.idx = self.curidx
+	args.opcode = opcode.SBLIND
+	args.coin	= 100
+	self:push_client("pokercall", args)
+end
+
+function cls:take_perflopbblind()
+	-- body
+	assert(self.playalert.is(gameplay.PERFLOPBBLIND))
+end
+
+function cls:take_perflop()
+	-- body
+	assert(self.playalert.is(gameplay.PERFLOP))
+	self.alert.ev_deal(self)
+end
+
+function cls:take_flop( ... )
+	-- body
+	assert(self.playalert.is(gameplay.FLOP))
+end
+
+function cls:take_turn( ... )
+	-- body
+	assert(self.playalert.is(gameplay.TURN))
+end
+
+function cls:take_river( ... )
+	-- body
+	assert(self.playalert.is(gameplay.RIVER))
 end
 
 return cls

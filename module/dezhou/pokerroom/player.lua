@@ -13,6 +13,8 @@ state.WAIT_READY     = "wait_ready"
 state.READY          = "ready"
 state.WAIT_SHUFFLE   = "wait_shuffle"
 state.SHUFFLE        = "shuffle"
+state.WAIT_SBLIND    = "wait_sblind"
+state.
 state.WAIT_DEAL      = "wait_deal"      -- 以上状态都没有用
 state.DEAL       	 = "deal"
 state.WATCH          = "watch"          -- 观看状态，此时没有关于他的事物

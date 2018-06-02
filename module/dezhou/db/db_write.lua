@@ -4,11 +4,10 @@ local _M = {}
 
 function _M:write_user(db_user)
 	local sql = string_format([==[CALL
-		sp_user_insert_or_update (%d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s');]==],
-		db_user.uid, db_user.gold, db_user.diamond, db_user.checkin_month, db_user.checkin_count,
-		db_user.checkin_mcount, db_user.checkin_lday,
-		db_user.rcard, db_user.sex, db_user.nickname, db_user.province,
-		db_user.city, db_user.country, db_user.headimg, db_user.openid, db_user.nameid)
+		sp_user_insert_or_update (%d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d, %d);]==],
+		db_user.uid, db_user.sex, db_user.nickname, db_user.province,
+		db_user.city, db_user.country, db_user.headimg, db_user.openid, db_user.nameid,
+		db_user.create_at, db_user.update_at, db_user.login_at, db_user.new_user)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
@@ -30,6 +29,22 @@ function _M:write_user_room(db_user_room)
 	return true
 end
 
+function _M:write_user_package(db_user_package)
+	-- body
+	for _,db_user_item in ipairs(db_user_package) do
+		local sql = string_format([==[CALL
+		sp_user_package_insert_or_update(%d, %d, %d, %d, %d);]==],
+		db_user_item.uid, db_user_item.id, db_user_item.num, db_user_item.create_at, db_user_item.update_at)
+		-- log.info(sql)
+		local res = self.db:query(sql)
+		if res.errno then
+			log.info(self.dump(res))
+			return false
+		end
+	end
+	return true
+end
+
 function _M:write_room_mgr_users(db_users)
 	-- body
 	for _,db_user in pairs(db_users) do
@@ -40,6 +55,7 @@ function _M:write_room_mgr_users(db_users)
 		local res = self.db:query(sql)
 		if res.errno then
 			log.info(self.dump(res))
+			return false
 		end
 	end
 	return true

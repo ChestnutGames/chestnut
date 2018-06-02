@@ -18,6 +18,8 @@ function cls:LoadFile( ... )
 	local language = require "configs.languageConfig"
 	local notice = require "configs.noticeConfig"
 	local play = require "configs.playConfig"
+	-- local refresh = require "configs.refresh"
+	local roommode = require "configs.roommodeConfig"
 
 	self.config['card'] = card
 	self.config['consts'] = consts
@@ -29,6 +31,8 @@ function cls:LoadFile( ... )
 	self.config['language'] = language
 	self.config['notice'] = notice
 	self.config['play'] = play
+	-- self.config['refresh'] = refresh
+	self.config['roommode'] = roommode
 
 	return true
 end

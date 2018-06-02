@@ -26,42 +26,38 @@ function _M.unpack_account_component(component, seg, ... )
 	return true
 end
 
-function _M.unpack_user_component(component, seg, ... )
+function _M.unpack_user_component(component, seg)
 	-- body
 	assert(component and seg)
 	component.uid      = seg.uid
-	component.gold = seg.gold
-	component.diamond = seg.diamond
-	component.checkin_month = seg.checkin_month
-	component.checkin_count = seg.checkin_count
-	component.checkin_mcount = seg.checkin_mcount
-	component.checkin_lday = seg.checkin_lday
-	component.rcard = seg.rcard
-	component.sex = seg.sex
-	component.nickname = seg.nickname
-	component.province = seg.province
-	component.city     = seg.city
+	component.sex      = assert(seg.sex)
+	component.nickname = assert(seg.nickname)
+	component.province = assert(seg.province)
+	component.city     = assert(seg.city)
 	component.country  = seg.country
 	component.headimg  = seg.headimg
 	component.openid   = seg.openid
 	component.nameid   = seg.nameid
-	component.create_time = seg.create_time
-	component.login_times = seg.login_times
+	component.createAt = seg.create_at
+	component.updateAt = assert(seg.update_at)
+	component.loginAt  = assert(seg.login_at)
+	component.newUser  = assert(seg.new_user)
 	return true
 end
 
-function _M.unpack_package_component(component, seg, ... )
+function _M.unpack_package_component(component, seg)
 	-- body
 	assert(component and seg)
-	local db_packages = {}
-	for k,package in pairs(seg.packages) do
-		local db_package = {}
-		for k,v in pairs(package) do
-			db_package[tonumber(k)] = v
-		end
-		db_packages[tonumber(k)] = db_package
+	local package = {}
+	for k,db_item in pairs(seg) do
+		local item = {}
+		item.id = assert(db_item.id)
+		item.num = assert(db_item.num)
+		item.createAt = assert(db_item.create_at)
+		item.updateAt = assert(db_item.update_at)
+		package[tonumber(item.id)] = item
 	end
-	component.packages = db_packages
+	component.packages['common'] = package
 	return true
 end
 

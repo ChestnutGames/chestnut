@@ -118,6 +118,32 @@
 # big2 类
 ####################################### 
 
+####################################### 
+# poker
+
+.pokerplayer {
+    idx 0 : integer
+    chip 1 : integer
+    sex 2 : integer
+    name 3 : string
+    state 4 : string
+    online 5 : boolean
+    cards 6 : *card         # 手上的牌
+    opcode 7 : integer
+    lead 8 : big2lead
+}
+
+.perflop_card {
+    idx 0 : integer
+    cards 1 : *card
+}
+
+.pokerrule {
+}
+
+# poker
+####################################### 
+
 ####################################### 一般模块 [1, 500)
 handshake 1 {
     response {
@@ -665,7 +691,7 @@ rchat 513 {
 }
 
 ####################################### 
-# 大老二模块 [720, 800)
+# 德州模块 [720, 800)
 # 轮到你做出选择，是出牌还是放弃
 pokertake_turn 720 {
     request {
@@ -688,33 +714,43 @@ pokercall 721 {
     }
 }
 
-# 洗牌
-pokershuffle 722 {
-    request {
-        first     0 : integer
-        p1        1 : *integer
-        p2        2 : *integer
-        p3        3 : *integer
-        p4        4 : *integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+# 洗牌(deprecated)
+# pokershuffle 722 {
+#     request {
+#     }
+#     response {
+#         errorcode 0 : integer
+#     }
+# }
 
 # 发牌
 pokerdeal 723 {
     request {
-        firstidx  0 : integer
-        firsttake 1 : integer
-        deal      2 : *big2playerdeal
+        sblindidx  0 : integer
+        bblindidx  1 : integer
+        state      2 : string
+        perflop    3 : *perflop_card # 每个玩家两张牌
+        flop       4 : *card         # 三张
+        turn       5 : card          # 第四张
+        river      6 : card          # 第五张
     }
     response {
         errorcode 0 : integer
     }
 }
 
-pokerready 724 {
+# (deprecated)
+pokertake_ready 724 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }   
+}
+
+# (deprecated)
+pokerready 725 {
     request {
         idx 0 : integer
     }
@@ -723,13 +759,20 @@ pokerready 724 {
     }
 }
 
-pokerover 725 {
+pokerover 726 {
     response {
         errorcode 0 : integer
     }
 }
 
-pokerrestart 726 {
+# 请求确认重新开始(deprecated)
+pokertake_restart 727 {
+    response { 
+        errorcode 0 : integer
+    }
+}
+
+pokerrestart 728 {
     request {
         idx       0 : integer
     }
@@ -738,31 +781,11 @@ pokerrestart 726 {
     }
 }
 
-# 请求确认重新开始
-pokertake_restart 727 {
-    response { 
-        errorcode 0 : integer
-    }
-}
-
 # 结算
-pokersettle 728 {
+pokersettle 729 {
     request {
         settles 0 : *settle
     }
-    response {
-        errorcode 0 : integer
-    }
-}
-
-pokerfinal_settle 729 {
-    request {
-        p1 0 : *settlementitem
-        p2 1 : *settlementitem
-        p3 2 : *settlementitem
-        p4 3 : *settlementitem
-        over    4 : boolean
-    } 
     response {
         errorcode 0 : integer
     }
@@ -779,7 +802,7 @@ pokermatch 730 {
 
 pokerrejoin 731 {
     request {
-        p 0 : big2player
+        p 0 : pokerplayer
     }
     response {
         errorcode 0 : integer
@@ -788,7 +811,7 @@ pokerrejoin 731 {
 
 pokerjoin 732 {
     request {
-        p 0 : big2player
+        p 0 : pokerplayer
     }
     response {
         errorcode 0 : integer
@@ -804,13 +827,42 @@ pokerleave 733 {
     }
 }
 
-pokertake_ready 734 {
+pokersitdown 734 {
     request {
         idx       0 : integer
     }
     response {
         errorcode 0 : integer
     }   
+}
+
+pokerstandup 735 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }   
+}
+
+pokersblind 736 {
+    request {
+        idx 0 : integer
+        coin 1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+pokerbblind 737 {
+    request {
+        idx 0 : integer
+        coin 1 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
 }
 
 # 德州模块结束

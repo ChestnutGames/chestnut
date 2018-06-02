@@ -70,13 +70,6 @@ local function auth_win_myself(username, password)
 
 			local db_user = {}
 			db_user.uid = uid
-			db_user.gold = 10
-			db_user.diamond = 10
-			db_user.checkin_month = 0
-			db_user.checkin_count = 0
-			db_user.checkin_mcount = 0
-			db_user.checkin_lday = 0
-			db_user.rcard = 0
 			db_user.sex = sex
 			db_user.nickname = "username"
 			db_user.province = "Beijing"
@@ -85,6 +78,10 @@ local function auth_win_myself(username, password)
 			db_user.headimg = ""
 			db_user.openid = 0
 			db_user.nameid = 0
+			db_user.create_at = os.time()
+			db_user.update_at = os.time()
+			db_user.login_at = os.time()
+			db_user.new_user = 1
 			skynet.call(".DB", "lua", "write_new_user", db_user)
 		end
 		return uid

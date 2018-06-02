@@ -9,6 +9,10 @@ return MakeComponent("user",
 	"city",
 	"country",
 	"headimg",
-	"create_time",
-	"login_time"
+	"openid",
+	"nameid",
+	"createAt",
+	"updateAt",
+	"loginAt",
+	"newUser"
 )

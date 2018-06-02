@@ -30,39 +30,37 @@ end
 function _M.pack_user_component(component)
 	-- body
 	assert(component.uid ~= nil)
-	local seg = {}
-	seg.uid      = component.uid
-	seg.gold     = component.gold
-	seg.diamond  = component.diamond
-	seg.checkin_month = component.checkin_month
-	seg.checkin_count = component.checkin_count
-	seg.checkin_mcount = component.checkin_mcount
-	seg.checkin_lday = component.checkin_lday
-	seg.rcard = component.rcard
-	seg.sex = component.sex
-	seg.nickname = component.nickname
-	seg.province = component.province
-	seg.city = component.city
-	seg.country = component.country
-	seg.headimg = component.headimg
-	seg.openid = component.openid
-	seg.nameid = component.nameid
-	return true, seg
+	local db_user = {}
+	db_user.uid            = component.uid
+	db_user.sex            = component.sex
+	db_user.nickname       = component.nickname
+	db_user.province       = component.province
+	db_user.city           = component.city
+	db_user.country        = component.country
+	db_user.headimg        = component.headimg
+	db_user.openid         = component.openid
+	db_user.nameid         = component.nameid
+	db_user.create_at = component.createAt
+	db_user.update_at = component.updateAt
+	db_user.login_at  = component.loginAt
+	db_user.new_user  = component.newUser
+	return true, db_user
 end
 
-function _M.pack_package_component(component, ... )
+function _M.pack_package_component(component, uid)
 	-- body
-	local db_packages = {}
-	for k,package in pairs(component.packages) do
-		db_package = {}
-		for k,v in pairs(package) do
-			db_package[string.format("%d", k)] = v
-		end
-		db_packages[string.format("%d", k)] = db_package
+	local db_package = {}
+	local package = component.packages['common']
+	for k,item in pairs(package) do
+		local db_item = {}
+		db_item.uid = assert(uid)
+		db_item.id  = assert(item.id)
+		db_item.num = assert(item.num)
+		db_item.create_at = assert(item.createAt)
+		db_item.update_at = assert(item.updateAt)
+		table.insert(db_package, db_item)
 	end
-	local seg = {}
-	seg.packages = db_packages
-	return true, seg
+	return true, db_package
 end
 
 function _M.pack_room_component(component, uid)
@@ -71,12 +69,12 @@ function _M.pack_room_component(component, uid)
 	assert(component.joined ~= nil)
 	assert(component.id ~= nil)
 	assert(uid)
-	local seg = {}
-	seg.uid = uid
-	seg.created   = component.isCreated and 1 or 0
-	seg.roomid    =	component.id
-	seg.joined    = component.joined and 1 or 0
-	return true, seg
+	local db_user_room = {}
+	db_user_room.uid = uid
+	db_user_room.created   = component.isCreated and 1 or 0
+	db_user_room.roomid    = component.id
+	db_user_room.joined    = component.joined and 1 or 0
+	return true, db_user_room
 end
 
 return _M

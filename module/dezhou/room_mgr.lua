@@ -11,12 +11,13 @@ local assert = assert
 
 local NORET = {}
 local users = {}   -- 玩家信息,玩家创建的房间
-local rooms = {}   -- 正在打牌的
+local rooms = {}   -- 私人打牌的
+local mrooms = {}  -- 匹配的房间
 local num = 0      -- 正在打牌的桌子数
 local pool = {}    -- 闲置的大佬2桌子
 local q = queue()  -- 排队的队列
 local bank = 101010
-local MAX_ROOM_NUM = 4
+local MAX_ROOM_NUM = 12
 local id = bank + 1
 
 -- @breif 生成房间id，
@@ -35,7 +36,6 @@ local function next_id()
 		return 0, id
 	end
 end
-
 
 local CMD = {}
 
@@ -62,7 +62,7 @@ function CMD.start(channel_id)
 	-- 初始所有桌子
 	for i=1,MAX_ROOM_NUM do
 		local roomid = bank + i
-		local addr = skynet.newservice("big2room/room", roomid)
+		local addr = skynet.newservice("pokerroom/room", roomid)
 		skynet.call(addr, "lua", "start", channel_id)
 		pool[roomid] = { id = roomid, addr = addr }
 	end
@@ -137,6 +137,25 @@ function CMD.sayhi()
 			rooms[k] = nil
 		end
 	end
+	-- 创建匹配房间
+	log.info('crate room mode')
+	local roommode = tonumber(ds.query('roommode'))
+	for k,v in pairs(roommode) do
+		local errorcode, roomid = next_id()
+		if errorcode ~= 0 then
+			break
+		end
+		assert(roomid >= bank + 1 and roomid <= bank + MAX_ROOM_NUM)
+		local room = assert(pool[roomid])
+		local rule = {
+			mode = k,
+			sblind = v.blinds,
+			bblind = v.blinds * 2
+		}
+		skynet.call(room.addr, "lua", "sayhi", 0, {}, rule)
+		mrooms[k] = room
+	end
+
 	return true
 end
 
