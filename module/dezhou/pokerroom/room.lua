@@ -1,4 +1,4 @@
-package.path = "./module/dezhou/big2room/?.lua;./module/dezhou/lualib/?.lua;"..package.path
+package.path = "./module/dezhou/pokerroom/?.lua;./module/dezhou/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"

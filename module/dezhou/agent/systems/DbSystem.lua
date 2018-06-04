@@ -38,15 +38,11 @@ function cls:load_cache_to_data()
 	log.info("uid(%d) load_cache_to_data", uid)
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
-	unpack_components.unpack_package_component(entity.package, res.db_package)
+	unpack_components.unpack_package_component(entity.package, res.db_user_package)
 	if #res.db_user_rooms == 1 then
 		unpack_components.unpack_room_component(entity.room, res.db_user_rooms[1])
 	end
-	-- 判断是否是新用户
-	if entity.user.newUser == 1 then
-		self:_on_user_born()
-		entity.user.newUser = 0
-	end
+	unpack_components.unpack_funcopen_component(entity.funcopen, res.db_user_funcopen)
 	return true
 end
 
@@ -55,28 +51,10 @@ function cls:save_user(uid, entity)
 	assert(self)
 	assert(uid and entity)
 	local data = {}
-	local ok, seg
-	ok, seg = pack_components.pack_user_component(entity.user)
-	if ok then
-		data.db_user = seg
-	else
-		log.error("pack_user_component failtrue.")
-		return false
-	end
-	ok, seg = pack_components.pack_room_component(entity.room, uid)
-	if ok then
-		data.db_user_room = seg
-	else
-		log.error("pack_room_component failtrue.")
-		return false
-	end
-	-- ok, seg = pack_components.pack_package_component(entity.package)
-	-- if ok then
-	-- 	data.package = seg
-	-- else
-	-- 	log.error("pack_package_component failtrue.")
-	-- 	return false
-	-- end
+	data.db_user = pack_components.pack_user_component(entity.user)
+	data.db_user_room = pack_components.pack_room_component(entity.room, uid)
+	data.db_user_package = pack_components.pack_package_component(entity.package, uid)
+	data.db_user_funcopen = pack_components.pack_funcopen_component(entity.funcopen, uid)
 	skynet.call(".DB", "lua", "write_user", data)
 	return true
 end

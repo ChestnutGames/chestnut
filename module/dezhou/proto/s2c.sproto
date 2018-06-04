@@ -130,7 +130,6 @@
     online 5 : boolean
     cards 6 : *card         # 手上的牌
     opcode 7 : integer
-    lead 8 : big2lead
 }
 
 .perflop_card {
@@ -843,26 +842,6 @@ pokerstandup 735 {
     response {
         errorcode 0 : integer
     }   
-}
-
-pokersblind 736 {
-    request {
-        idx 0 : integer
-        coin 1 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
-
-pokerbblind 737 {
-    request {
-        idx 0 : integer
-        coin 1 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
 }
 
 # 德州模块结束

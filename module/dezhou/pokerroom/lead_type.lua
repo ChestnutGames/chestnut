@@ -9,6 +9,7 @@ _M.STRAIGHT        = 5  -- 顺子
 _M.FLUSH           = 6  -- 同花
 _M.FULL_HOUSE      = 7  -- 葫芦
 _M.FOUR_OF_A_KIND  = 8  -- 铁质  (4张一样的牌再加任意牌)
-_M.ROYAL_FLUSH     = 9  -- 同花大顺
+_M.STRAIGHT_FLUSH  = 9  -- 同花顺
+_M.ROYAL_FLUSH     = 10 -- 同花大顺
 
 return _M

@@ -1,17 +1,18 @@
 
 local cls = class("AppConfig")
 
-function cls:ctor( ... )
+function cls:ctor()
 	-- body
 	self.config = {}
 end
 
-function cls:LoadFile( ... )
+function cls:LoadFile()
 	-- body
 	local card = require "configs.cardConfig"
 	local consts = require "configs.constsConfig"
 	local desk = require "configs.deskConfig"
 	local errorcode = require "configs.errorcodeConfig"
+	local funcopen = require "configs.funcopenConfig"
 	local hand = require "configs.handConfig"
 	local hutype = require "configs.hutypeConfig"
 	local item = require "configs.itemConfig"
@@ -25,6 +26,7 @@ function cls:LoadFile( ... )
 	self.config['consts'] = consts
 	self.config['desk'] = desk
 	self.config['errorcode'] = errorcode
+	self.config['funcopen'] = funcopen
 	self.config['hand'] = hand
 	self.config['hutype'] = hutype
 	self.config['item'] = item
@@ -37,12 +39,13 @@ function cls:LoadFile( ... )
 	return true
 end
 
-function cls:CheckConfig( ... )
+function cls:CheckConfig()
 	-- body
+	assert(self)
 	return true
 end
 
-function cls:CheckCard( ... )
+function cls:CheckCard()
 	-- body
 end
 

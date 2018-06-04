@@ -46,6 +46,7 @@ function cls:afk()
 	local uid   = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
+
 	if entity.room.joined and entity.room.online then
 		local ok = skynet.call(entity.room.addr, "lua", "afk", uid)
 		assert(ok)
@@ -98,9 +99,10 @@ function cls:match(args)
 		return res
 	end
 	local agent = skynet.self()
-	res = skynet.call(".ROOM_MGR", "lua", "create", uid, agent, args)
+	res = skynet.call(".ROOM_MGR", "lua", "match", uid, agent, args.mode)
+	log.info('match %d', args.mode)
 	if res.errorcode == 0 then
-		entity.room.matching = true
+		entity.room.matching = false
 	end
 	return res
 end
@@ -156,6 +158,7 @@ function cls:join(args)
 			entity.room.addr = res.addr
 			entity.room.joined = true
 			entity.room.online = true
+			entity.room.mode = response.mode
 		else
 			log.info('join room FAIL.')
 		end

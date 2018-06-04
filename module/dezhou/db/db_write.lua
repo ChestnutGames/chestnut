@@ -2,49 +2,6 @@ local log = require "chestnut.skynet.log"
 local string_format = string.format
 local _M = {}
 
-function _M:write_user(db_user)
-	local sql = string_format([==[CALL
-		sp_user_insert_or_update (%d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d, %d);]==],
-		db_user.uid, db_user.sex, db_user.nickname, db_user.province,
-		db_user.city, db_user.country, db_user.headimg, db_user.openid, db_user.nameid,
-		db_user.create_at, db_user.update_at, db_user.login_at, db_user.new_user)
-	-- log.info(sql)
-	local res = self.db:query(sql)
-	if res.errno then
-		log.info(self.dump(res))
-	end
-	return res
-end
-
-function _M:write_user_room(db_user_room)
-	-- body
-	local sql = string_format([==[CALL
-	sp_user_room_insert_or_update(%d, %d, %d, %d);]==],
-	db_user_room.uid, db_user_room.roomid, db_user_room.created, db_user_room.joined)
-	-- log.info(sql)
-	local res = self.db:query(sql)
-	if res.errno then
-		log.info(self.dump(res))
-	end
-	return true
-end
-
-function _M:write_user_package(db_user_package)
-	-- body
-	for _,db_user_item in ipairs(db_user_package) do
-		local sql = string_format([==[CALL
-		sp_user_package_insert_or_update(%d, %d, %d, %d, %d);]==],
-		db_user_item.uid, db_user_item.id, db_user_item.num, db_user_item.create_at, db_user_item.update_at)
-		-- log.info(sql)
-		local res = self.db:query(sql)
-		if res.errno then
-			log.info(self.dump(res))
-			return false
-		end
-	end
-	return true
-end
-
 function _M:write_room_mgr_users(db_users)
 	-- body
 	for _,db_user in pairs(db_users) do
@@ -54,7 +11,7 @@ function _M:write_room_mgr_users(db_users)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.info(self.dump(res))
+			log.error(self.dump(res))
 			return false
 		end
 	end
@@ -69,7 +26,7 @@ function _M:write_room_mgr_rooms(db_rooms)
 		db_room.id, db_room.host, db_room.users, db_room.ju)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.info(self.dump(res))
+			log.error(self.dump(res))
 		end
 	end
 	return true
@@ -84,7 +41,7 @@ function _M:write_room_users(db_users)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.info(self.dump(res))
+			log.error(self.dump(res))
 		end
 	end
 	return true
@@ -98,7 +55,70 @@ function _M:write_room(db_room)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
-		log.info(self.dump(res))
+		log.error(self.dump(res))
+	end
+	return true
+end
+
+------------------------------------------
+-- about user
+function _M:write_user(db_user)
+	local sql = string_format([==[CALL
+		sp_user_insert_or_update (%d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d, %d, %d);]==],
+		db_user.uid, db_user.sex, db_user.nickname, db_user.province,
+		db_user.city, db_user.country, db_user.headimg, db_user.openid, db_user.nameid,
+		db_user.create_at, db_user.update_at, db_user.login_at, db_user.new_user, db_user.level)
+	-- log.info(sql)
+	local res = self.db:query(sql)
+	if res.errno then
+		log.error(self.dump(res))
+	end
+	return res
+end
+
+function _M:write_user_room(db_user_room)
+	-- body
+	local sql = string_format([==[CALL
+	sp_user_room_insert_or_update(%d, %d, %d, %d, %d, %d, %d);]==],
+	db_user_room.uid, db_user_room.roomid, db_user_room.created, db_user_room.joined,
+	db_user_room.create_at, db_user_room.update_at, db_user_room.mode)
+	-- log.info(sql)
+	local res = self.db:query(sql)
+	if res.errno then
+		log.error(self.dump(res))
+	end
+	return true
+end
+
+function _M:write_user_package(db_user_package)
+	-- body
+	for _,db_user_item in ipairs(db_user_package) do
+		local sql = string_format([==[CALL
+		sp_user_package_insert_or_update(%d, %d, %d, %d, %d);]==],
+		db_user_item.uid, db_user_item.id, db_user_item.num, db_user_item.create_at, db_user_item.update_at)
+		-- log.info(sql)
+		local res = self.db:query(sql)
+		if res.errno then
+			log.error(self.dump(res))
+			return false
+		end
+	end
+	return true
+end
+
+function _M:write_user_funcopen(db_user_funcopen)
+	-- body
+	for _,db_user_funcitem in ipairs(db_user_funcopen) do
+		local sql = string_format([==[CALL
+		sp_user_funcopen_insert_or_update(%d, %d, %d, %d, %d);]==],
+		db_user_funcitem.uid, db_user_funcitem.id, db_user_funcitem.open,
+		db_user_funcitem.create_at, db_user_funcitem.update_at)
+		-- log.info(sql)
+		local res = self.db:query(sql)
+		if res.errno then
+			log.error(self.dump(res))
+			return false
+		end
 	end
 	return true
 end
@@ -113,7 +133,7 @@ function _M:write_offuser_room_created(db_user_room)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
-		log.info(self.dump(res))
+		log.error(self.dump(res))
 	end
 	return true
 end

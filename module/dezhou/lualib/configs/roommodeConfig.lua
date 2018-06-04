@@ -4,7 +4,10 @@ _M["1"] = {
 	
 	["id"] = 1,	
 	["num"] = 5,	
-	["blinds"] = 25,
+	["join"] = 5,	
+	["play"] = 1,	
+	["sblind"] = 25,	
+	["bblind"] = 50,
 }
 
 return _M

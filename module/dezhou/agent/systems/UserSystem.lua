@@ -31,6 +31,11 @@ function cls:set_agent_systems(systems, ... )
 	self.agentSystems = systems
 end
 
+function cls:on_data_init()
+	-- body
+	assert(self)
+end
+
 function cls:first(args, ... )
 	-- body
 	local uid = self.agentContext.uid

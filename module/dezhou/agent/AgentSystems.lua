@@ -1,9 +1,10 @@
 local AhievementSystem = require "systems.AhievementSystem"
 local DbSystem = require "systems.DbSystem"
+local FuncOpenSystem = require "systems.FuncOpenSystem"
+local LevelSystem = require "systems.LevelSystem"
 local PackageSystem = require "systems.PackageSystem"
 local RoomSystem = require "systems.RoomSystem"
 local UserSystem = require "systems.UserSystem"
-local FuncOpenSystem = require "systems.FuncOpenSystem"
 
 
 local table_insert = table.insert
@@ -19,19 +20,21 @@ function Processors:ctor(agentContext)
     self._cleanup_processors = {}
     self._tear_down_processors = {}
     self._afk_processors = {}
+    self._data_init_processors = {}
 
     self.agentContext = agentContext
     self.user = UserSystem.new(agentContext)
     self.room = RoomSystem.new(agentContext)
     self.db = DbSystem.new(agentContext)
     self.package = PackageSystem.new(agentContext)
-    self.func_open = FuncOpenSystem.new(agentContext)
+    self.funcopen = FuncOpenSystem.new(agentContext)
+
 
     self:add(self.user)
     self:add(self.room)
     self:add(self.db)
     self:add(self.package)
-    self:add(self.func_open)
+    self:add(self.funcopen)
 end
 
 function Processors:add(processor)
@@ -61,6 +64,10 @@ function Processors:add(processor)
 
     if processor.afk then
         table_insert(self._afk_processors, processor)
+    end
+
+    if processor.on_data_init then
+        table_insert(self._data_init_processors, processor)
     end
 end
 
@@ -142,6 +149,12 @@ function Processors:afk( ... )
     -- body
     for _, processor in pairs(self._afk_processors) do
         processor:afk()
+    end
+end
+
+function Processors:on_data_init()
+    for _, processor in pairs(self._data_init_processors) do
+        processor:on_data_init()
     end
 end
 

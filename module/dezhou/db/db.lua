@@ -118,6 +118,8 @@ function QUERY.read_user(uid)
 	local res = {}
 	res.db_users = db_read.read_user_by_uid(ctx, uid)
 	res.db_user_rooms = db_read.read_user_room(ctx, uid)
+	res.db_user_package = db_read.read_user_package(ctx, uid)
+	res.db_user_funcopen = db_read.read_user_funcopen(ctx, uid)
 	return res
 end
 
@@ -149,6 +151,8 @@ function QUERY.write_user(data)
 	-- body
 	db_write.write_user(ctx, data.db_user)
 	db_write.write_user_room(ctx, data.db_user_room)
+	db_write.write_user_package(ctx, data.db_user_package)
+	db_write.write_user_funcopen(ctx, data.db_user_funcopen)
 	return true
 end
 

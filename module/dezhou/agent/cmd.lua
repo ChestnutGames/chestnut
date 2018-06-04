@@ -437,7 +437,7 @@ end
 
 function CMD:pokermatch(args)
 	-- body
-	self:send_request_gate("big2match", args)
+	self:send_request_gate("pokermatch", args)
 	return servicecode.NORET
 end
 

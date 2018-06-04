@@ -7,13 +7,15 @@ local AgentSystems = require "AgentSystems"
 local EntitasContext = require "entitas.Context"
 local Matcher = require "entitas.Matcher"
 local PrimaryEntityIndex = require "entitas.PrimaryEntityIndex"
-local RoomComponent = require "components.RoomComponent"
+
 local UserComponent = require "components.UserComponent"
-local DbComponent = require "components.DbComponent"
 local AccountComponent = require "components.AccountComponent"
+local DbComponent = require "components.DbComponent"
+local FuncOpenComponent = require "components.FuncOpenComponent"
 local InboxComponent = require "components.InboxComponent"
 local OutboxComponent = require "components.OutboxComponent"
 local PackageComponent = require "components.PackageComponent"
+local RoomComponent = require "components.RoomComponent"
 local CMD = require "cmd"
 local assert = assert
 
@@ -74,6 +76,7 @@ function cls:init_data(uid)
 		entity:add(AccountComponent, uid)
 		entity:add(UserComponent, uid)
 		entity:add(DbComponent)
+		entity:add(FuncOpenComponent, {})
 		entity:add(InboxComponent)
 		entity:add(OutboxComponent)
 		entity:add(PackageComponent, {})
@@ -82,6 +85,12 @@ function cls:init_data(uid)
 
 	-- 重新加载数据
 	local ok, err = pcall(self.systems.db.load_cache_to_data, self.systems.db)
+	if not ok then
+		log.error(err)
+		return servicecode.LOGIN_AGENT_LOAD_ERR
+	end
+	-- 初始化所有数据
+	ok, err = pcall(self.systems.on_data_init, self.systems)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR

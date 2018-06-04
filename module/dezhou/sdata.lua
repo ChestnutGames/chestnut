@@ -34,13 +34,11 @@ end
 
 skynet.start(function()
 	skynet.dispatch("lua", function(_,_, cmd, ...)
-		log.info("sdata cmd = %s", cmd)
-		local f = CMD[cmd]
+		local f = assert(CMD[cmd])
 		local r = f(...)
 		if r ~= NORET then
 			skynet.retpack(r)
 		end
 	end)
-	-- skynet.fork(update_db)
 	skynet.register "sdata"
 end)

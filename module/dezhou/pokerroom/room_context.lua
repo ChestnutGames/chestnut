@@ -20,7 +20,7 @@ state.CREATE     = "create"
 state.JOIN       = "join"      -- 此状态下会等待玩家加入
 state.READY      = "ready"     -- 此状态下等待玩家准备
 state.SHUFFLE    = "shuffle"   -- 此状态下洗牌
-state.DEAL       = "deal"      -- 此状态发牌        (deprecated)
+state.DEAL       = "deal"      -- 此状态发牌
 state.FIRSTTURN  = "firstturn" -- 第一个人出牌
 state.TURN       = "turn"      -- 轮谁出牌          (麻将只是可以多人同时turn call)
 state.CALL       = "call"      -- 只有pass命令
@@ -59,12 +59,12 @@ function cls:ctor()
 	self.id = 0
 	self.open = false
 	self.host = nil
-	self.max = 5          -- 玩家数
 	self.joined = 0
 	self.online = 0
 	self.maxju = 0        -- 玩的局数
 	self.uplayers = {}
-	self.rule = {}        -- 房间规则
+	self.mode = 0         -- 房间模式
+	self.rule = {}        -- 房间规则，作为模式的补充
 
 	-- play
 	self._cards = {}         -- 洗牌
@@ -516,7 +516,7 @@ function cls:init_data()
 	return true
 end
 
-function cls:sayhi(host, users, rule)
+function cls:sayhi(host, users, mode, rule)
 	-- body
 	assert(self)
 	self.host = host
@@ -532,7 +532,11 @@ function cls:sayhi(host, users, rule)
 		self.uplayers[player.uid] = player
 		self:incre_joined()
 	end
-	self.rule = rule
+	if host == 0 then
+		self.mode = mode
+		self.rule = rule
+		assert(mode ~= 0)
+	end
 	return true
 end
 
@@ -666,14 +670,13 @@ function cls:join(uid, agent, name, sex)
 		online = me.online,
 		cards = {},
 		opcode = opcode.NONE,
-		lead = {}
 	}
 
 	local res = {}
 	res.errorcode = 0
 	res.roomid = self.id
-	res.room_max = self.max
-	res.state = self.alert.current
+	res.mode   = self.mode
+	res.state  = self.alert.current
 	res.me = p
 	res.ps = {}
 	for _,v in ipairs(self.players) do
@@ -687,7 +690,6 @@ function cls:join(uid, agent, name, sex)
 				online = v.online,
 				cards = {},
 				opcode = opcode.NONE,
-				lead  = {}
 			}
 			table.insert(res.ps, p)
 		end
@@ -696,7 +698,7 @@ function cls:join(uid, agent, name, sex)
 
 	local args = {}
 	args.p = p
-	self:push_client_except_idx(me.idx, "big2join", args)
+	self:push_client_except_idx(me.idx, "pokerjoin", args)
 
 	-- if self.joined >= self.max and self.online >= self.max then
 	-- 	self.alert.ev_ready(self)
@@ -708,7 +710,6 @@ function cls:rejoin(uid, agent)
 	-- body
 	assert(uid and agent)
 	local res = { errorcode = 0 }
-	log.info("rejoin uid(%d)", uid)
 	local me = self:get_player_by_uid(uid)
 	if me == nil then
 		res.errorcode = 17
@@ -718,6 +719,7 @@ function cls:rejoin(uid, agent)
 	assert(not me.online)
 	me.agent = agent
 	me.online = true
+	me.sitdown = true
 	self:incre_online()
 
 	if me.alert.is(Player.state.NONE) then
@@ -737,13 +739,12 @@ function cls:rejoin(uid, agent)
 		online = me.online,
 		cards  = me:pack_cards(),
 		opcode = me.opcode,
-		lead   = me:pack_leadcards()
 	}
 
 	res.errorcode = 0
 	res.roomid = self.id
-	res.room_max = self.max
-	res.state = self.alert.current
+	res.mode   = self.mode
+	res.state  = self.alert.current
 	res.me = p
 	res.ps = {}
 	for _,v in ipairs(self.players) do
@@ -757,7 +758,6 @@ function cls:rejoin(uid, agent)
 				online = v.online,
 				cards  = v:pack_cards(),
 				opcode = v.opcode,
-				lead   = v:pack_leadcards()
 			}
 			table.insert(res.ps, p)
 		end
@@ -766,7 +766,7 @@ function cls:rejoin(uid, agent)
 
 	local args = {}
 	args.p = p
-	self:push_client_except_idx(me.idx, "big2rejoin", args)
+	self:push_client_except_idx(me.idx, "pokerrejoin", args)
 
 	-- if self.joined >= self.max and self.online >= self.max then
 	-- 	if self.alert.is(state.JOIN) then
@@ -797,7 +797,7 @@ function cls:leave(uid)
 
 	local args = {}
 	args.idx = p.idx
-	self:push_client_except_idx(p.idx, "big2leave", args)
+	self:push_client_except_idx(p.idx, "pokerleave", args)
 	return servicecode.NORET
 end
 
@@ -1268,8 +1268,8 @@ function cls:take_over()
 	assert(self.alert.is(state.OVER))
 	self:emit_player_event('ev_wait_over')
 
-	self:record("big2over")
-	self:push_client("big2over")
+	self:record("pokerover")
+	self:push_client("pokerover")
 end
 
 -- 结算会检查是重新开始一局，还是房间结束
@@ -1280,8 +1280,8 @@ function cls:take_settle()
 	local args = {}
 	args.settles = self.settles
 
-	self:record("settle", args)
-	self:push_client("settle", args)
+	self:record("pokersettle", args)
+	self:push_client("pokersettle", args)
 end
 
 function cls:take_restart()
@@ -1295,7 +1295,7 @@ function cls:take_restart()
 		self._players[i]:take_restart()
 	end
 
-	self:push_client("take_restart")
+	self:push_client("pokertake_restart")
 end
 
 function cls:take_roomover()
@@ -1336,17 +1336,17 @@ function cls:take_perflop()
 	self.alert.ev_deal(self)
 end
 
-function cls:take_flop( ... )
+function cls:take_flop()
 	-- body
 	assert(self.playalert.is(gameplay.FLOP))
 end
 
-function cls:take_turn( ... )
+function cls:take_turn()
 	-- body
 	assert(self.playalert.is(gameplay.TURN))
 end
 
-function cls:take_river( ... )
+function cls:take_river()
 	-- body
 	assert(self.playalert.is(gameplay.RIVER))
 end

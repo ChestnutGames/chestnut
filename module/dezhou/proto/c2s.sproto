@@ -126,7 +126,6 @@
     online 5 : boolean
     cards 6 : *card         # 手上的牌
     opcode 7 : integer
-    lead 8 : big2lead
 }
 
 .perflop_card {
@@ -610,9 +609,9 @@ pokerjoin 726 {
     response {
         errorcode 0 : integer
         roomid    1 : integer
-        room_max  2 : integer
-        state     3 : string
-        rule      4 : pokerrule
+        mode      2 : integer          # 房间模式
+        state     3 : string           # 房间状态，这里其实没有用
+        rule      4 : pokerrule        # 在自定义有用,作为模式的补充
         me        5 : pokerplayer
         ps        6 : *pokerplayer
     }
@@ -622,7 +621,7 @@ pokerrejoin 727 {
     response {
         errorcode 0 : integer
         roomid    1 : integer
-        room_max  2 : integer
+        mode      2 : integer
         state     3 : string
         rule      4 : pokerrule
         me        5 : pokerplayer

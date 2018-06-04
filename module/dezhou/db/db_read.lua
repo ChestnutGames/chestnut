@@ -38,27 +38,6 @@ function _M:read_account_by_username(username, password)
 	end
 end
 
-function _M:read_user_by_uid(uid)
-	-- body
-	local res = self.db:query(string_format("CALL sp_user_select(%d);", uid))
-	if res.mulitresultset then
-		return res[1]
-	end
-	return res
-end
-
-function _M:read_user_room(uid)
-	-- body
-	local res = self.db:query(string_format("CALL sp_user_room_select(%d);", uid))
-	-- log.info(self.dump(res))
-	if res.mulitresultset then
-		return res[1]
-	else
-		log.error(self.dump(res))
-	end
-	return res
-end
-
 function _M:read_room(id)
 	-- body
 	local res = self.db:query(string_format("CALL sp_room_select(%d);", id))
@@ -83,6 +62,51 @@ function _M:read_room_users(id)
 	end
 end
 
+------------------------------------------
+-- about user
+function _M:read_user_by_uid(uid)
+	-- body
+	local res = self.db:query(string_format("CALL sp_user_select(%d);", uid))
+	if res.mulitresultset then
+		return res[1]
+	end
+	return res
+end
 
+function _M:read_user_room(uid)
+	-- body
+	local res = self.db:query(string_format("CALL sp_user_room_select(%d);", uid))
+	-- log.info(self.dump(res))
+	if res.mulitresultset then
+		return res[1]
+	else
+		log.error(self.dump(res))
+	end
+	return res
+end
+
+function _M:read_user_package(uid)
+	-- body
+	local res = self.db:query(string_format("CALL sp_user_package_select(%d);", uid))
+	-- log.info(self.dump(res))
+	if res.mulitresultset then
+		return res[1]
+	else
+		log.error(self.dump(res))
+	end
+	return res
+end
+
+function _M:read_user_funcopen(uid)
+	-- body
+	local res = self.db:query(string_format("CALL sp_user_funcopen_select(%d);", uid))
+	-- log.info(self.dump(res))
+	if res.mulitresultset then
+		return res[1]
+	else
+		log.error(self.dump(res))
+	end
+	return res
+end
 
 return _M

@@ -9,16 +9,27 @@ local json = require "rapidjson"
 local traceback = debug.traceback
 local assert = assert
 
+-- room
+-- room.id          房间id
+-- room.addr        房间地址
+-- room.mode        房间模式
+-- room.rule        房间规则
+-- room.joined      房间加入的人数
+-- room.users       房间已经加入的人员
+
 local NORET = {}
 local users = {}   -- 玩家信息,玩家创建的房间
 local rooms = {}   -- 私人打牌的
-local mrooms = {}  -- 匹配的房间
 local num = 0      -- 正在打牌的桌子数
 local pool = {}    -- 闲置的大佬2桌子
-local q = queue()  -- 排队的队列
 local bank = 101010
-local MAX_ROOM_NUM = 12
 local id = bank + 1
+local MAX_ROOM_NUM = 0
+
+-- 匹配
+local mmrooms = {}  -- 匹配的房间
+local mrooms = {}
+local q = queue()  -- 排队的队列
 
 -- @breif 生成房间id，
 -- @return 0,成功, 13 超过最大房间数
@@ -59,12 +70,28 @@ function CMD.start(channel_id)
 	assert(MAX_ROOM_NUM > 1)
 	log.info('MAX_ROOM_NUM ==> %d', MAX_ROOM_NUM)
 
-	-- 初始所有桌子
+	-- 初始所有自定义桌子
 	for i=1,MAX_ROOM_NUM do
 		local roomid = bank + i
 		local addr = skynet.newservice("pokerroom/room", roomid)
 		skynet.call(addr, "lua", "start", channel_id)
 		pool[roomid] = { id = roomid, addr = addr }
+	end
+
+	-- 初始化所有匹配房间
+	local offset = MAX_ROOM_NUM
+	local roommode = ds.query('roommode')
+	for _,v in pairs(roommode) do
+		mmrooms[v.id] = {}
+		for i=1,v.num do
+			offset = offset + i
+			local roomid = bank + offset
+			local addr = skynet.newservice("pokerroom/room", roomid)
+			skynet.call(addr, "lua", "start", channel_id)
+			local room = { mode=v.id, id=roomid, addr=addr, joined=0, users={} }
+			mmrooms[v.id][roomid] = room
+			mrooms[roomid] = room
+		end
 	end
 	return true
 end
@@ -115,7 +142,7 @@ function CMD.sayhi()
 	for k,v in pairs(rooms) do
 		if v.ju < 1 then
 			local room = pool[k]
-			local ok = skynet.call(room.addr, "lua", "sayhi", v.host, assert(v.users))
+			local ok = skynet.call(room.addr, "lua", "sayhi", v.host, assert(v.users), 0)
 			if ok then
 				v.addr = room.addr
 				pool[k] = nil
@@ -138,22 +165,11 @@ function CMD.sayhi()
 		end
 	end
 	-- 创建匹配房间
-	log.info('crate room mode')
-	local roommode = tonumber(ds.query('roommode'))
-	for k,v in pairs(roommode) do
-		local errorcode, roomid = next_id()
-		if errorcode ~= 0 then
-			break
-		end
-		assert(roomid >= bank + 1 and roomid <= bank + MAX_ROOM_NUM)
-		local room = assert(pool[roomid])
-		local rule = {
-			mode = k,
-			sblind = v.blinds,
-			bblind = v.blinds * 2
-		}
-		skynet.call(room.addr, "lua", "sayhi", 0, {}, rule)
-		mrooms[k] = room
+	for _,v in pairs(mrooms) do
+		assert(v.addr)
+		skynet.call(v.addr, "lua", "sayhi", 0, v.users, v.mode)
+		skynet.call('.CHATD', 'lua', 'room_create', v.id, v.addr)
+		skynet.call('.CHATD', 'lua', 'room_init_users', v.id, v.users)
 	end
 
 	return true
@@ -219,42 +235,29 @@ end
 
 ------------------------------------------
 -- 匹赔
-function CMD.enqueue_agent(uid, agent, rule, mode, scene, ... )
+function CMD.match(uid, agent, mode)
 	-- body
-	log.info("enqueue_agent")
-	local rt = ((scene & 0xff << 16) | (mode & 0xff << 8) | (rule & 0xff))
+	print(mode)
+	local res = {}
+	res.errorcode = 0
+	local roommode = ds.query('roommode')
+	local xmode = assert(roommode[tostring(mode)])
+	local rooms = assert(mmrooms[mode])
+	for _,room in pairs(rooms) do
+		if room.joined < xmode.join then
+			skynet.retpack(res)
+			local args = { roomid=room.id }
+			skynet.send(agent, 'lua', 'pokermatch', args)
+			return NORET
+		end
+	end
 	local user = {
-		agent = agent,
 		uid = uid,
-		sid = sid,
-		rt = rt,
-		rule = rule,
-		mode = mode,
-		scene = scene,
+		agent = agent,
+		mode = mode
 	}
-	users[uid] = agent
-	mgr:enqueue_agent(rt, agent)
-
-	if mgr:get_agent_queue_sz(rt) >= 3 then
-		log.info("room number more than 3")
-		local room = mgr:dequeue_room()
-		for i=1,3 do
-			local u = mgr:dequeue_agent(rt)
-			skynet.send(u.agent, "lua", "enter_room", room.id)
-			users[u.uid] = nil
-		end	
-	end
-	return noret
-end
-
-function CMD.dequeue_agent(uid)
-	-- body
-	assert(uid)
-	local u = users[uid]
-	if u then
-		mgr:remove_agent(u)
-		users[uid] = nil
-	end
+	q:enqueue(user)
+	return res
 end
 
 ------------------------------------------
@@ -311,7 +314,12 @@ function CMD.apply(roomid)
 	if room then
 		return { errorcode = 0, addr = room.addr }
 	else
-		return { errorcode = 14 }
+		room = mrooms[roomid]
+		if room then
+			return { errorcode = 0, addr = room.addr }
+		else
+			return { errorcode = 14 }
+		end
 	end
 end
 
@@ -323,6 +331,8 @@ function CMD.dissolve(roomid)
 	local user = users[room.host]
 	user.roomid = 0
 	room.host = 0
+	room[roomid] = nil
+	pool[room.id] = room
 	return NORET
 end
 
@@ -332,7 +342,15 @@ function CMD.room_join(roomid, uid, agent, idx, chip)
 	-- body
 	assert(roomid and uid and agent and idx and chip)
 	local room = rooms[roomid]
-	room.users[uid] = { uid=uid, agent=agent, idx=idx, chip=chip }
+	if room then
+		room.users[uid] = { uid=uid, agent=agent, idx=idx, chip=chip }
+	else
+		room = mrooms[roomid]
+		if room then
+			room.users[uid] = { uid=uid, agent=agent, idx=idx, chip=chip }
+			room.joined = room.joined + 1
+		end
+	end
 	return true
 end
 

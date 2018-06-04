@@ -14,5 +14,6 @@ return MakeComponent("user",
 	"createAt",
 	"updateAt",
 	"loginAt",
-	"newUser"
+	"newUser",
+	"level"
 )

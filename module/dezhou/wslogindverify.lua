@@ -82,6 +82,7 @@ local function auth_win_myself(username, password)
 			db_user.update_at = os.time()
 			db_user.login_at = os.time()
 			db_user.new_user = 1
+			db_user.level = 1
 			skynet.call(".DB", "lua", "write_new_user", db_user)
 		end
 		return uid
