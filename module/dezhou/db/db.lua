@@ -174,7 +174,7 @@ end
 -- 修改离线数据
 function QUERY.write_offuser_room(db_user_room)
 	-- body
-	db_write.write_user_room(ctx, db_user_room)
+	db_write.write_offuser_room_created(ctx, db_user_room)
 	return true
 end
 

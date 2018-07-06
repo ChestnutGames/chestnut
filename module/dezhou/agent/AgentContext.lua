@@ -18,6 +18,7 @@ local PackageComponent = require "components.PackageComponent"
 local RoomComponent = require "components.RoomComponent"
 local CMD = require "cmd"
 local assert = assert
+local traceback = debug.traceback
 
 local cls = class("AgentContext", context)
 
@@ -84,13 +85,13 @@ function cls:init_data(uid)
 	end
 
 	-- 重新加载数据
-	local ok, err = pcall(self.systems.db.load_cache_to_data, self.systems.db)
+	local ok, err = xpcall(self.systems.db.load_cache_to_data, traceback, self.systems.db)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR
 	end
 	-- 初始化所有数据
-	ok, err = pcall(self.systems.on_data_init, self.systems)
+	ok, err = xpcall(self.systems.on_data_init, traceback, self.systems)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR

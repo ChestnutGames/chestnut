@@ -39,6 +39,8 @@ function CMD.afk(uid)
 	users[uid] = nil
 end
 
+------------------------------------------
+-- 房间信息
 function CMD.room_create(room_id, addr)
 	-- body
 	assert(room_id and addr)
@@ -87,7 +89,11 @@ function CMD.room_leave(room_id, uid)
 	-- body
 	assert(room_id and uid)
 	local room = rooms[room_id]
-	room.users[uid] = nil
+	if room then
+		room.users[uid] = nil
+	else
+		log.error('room(%d) leave', room_id)
+	end
 	return true
 end
 

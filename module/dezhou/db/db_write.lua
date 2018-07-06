@@ -128,8 +128,8 @@ end
 function _M:write_offuser_room_created(db_user_room)
 	-- body
 	local sql = string_format([==[CALL
-	sp_offuser_room_update_created(%d, %d);]==],
-	db_user_room.uid, db_user_room.roomid, db_user_room.created, db_user_room.joined)
+	sp_offuser_room_update_created(%d, %d, %d, %d, %d);]==],
+	db_user_room.uid, db_user_room.created, db_user_room.joined, db_user_room.update_at, db_user_room.mode)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then

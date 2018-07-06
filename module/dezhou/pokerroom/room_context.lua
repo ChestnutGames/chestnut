@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local mc = require "skynet.multicast"
--- local ds = require "skynet.datasheet"
+local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
 local fsm = require "chestnut.fsm"
@@ -81,6 +81,10 @@ function cls:ctor()
 	self.alert = self:create_alert(state.NONE)
 	self.alert.ev_join(self)
 	self.playalert = self:create_gameplay_alert(gameplay.NONE)
+	self.flopCards = {}
+	self.turnCard = nil
+	self.riverCard = nil
+	self.callround = 0
 	self.settles = {}           -- 在结束的时候已经完成
 
 	-- 记录所有数据
@@ -120,10 +124,12 @@ end
 
 function cls:find_noone()
 	-- body
-	if self.joined >= self.max then
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	if self.joined >= xmode.join then
 		return nil
 	end
-	for i=1,self.max do
+	for i=1,xmode.join do
 		if self.players[i].uid == 0 then
 			return self.players[i]
 		end
@@ -149,7 +155,9 @@ end
 
 function cls:push_client(name, args)
 	-- body
-	for i=1,self.max do
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
 		local p = self.players[i]
 		if not p:is_none() then
 			if p.online then
@@ -172,7 +180,9 @@ end
 
 function cls:push_client_except_idx(idx, name, args)
 	-- body
-	for i=1,self.max do
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
 		if idx ~= i then
 			local p = self.players[i]
 			if not p:is_none() and p.online then
@@ -214,9 +224,14 @@ end
 -- 所有玩家都转移状态
 function cls:emit_player_event(event)
 	-- body
-	for i=1,self.max do
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
 		local p = assert(self.players[i])
-		p.alert[event](p)
+		if not p:is_none() and
+			p.dealed then
+			p.alert[event](p)
+		end
 	end
 end
 
@@ -298,9 +313,13 @@ end
 function cls:is_next_state(state)
 	-- body
 	assert(state)
-	for i=1,self.max do
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
 		local p = assert(self.players[i])
-		if not p.alert.is(state) then
+		if not p:is_none() and
+			p.dealed and
+			not p.alert.is(state) then
 			return false
 		end
 	end
@@ -310,10 +329,6 @@ end
 function cls:on_next_state()
 	-- body
 	if self.alert.is(state.JOIN) then
-		if self:is_next_state(Player.state.JOIN) then
-			log.info('on_next_state')
-			self.alert.ev_shuffle(self)
-		end
 	elseif self.alert.is(state.READY) then
 		if self:is_next_state(Player.state.READY) then
 			self.alert.ev_shuffle(self)
@@ -324,10 +339,7 @@ function cls:on_next_state()
 		end
 	elseif self.alert.is(state.DEAL) then
 		if self:is_next_state(Player.state.DEAL) then
-			if self.playalert.is(gameplay.PERFLOP) then
-				-- 最开是没人发三张牌，
-				self.alert.ev_first_turn()
-			end
+			self.alert.ev_first_turn()
 		end
 	elseif self.alert.is(state.CALL) then
 		if self:is_next_state(Player.state.CALL) then
@@ -360,6 +372,25 @@ function cls:on_next_state()
 	end
 end
 
+function cls:on_doshuffle()
+	-- body
+	-- 判断join玩家人数
+	if self.alert.current < state.SHUFFLE then
+		local cnt = 0
+		local roommode = ds.query('roommode')
+		local xmode = roommode[tostring(self.mode)]
+		for i=1,xmode.join do
+			local p = self.players[i]
+			if p.alert.is(Player.state.JOIN) then
+				cnt = cnt + 1
+			end
+		end
+		if cnt >= 2 then
+			self.alert.ev_shuffle(self)
+		end
+	end
+end
+
 -- 创建gameplay状态机
 function cls:create_gameplay_alert(initial_state)
 	-- body
@@ -378,13 +409,6 @@ function cls:create_gameplay_alert(initial_state)
 			on_perflopsblind = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
 		    on_perflopbblind = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
 		    on_perflop = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
-		    on_perflop = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
-		    on_deal = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
-		    on_firstturn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_turn = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-		    on_call = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-			on_lead = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
-			on_over = function(self, event, from, to, obj, msg) obj:on_state(event, from, to, msg) end,
 		}
 	})
 	return alert
@@ -393,17 +417,32 @@ end
 function cls:on_gameplay_state(event, from, to)
 	-- body
 	if to == gameplay.PERFLOPSBLIND then
+		log.info('gameplay perflopsblind')
 		self:take_perflopsblind()
 	elseif to == gameplay.PERFLOPBBLIND then
 		self:take_perflopbblind()
+	elseif to == gameplay.PERFLOP then
+		self.alert.ev_deal(self)
 	end
 end
 
 function cls:next_idx()
 	-- body
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
 	self.curidx = self.curidx + 1
-	if self.curidx > self.max then
+	if self.curidx > xmode.join then
 		self.curidx = 1
+	end
+	local p = assert(self.players[self.curidx])
+	while not p.dealed and 
+		(p.opcode == opcode.FOLD or
+		p.opcode == opcode.ALLIN) do
+		self.curidx = self.curidx + 1
+		if self.curidx > xmode.join then
+			self.curidx = 1
+		end
+		p = assert(self.players[self.curidx])
 	end
 end
 
@@ -418,8 +457,10 @@ end
 
 function cls:incre_joined()
 	-- body
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
 	self.joined = self.joined + 1
-	assert(self.joined <= self.max)
+	assert(self.joined <= xmode.join)
 end
 
 function cls:decre_joined()
@@ -430,8 +471,10 @@ end
 
 function cls:incre_online()
 	-- body
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
 	self.online = self.online + 1
-	assert(self.online <= self.max)
+	assert(self.online <= xmode.join)
 end
 
 function cls:decre_online()
@@ -445,6 +488,34 @@ function cls:print_cards()
 	for i,v in ipairs(self._cards) do
 		print(v:describe())
 	end
+end
+
+function cls:clear_player_dealed()
+	-- body
+	assert(self)
+end
+
+function cls:next_card()
+	-- body
+	local card = assert(self._cards[self._dealcardidx])
+	self._dealcardidx = self._dealcardidx + 1
+	return card
+end
+
+function cls:count_left()
+	-- body
+	local cnt = 0
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
+		local p = self.players[i]
+		if p.dealed then
+			if p.opcode ~= opcode.FOLD then
+				cnt = cnt + 1
+			end
+		end
+	end
+	return cnt
 end
 
 ------------------------------------------
@@ -596,7 +667,9 @@ function cls:create(uid, args)
 	self.host = uid
 
 	-- clear player
-	for i=1,self.max do
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
 		local p = self.players[i]
 		assert(p:is_none())
 		assert(not p.online)
@@ -623,7 +696,7 @@ function cls:create(uid, args)
 	local res = {}
 	res.errorcode = 0
 	res.roomid = self.id
-	res.room_max = self.max
+	res.room_max = xmode.join
 	return res
 end
 
@@ -631,12 +704,14 @@ function cls:join(uid, agent, name, sex)
 	-- body
 	assert(uid and agent and name and sex)
 	local res = {}
-	if not self.alert.is(state.JOIN) then
-		res.errorcode = 15
-		return res
-	end
+	-- if not self.alert.is(state.JOIN) then
+	-- 	res.errorcode = 15
+	-- 	return res
+	-- end
 
-	if self.joined >= self.max then
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	if self.joined >= xmode.join then
 		res.errorcode = 16
 		return res
 	end
@@ -779,13 +854,18 @@ end
 
 function cls:leave(uid)
 	-- body
+	log.info('uid(%d) leave', uid)
 	local p = self:get_player_by_uid(uid)
 	assert(p)
-	p.online = false
+	if p.online then
+		p.online = false
+		self:decre_online()
+	end
 	p.uid = 0
-	self:decre_online()
+	p.sitdown = false
+	p.alert.ev_reset_none()
 	self:decre_joined()
-	-- self.alert.ev_reset_join()
+	self.uplayers[uid] = nil
 
 	-- 把信息存到
 	skynet.call('.ROOM_MGR', "lua", "room_leave", self.id, uid)
@@ -813,9 +893,16 @@ function cls:afk(uid)
 	skynet.call('.ROOM_MGR', "lua", "room_afk", self.id, uid)
 	skynet.call('.CHATD', "lua", "room_afk", self.id, uid)
 
-	local args = {}
-	args.idx = p.idx
-	self:push_client_except_idx(p.idx, "offline", args)
+	log.info('room(%d) join %d', self.id, self.joined)
+	if self.joined == 1 then
+		skynet.call(p.agent, 'lua', 'room_leave')
+	elseif self.playalert.is(gameplay.NONE) then
+		skynet.call(p.agent, 'lua', 'room_leave')
+	else
+		-- local args = {}
+		-- args.idx = p.idx
+		-- self:push_client_except_idx(p.idx, "offline", args)
+	end
 	return true
 end
 
@@ -828,7 +915,7 @@ function cls:recycle()
 end
 
 ------------------------------------------
--- 大佬2协议
+-- 德州协议
 function cls:step(idx, mock)
 	-- body
 	assert(idx)
@@ -837,7 +924,9 @@ function cls:step(idx, mock)
 		res.errorcode = 1
 		return res
 	end
-	if idx < 1 or idx > self.max then
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	if idx < 1 or idx > xmode.join then
 		res.errorcode = 1
 		return res
 	end
@@ -860,13 +949,15 @@ function cls:step(idx, mock)
 		end
 		p.alert.ev_ready(p)
 	elseif self.alert.is(state.SHUFFLE) then
-		log.info('step : shuffle')
 		if not mock then
 			res.errorcode = 0
 			skynet.retpack(res)
 		end
-		-- 此玩家发牌完成
-		p.alert.ev_deal(p)
+		if self.playalert.is(gameplay.PERFLOPSBLIND) then
+			self.playalert.ev_perflopbblind(self)
+		elseif self.playalert.is(gameplay.PERFLOPBBLIND) then
+			self.playalert.on_perflop(self)
+		end
 	elseif self.alert.is(state.DEAL) then
 		if not mock then
 			res.errorcode = 0
@@ -935,63 +1026,6 @@ function cls:ready(idx)
 	return servicecode.NORET
 end
 
-function cls:lead(idx, code, xleadcards, mock)
-	-- body
-	if mock then
-		assert(idx == self.curidx)
-		local p = assert(self.players[idx])
-		assert(p:lead(ltype, cards) == 0)
-		self.alert.ev_lead(self)
-	else
-		local res = {}
-		if not self.open then
-			res.errorcode = 20
-			return res
-		end
-		if idx ~= self.curidx then
-			res.errorcode = 21
-			return res
-		end
-		-- 检测此玩家是否
-		local p = self.players[idx]
-		if p:is_none() then
-			res.errorcode = 17
-			return res
-		end
-		-- 真正出牌的地方
-		local xcards = {}
-		for i,v in ipairs(xleadcards.cards) do
-			local card = assert(self._kcards[v.value])
-			table.insert(xcards, card)
-		end
-		-- 检测出牌类型对不对
-		local lt = to_lead_type.parseLeadtype(xcards)
-		if lt ~= xleadcards.leadtype then
-			res.errorcode = 22
-			return res
-		end
-		local aLeadcards = leadcards.new(xleadcards.leadtype, xcards)
-		if self.previdx ~= 0 then
-			local prevp = self.players[self.previdx]
-			if not aLeadcards:mt(prevp.leadcards) then
-				res.errorcode = 1
-				return res
-			end
-		end
-		local errorcode = p:lead(code, aLeadcards)
-		if errorcode == 0 then
-			self.previdx = self.curidx
-			res.errorcode = errorcode
-			skynet.retpack(res)
-			self.alert.ev_call(self)
-			return servicecode.NORET
-		else
-			res.errorcode = errorcode
-			return res
-		end
-	end
-end
-
 function cls:call(idx, code, args, mock)
 	-- body
 	if mock then
@@ -1010,16 +1044,10 @@ function cls:call(idx, code, args, mock)
 			res.errorcode = 17
 			return res
 		end
-		if code == opcode.PASS then
-			p:call(idx, code)
-			res.errorcode = 0
-			skynet.retpack(res)
-		elseif code == opcode.LEAD then
-			return self:lead(idx, code, args.lead)
-		else
-			res.errorcode = 1
-			return res
-		end
+		p:call(idx, code)
+		res.errorcode = 0
+		skynet.retpack(res)
+ 
 		-- 转移状态
 		self.alert.ev_call()
 		return servicecode.NORET
@@ -1031,6 +1059,30 @@ function cls:restart(idx)
 	-- body
 	assert(self)
 	assert(idx)
+end
+
+function cls:joinedx(idx)
+	-- body
+	local res = {}
+	if not self.open then
+		res.errorcode = 1
+		return res
+	end
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	if idx < 1 or idx > xmode.join then
+		res.errorcode = 1
+		return res
+	end
+	-- 检测此玩家是否
+	local p = self.players[idx]
+	if p:is_none() then
+		res.errorcode = 1
+		return res
+	end
+	p.alert.ev_join(p)
+	res.errorcode = 0
+	return res
 end
 
 ------------------------------------------
@@ -1046,15 +1098,15 @@ function cls:take_shuffle()
 	assert(self.alert.is(state.SHUFFLE))
 
 	-- 开始洗牌后才开始计算消耗品
-	local ok = skynet.call('.ROOM_MGR', 'lua', 'room_is_1stju', self.id)
-	if ok then
+	-- local ok = skynet.call('.ROOM_MGR', 'lua', 'room_is_1stju', self.id)
+	-- if ok then
 		-- 消耗房主的门票
 		-- send agent
 		-- local p = self:get_player_by_uid(self.host)
 		-- local addr = p:get_agent()
 		-- local ok = skynet.call(addr, "lua", "alter_rcard", -1)
 		-- assert(ok)
-	end
+	-- end
 
 	-- 记录所有消息
 	self._stime = skynet.now()
@@ -1079,51 +1131,92 @@ function cls:take_shuffle()
 	-- self:print_cards()
 
 	-- self:record("shuffle", args)
+
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
+		local p = assert(self.players[i])
+		if not p:is_none() and
+			p.online and
+			p.sitdown then
+			p.dealed = true
+		end
+	end
+	self.playalert.ev_perflopsblind(self)
 	-- self.alert.ev_deal(self)
 
-	self:take_deal()
+	-- self:take_deal()
 end
 
 function cls:take_deal()
 	-- body
+	assert(self.assert.is(state.DEAL))
+	local args = {}
+	args.sblindidx  = assert(self.sblindidx)
+	args.bblindidx  = assert(self.bblindidx)
+
 	-- 最开阶段发牌，每个人发两张牌
 	if self.playalert.is(gameplay.PERFLOP) then
-
+		args.state = 'perflop'
+		local roommode = ds.query('roommode')
+		local xmode = roommode[tostring(self.mode)]
+		self:emit_player_event('ev_wait_deal_after_join')
+		for _=1,2 do
+			for j=1,xmode.join do
+				local p = assert(self.players[j])
+				if p.dealed then
+					local card =  self:next_card()
+					p:insert(card)
+				end
+			end
+		end
 	elseif self.playalert.is(gameplay.FLOP) then
 		-- 公共发三张牌
+		args.state = 'flop'
+		local cards = {}
+		for _=1,3 do
+			local card = self:next_card()
+			table.insert(cards, card)
+		end
+		self.flopCards = cards
 	elseif self.playalert.is(gameplay.TURN) then
+		args.state = 'turn'
+		self.turnCard = self:next_card()
 	elseif self.playalert.is(gameplay.RIVER) then
+		args.state = 'river'
+		self.riverCard = self:next_card()
 	end
-	assert(self.assert())
-	-- 发牌
-	-- self:print_cards()
-	local event = 'ev_' .. Player.state.WAIT_DEAL
-	self:emit_player_event(event)
-	for i=1,52,4 do
-		local k = i
-		for j=1,4 do
-			local card =  assert(self._cards[k])
-			local p = self.players[j]
-			p:insert(card)
-			k = k + 1
+
+	if self.playalert.current >= gameplay.PERFLOP then
+		local perflop = {}
+		local roommode = ds.query('roommode')
+		local xmode = roommode[tostring(self.mode)]
+		for i=1,xmode.join do
+			local xperflop = {}
+			local p = assert(self.players[i])
+			if p.dealed then
+				xperflop.idx = p.idx
+				xperflop.cards = p:pack_cards()
+			end
+			table.insert(perflop, xperflop)
 		end
 	end
-
-	self.players[1]:print_cards()
-
-	local p1 = self.players[1]:pack_cards()
-	local p2 = self.players[2]:pack_cards()
-	local p3 = self.players[3]:pack_cards()
-	local p4 = self.players[4]:pack_cards()
-
-	local args = {}
-	args.firstidx  = self.firstidx
-	args.firsttake = self.firstidx
-	args.deal = {}
-	table.insert(args.deal, { idx = 1, cards = p1 })
-	table.insert(args.deal, { idx = 2, cards = p2 })
-	table.insert(args.deal, { idx = 3, cards = p3 })
-	table.insert(args.deal, { idx = 4, cards = p4 })
+	if self.playalert.current >= gameplay.FLOP then
+		local cc = {}
+		for k,v in pairs(self.flopCards) do
+			local c = {value=v.value, pos=v.pos}
+			table.insert(cc, c)
+		end
+		args.flop = cc
+	end
+	if self.playalert.current >= gameplay.TURN then
+		local c = {value=self.turnCard.value, pos=self.turnCard.pos}
+		args.turn = c
+	end
+	if self.playalert.current >= gameplay.RIVER then
+		local c = {value=self.riverCard.value, pos=self.riverCard.pos}
+		args.river = c
+	end
 
 	self:record("pokerdeal", args)
 	self:push_client("pokerdeal", args)
@@ -1144,21 +1237,38 @@ function cls:take_firstturn()
 	assert(self.alert.is(state.FIRSTTURN))
 	-- 把房间状态转移到turn
 	self.alert.ev_turn_after_firstturn(self)
+	local roommode = ds.query('roommode')
+	 
 
+	-- 判断谁先叫
 	if self.playalert.is(gameplay.PERFLOP) then
-		-- 玩家状态转移
-		self.curidx = 1
-		
+		self.curidx = self.bblindidx
+		self:next_idx()
+		self.previdx = self.curidx          -- 用这两个相等判断是否是起始点
+		self.firstidx = self.curidx
+		local p = self.players[self.curidx]
+		while not p.dealed do
+			self:next_idx()
+			p = self.players[self.curidx]
+		end
 	elseif self.playalert.is(gameplay.FLOP) then
+		self.curidx = self.sblindidx
+		local p = self.players[self.curidx]
+	elseif self.playalert.is(gameplay.TURN) then
+	elseif self.playalert.is(gameplay.RIVER) then
 	end
+
+	-- 下面都一样
 	local p = self.players[self.curidx]
 	assert(p.alert.can('ev_wait_turn_after_deal'))
 	p.alert.ev_wait_turn_after_deal(p)
 
-	for i=1,self.max do
+	for i=1,xmode.join do
 		if i ~= self.curidx then
 			local p = self.players[i]
-			p.alert.ev_watch_after_deal(p)
+			if p.dealed then
+				p.alert.ev_watch_after_deal(p)
+			end
 		end
 	end
 
@@ -1183,35 +1293,34 @@ function cls:take_turn()
 	-- body
 	assert(self.alert.is(state.TURN))
 	assert(self.curidx)
-	-- 选择下一个
-	local who = 0
-	for i=1,3 do
-		local idx = self.curidx + i
-		if idx > self.max then
-			idx = 1
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	if self.playalert.is(gameplay.PERFLOP) then
+		-- 1.判断结束没有
+		-- 2.判断谁下一个
+		-- 3.一轮后，加注是否还要加
+
+		self.curidx = self.bblindidx
+		self:next_idx()
+		self.previdx = self.curidx          -- 用这两个相等判断是否是起始点
+		local p = self.players[self.curidx]
+		while not p.dealed do
+			self:next_idx()
+			p = self.players[self.curidx]
 		end
-		local p = self.players[idx]
-		if p.opcode ~= opcode.PASS then
-			who = idx
-			break
-		end
-	end
-	if who == 0 then
-		-- 清理这一轮玩家状态
-		for i=1,self.max do
-			local p = self.players[i]
-			p.opcode = opcode.NONE
-		end
-		self.previdx = 0
-	else
-		self.curidx = who
+	elseif self.playalert.is(gameplay.FLOP) then
+		self.curidx = self.sblindidx
+		local p = self.players[self.curidx]
+	elseif self.playalert.is(gameplay.TURN) then
+	elseif self.playalert.is(gameplay.RIVER) then
 	end
 
+	-- 下面都一样
 	local p = self.players[self.curidx]
 	assert(p.alert.can('ev_wait_turn_after_call'))
 	p.alert.ev_wait_turn_after_call(p)
 
-	for i=1,self.max do
+	for i=1,xmode.join do
 		if i ~= self.curidx then
 			local p = self.players[i]
 			p.alert.ev_watch_after_call(p)
@@ -1222,7 +1331,7 @@ function cls:take_turn()
 	args.idx = self.curidx
 	args.countdown = self.countdown
 	-- self:record("take_turn", args)
-	self:push_client("big2take_turn", args)
+	self:push_client("pokertake_turn", args)
 
 	if MOCK then
 		skynet.timeout(100 * 20, function ()
@@ -1237,10 +1346,13 @@ end
 function cls:take_call()
 	-- body
 	assert(self.alert.is(state.CALL))
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+
 	local p = assert(self.players[self.curidx])
 	p.alert.ev_wait_call_after_wait_turn(p)
 
-	for i=1,self.max do
+	for i=1,xmode.join do
 		if i ~= self.curidx then
 			local p = assert(self.players[i])
 			p.alert.ev_wait_call_after_watch(p)
@@ -1256,7 +1368,7 @@ function cls:take_call()
 	if MOCK then
 		skynet.timeout(100 * 20, function ()
 			-- body
-			for i=1,self.max do
+			for i=1,xmode.join do
 				self:step(i, true)
 			end
 		end)
@@ -1301,7 +1413,9 @@ end
 function cls:take_roomover()
 	-- body
 	assert(self.alert.is(state.ROOMOVER))
-	for i=1,self.max do
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
 		local p = self.players[i]
 		if p.online then
 			skynet.call(p.agent, 'lua', 'roomover')
@@ -1317,6 +1431,10 @@ end
 function cls:take_perflopsblind()
 	-- body
 	assert(self.playalert.is(gameplay.PERFLOPSBLIND))
+	self.firstidx = 1
+	self.curidx = 1
+	self:next_idx()
+	self.sblindidx = self.curidx
 
 	local args = {}
 	args.idx = self.curidx
@@ -1328,6 +1446,14 @@ end
 function cls:take_perflopbblind()
 	-- body
 	assert(self.playalert.is(gameplay.PERFLOPBBLIND))
+	self:next_idx()
+	self.bblindidx = self.curidx
+
+	local args = {}
+	args.idx = self.curidx
+	args.opcode = opcode.BBLIND
+	args.coin	= 100
+	self:push_client("pokercall", args)
 end
 
 function cls:take_perflop()

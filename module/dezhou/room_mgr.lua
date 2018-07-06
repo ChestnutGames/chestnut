@@ -16,6 +16,7 @@ local assert = assert
 -- room.rule        房间规则
 -- room.joined      房间加入的人数
 -- room.users       房间已经加入的人员
+-- room.users ==> user = { uid, agent }
 
 local NORET = {}
 local users = {}   -- 玩家信息,玩家创建的房间
@@ -27,8 +28,8 @@ local id = bank + 1
 local MAX_ROOM_NUM = 0
 
 -- 匹配
-local mmrooms = {}  -- 匹配的房间
-local mrooms = {}
+local mmrooms = {}  -- 匹配的房间,按模式分类的
+local mrooms = {}   -- 所有匹配的房间
 local q = queue()  -- 排队的队列
 
 -- @breif 生成房间id，
@@ -344,6 +345,7 @@ function CMD.room_join(roomid, uid, agent, idx, chip)
 	local room = rooms[roomid]
 	if room then
 		room.users[uid] = { uid=uid, agent=agent, idx=idx, chip=chip }
+		room.joined = room.joined + 1
 	else
 		room = mrooms[roomid]
 		if room then
@@ -358,8 +360,18 @@ function CMD.room_rejoin(roomid, uid, agent)
 	-- body
 	assert(roomid and uid and agent)
 	local room = assert(rooms[roomid])
-	local user = room.users[uid]
-	user.agent = agent
+	if room then
+		local user = assert(room.users[uid])
+		user.agent = agent
+	else
+		room = mrooms[roomid]
+		if room then
+			local user = assert(room.users[uid])
+			user.agent = agent
+		else
+			assert(false)
+		end
+	end
 	return true
 end
 
@@ -367,8 +379,16 @@ function CMD.room_afk(roomid, uid)
 	-- body
 	assert(roomid and uid)
 	local room = rooms[roomid]
-	local user = room.users[uid]
-	user.agent = nil
+	if room then
+		local user = assert(room.users[uid])
+		user.agent = nil
+	else
+		room = mrooms[roomid]
+		if room then
+			local user = assert(room.users[uid])
+			user.agent = nil
+		end
+	end
 	return true
 end
 
@@ -376,7 +396,19 @@ function CMD.room_leave(roomid, uid)
 	-- body
 	assert(roomid and uid)
 	local room = rooms[roomid]
-	room.users[uid] = nil
+	if room then
+		assert(room.joined > 0)
+		room.joined = room.joined - 1
+		room.users[uid] = nil
+	else
+		room = mrooms[roomid]
+		if room then
+			assert(room.joined > 0)
+			room.joined = room.joined - 1
+			assert(room.users[uid])
+			room.users[uid] = nil
+		end
+	end
 	return true
 end
 

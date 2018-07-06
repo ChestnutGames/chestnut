@@ -141,6 +141,14 @@ function REQUEST:room_info(args)
 	end
 end
 
+function REQUEST:package_info(args)
+	-- body
+	return self.systems.package:package_info(args)
+end
+
+------------------------------------------
+-- 麻将协议
+
 function REQUEST:rejoin()
 	-- body
 	return self.systems.room:rejoin()
@@ -151,8 +159,7 @@ function REQUEST:match(args)
 	return self.systems.room:match(args)
 end
 
-------------------------------------------
--- 麻将协议
+
 function REQUEST:ready(args, ... )
 	-- body
 	local M = self.systems.room
@@ -314,6 +321,11 @@ end
 function REQUEST:pokerleave( ... )
 	-- body
 	return self.systems.room:leave(...)
+end
+
+function REQUEST:pokerjoined( ... )
+	-- body
+	return self.systems.room:forward_room("joined", ...)
 end
 
 return REQUEST

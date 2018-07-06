@@ -95,9 +95,16 @@ function CMD:leave(args)
 end
 
 -- call by agent
-function CMD:afk(uid)
+function CMD:on_afk(uid)
 	-- body
 	return self:afk(uid)
+end
+
+function CMD:afk(args)
+	-- body
+	assert(self)
+	assert(args.servicecode == servicecode.SUCCESS)
+	return servicecode.NORET
 end
 
 -- call by room_mgr
@@ -154,6 +161,11 @@ end
 function CMD:on_restart(args)
 	-- body
 	return self:restart(args.idx)
+end
+
+function CMD:on_joined(args)
+	-- body
+	return self:joinedx(args.idx)
 end
 
 -- 结束协议

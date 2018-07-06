@@ -31,6 +31,9 @@ function cls:_increase(pt, id, num)
 		package[id] = { id = id, num = 0 }
 	end
 	package[id].num = package[id].num + num
+	local item = { id=id, num=num }
+	self:send_request("add_item", { i = item })
+	return true
 end
 
 function cls:_decrease(pt, id, num)
@@ -44,6 +47,9 @@ function cls:_decrease(pt, id, num)
 	end
 	package[id].num = package[id].num - num
 	assert(package[id] >= 0)
+
+	local item = { id=id, num=num }
+	self:send_request("sub_item", { i = item })
 	return true
 end
 
@@ -73,26 +79,26 @@ function cls:on_func_open()
 	entity.package.packages[PackageType.COMMON][3] = { id=3, num=1, createAt=os.time(), updateAt=os.time() }     -- 经验
 end
 
-function cls:check_consume_rcard(value)
+function cls:check_consume(id, value)
 	-- body
 	local uid = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
 	local package = entity.package.packages[PackageType.COMMON]
 	assert(package)
-	local item = package[4]
+	local item = package[id]
 	if item.num < value then
 		return false
 	end
 	return true
 end
 
-function cls:consume_rcard(value)
+function cls:consume(id, value)
 	-- body
-	if not self:check_consume_rcard(value) then
+	if not self:check_consume(id, value) then
 		return false
 	end
-	return self:_decrease(PackageType.COMMON, 4, value)
+	return self:_decrease(PackageType.COMMON, id, value)
 end
 
 function cls:rcard_num()
@@ -108,6 +114,25 @@ function cls:rcard_num()
 		package[4] = item
 	end
 	return item.num
+end
+
+function cls:package_info()
+	-- body
+	local uid = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	local package = entity.package.packages[PackageType.COMMON]
+	assert(package)
+	local all = {}
+	for _,v in pairs(package) do
+		local item = { id=v.id, num=v.num}
+		table.insert(all, item)
+	end
+	local res = {
+		errorcode = 0,
+		all = all
+	}
+	return res
 end
 
 return cls

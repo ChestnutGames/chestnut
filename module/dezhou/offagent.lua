@@ -44,9 +44,10 @@ function CMD.write_offuser_room(uid)
 	-- body
 	local offuser = {
 		uid = uid,
-		roomid = 0,
 		created = 0,
-		joined = 0
+		joined = 0,
+		update_at=os.time(),
+		mode = 0
 	}
 	return skynet.call('.DB', "lua", 'write_offuser_room', offuser)
 end

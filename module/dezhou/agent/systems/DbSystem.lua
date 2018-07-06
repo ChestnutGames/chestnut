@@ -20,11 +20,6 @@ function cls:set_agent_systems(agentSystems)
 	self.agentSystems = agentSystems
 end
 
-function cls:_on_user_born()
-	-- body
-	self.agentSystems.func_open:user_born()
-end
-
 function cls:set_context(context)
 	-- body
 	self.context = context

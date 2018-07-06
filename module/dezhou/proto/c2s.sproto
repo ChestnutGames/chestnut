@@ -5,16 +5,43 @@
     version 3 : integer
 }
 
-.settlement {
-    uid 0 : integer
-	gold 1 : integer	
-}
-
 .card {
     pos   0 : integer
     value 1 : integer
 }
 
+# 背包
+.item {
+    id  0 : integer
+    num 1 : integer
+}
+
+####################################### 
+# 邮件
+.mail {
+    id       0 : integer
+    from     1 : integer
+    to       2 : integer
+    title    3 : string
+    content  4 : string
+    viewed   5 : integer
+    datetime 6 : integer
+}
+
+.outbox {
+    all 0 : *mail
+}
+
+.record {
+    id            0 : integer
+    datetime      1 : integer
+    player1       2 : string
+    player2       3 : string
+    player3       4 : string
+    player4       5 : string
+}
+
+####################################### 
 # 麻将玩家信息，在重新链接的时候
 .player {
     idx          0 : integer
@@ -34,20 +61,6 @@
     putidx       15 : integer  # 无用
     hold_card    16 : card
     hucards      17 : *card
-}
-
-.mail {
-    id       0 : integer
-    from     1 : integer
-    to       2 : integer
-    title    3 : string
-    content  4 : string
-    viewed   5 : integer
-    datetime 6 : integer
-}
-
-.outbox {
-    all 0 : mail
 }
 
 .opinfo {
@@ -71,17 +84,28 @@
     qingyise      1 : integer
 }
 
-.record {
-    id            0 : integer
-    datetime      1 : integer
-    player1       2 : string
-    player2       3 : string
-    player3       4 : string
-    player4       5 : string
-}
-
 .rule {
     id 0 : integer
+}
+
+.settlementitem {
+    idx       0 : integer           # 关于谁的
+    chip      1 : integer           # 赢与输，多少
+    opcode    2 : integer           # 什么原因，若是胡，请还要判断小面两个
+    gangtype  3 : integer
+    hutype    4 : integer           
+    jiaotype  5 : integer
+    them      6 : *integer          # 针对谁
+    huazhu    7 : boolean           # 是否是花猪
+    dajiao    8 : boolean           # 是否是大叫
+    tuisui    9 : boolean           # 是否是退税
+}
+
+.settle {
+    p1 0 : settlementitem
+    p2 1 : settlementitem
+    p3 2 : settlementitem
+    p4 3 : settlementitem
 }
 
 ####################################### 
@@ -167,13 +191,7 @@ inituser 3 {
 first 104 {
     response {
         errorcode 0 : integer
-        name      1 : string
-        nameid    2 : string
-        rcard     3 : integer
-        board     4 : string
-        adver     5 : string
-        msgnum    6 : integer
-        sex       7 : integer
+        nickname  1 : string
     }
 }
 
@@ -258,6 +276,13 @@ room_info 114 {
         isCreated 1 : boolean
         joined    2 : boolean
         roomid    3 : integer
+    }
+}
+
+package_info 115 {
+    response {
+        errorcode 0 : integer
+        all       1 : *item
     }
 }
 
@@ -636,6 +661,15 @@ pokerleave 728 {
     response {
         errorcode 0 : integer
     }
+}
+
+pokerjoined 729 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }   
 }
 
 # 德州协议 [720, 800)

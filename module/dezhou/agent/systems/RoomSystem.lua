@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local RoomComponent = require "components.RoomComponent"
 local UserComponent = require "components.UserComponent"
@@ -12,9 +13,56 @@ function cls:ctor(context)
 	return self
 end
 
-function cls:set_context(context, ... )
+function cls:set_context(context)
 	-- body
 	self.context = context
+end
+
+------------------------------------------
+-- event
+function cls:on_data_init()
+	-- body
+	assert(self)
+	local uid = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if (entity.room.createAt == nil) or
+		entity.room.createAt == 0 then
+		entity.room.isCreated = false
+		entity.room.joined = false
+		entity.room.id = 0
+		entity.room.addr = 0
+		entity.room.mode = 0                     -- 这个字段没有用
+		entity.room.createAt = os.time()
+		entity.room.updateAt = os.time()
+	end
+end
+
+function cls:on_func_open()
+	-- body
+	local uid = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	entity.room.isCreated = false
+	entity.room.joined = false
+	entity.room.id = 0
+	entity.room.addr = 0
+	entity.room.mode = 0                     -- 这个字段没有用
+	entity.room.createAt = os.time()
+	entity.room.updateAt = os.time()
+end
+
+function cls:afk()
+	-- body
+	log.info("RoomSystem call afk")
+	local uid   = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if entity.room.joined then
+		local ok = skynet.call(entity.room.addr, "lua", "on_afk", uid)
+		assert(ok)
+		entity.room.addr = 0
+	end
 end
 
 function cls:initialize()
@@ -39,33 +87,9 @@ function cls:initialize()
 	end
 	return true
 end
+-- event
+------------------------------------------
 
-function cls:afk()
-	-- body
-	log.info("RoomSystem call afk")
-	local uid   = self.agentContext.uid
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
-
-	if entity.room.joined and entity.room.online then
-		local ok = skynet.call(entity.room.addr, "lua", "afk", uid)
-		assert(ok)
-		entity.room.online = false
-		entity.room.addr = 0
-	end
-end
-
-function cls:on_func_open()
-	-- body
-	local uid = self.agentContext.uid
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
-	entity.room.isCreated = false
-	entity.room.id = 0
-	entity.room.addr = 0
-	entity.room.joined = false
-	entity.room.online = false
-end
 
 function cls:room_info()
 	-- body
@@ -73,7 +97,6 @@ function cls:room_info()
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
 
-	log.info("room roomid = %d", entity.room.id)
 	local res = {}
 	res.errorcode = 0
 	res.isCreated = entity.room.isCreated
@@ -158,7 +181,7 @@ function cls:join(args)
 			entity.room.addr = res.addr
 			entity.room.joined = true
 			entity.room.online = true
-			entity.room.mode = response.mode
+			entity.room.mode = assert(response.mode)
 		else
 			log.info('join room FAIL.')
 		end
@@ -198,21 +221,30 @@ function cls:rejoin()
 	end
 end
 
-function cls:leave(args)
+-- called by room
+-- called by client
+function cls:leave()
 	-- body
-	local res = {}
-	if self.joined then
-		res = skynet.call(addr, "lua", "on_leave", args)
-		if res.errorcode == errorcode.SUCCESS then
-			self.joined = false
+	log.info('RoomSystem leave')
+	local uid   = self.agentContext.uid
+	local index = self.context:get_entity_index(UserComponent)
+	local entity = index:get_entity(uid)
+	if entity.room.joined then
+		local res = skynet.call(entity.room.addr, 'lua', 'on_leave', uid)
+		log.info('call room leave')
+		if res.errorcode == 0 then
+			entity.room.isCreated = false
+			entity.room.joined = false
+			entity.room.id = 0
+			entity.room.mode = 0
+		else
+			log.error('uid(%d) leave failture.', uid)
 		end
-		return res
-	else
-		res.errorcode = errorcode.NOEXiST_ROOMID
-		return res
 	end
+	return true
 end
 
+-- called by room
 function cls:roomover()
 	-- body
 	local uid   = self.agentContext.uid

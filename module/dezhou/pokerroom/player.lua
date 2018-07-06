@@ -45,6 +45,7 @@ function cls:ctor(env, uid, agent)
 	self.online = false  -- user in game
 	self.robot  = false  -- user
 	self.sitdown = false -- 是否坐下
+	self.dealed = false  -- 是否被发了牌
 
 	-- play
 	self.cards  = vector(function (l, r)
@@ -52,7 +53,7 @@ function cls:ctor(env, uid, agent)
 		return l:mt(r)
 	end)()
 	self.opcode = 0
-	self.leadcards = nil
+	self.coin = 0
 	self.timer = nil
 
 	self.alert = nil
@@ -82,7 +83,8 @@ function cls:init_alert(initial_state)
 		    {name = "ev_join",          from = state.WAIT_JOIN,      to = state.JOIN},
 		    {name = "ev_wait_ready",    from = state.NONE,           to = state.WAIT_READY},
 		    {name = "ev_ready",         from = state.WAIT_READY,     to = state.READY},
-		    {name = "ev_wait_deal",     from = state.JOIN,          to = state.WAIT_DEAL},
+		    {name = "ev_wait_deal_after_call",     from = state.CALL,          to = state.WAIT_DEAL},
+		    {name = "ev_wait_deal_after_join",     from = state.JOIN,          to = state.WAIT_DEAL},
 		    {name = "ev_deal",          from = state.WAIT_DEAL,      to = state.DEAL},
 		    {name = "ev_watch_after_deal",         from = state.DEAL,    to = state.WATCH},
 		    {name = "ev_watch_after_call",         from = state.CALL,    to = state.WATCH},
@@ -98,6 +100,7 @@ function cls:init_alert(initial_state)
 		    {name = "ev_settle",           from = state.OVER,         to = state.SETTLE},
 		    {name = "ev_restart",          from = state.SETTLE,       to = state.RESTART},
 
+		    {name = "ev_reset_none",            from = "*",    to = state.NONE},
 		    {name = "ev_reset_wait_deal",       from = "*",    to = state.WAIT_DEAL},
 		    {name = "ev_reset_deal",            from = "*",    to = state.DEAL},
 		    {name = "ev_reset_watch",           from = "*",    to = state.WATCH},
@@ -126,8 +129,8 @@ function cls:on_state(event, from, to)
 	-- body
 	-- assert(event and from and to)
 	if to == state.JOIN then
-		log.info('player join')
-		self.env:on_next_state()
+		self.sitdown = true
+		self.env:on_doshuffle()
 	elseif to == state.READY then
 		self.env:on_next_state()
 	elseif to == state.SHUFFLE then

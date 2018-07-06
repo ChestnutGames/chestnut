@@ -71,7 +71,7 @@ local function auth_win_myself(username, password)
 			local db_user = {}
 			db_user.uid = uid
 			db_user.sex = sex
-			db_user.nickname = "username"
+			db_user.nickname = username
 			db_user.province = "Beijing"
 			db_user.city = "Beijing"
 			db_user.country = "CN"

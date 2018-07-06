@@ -36,7 +36,7 @@ function cls:on_data_init()
 	assert(self)
 end
 
-function cls:first(args, ... )
+function cls:first()
 	-- body
 	local uid = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
@@ -44,15 +44,7 @@ function cls:first(args, ... )
 
 	local res = {}
 	res.errorcode = 0
-	res.name   = assert(entity.account.nickname)
-	res.nameid = "ok"
-	res.sex    = entity.account.sex
-	res.rcard  = self.agentSystems.package:rcard_num()
-
-	log.info("name = %s", res.name)
-	log.info("nameid = %s", res.nameid)
-	log.info("rcard = %d", res.rcard)
-	log.info("sex = %d", res.sex)
+	res.nickname  = assert(entity.user.nickname)
 	return res
 end
 

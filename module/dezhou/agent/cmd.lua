@@ -101,6 +101,12 @@ function CMD:record(recordid, names)
 	r:insert_db()
 end
 
+function CMD:room_leave()
+	-- body
+	log.info('room_leave')
+	return self.systems.room:leave()
+end
+
 ------------------------------------------
 -- 协议代理
 -- 下面全是协议代理
@@ -449,13 +455,13 @@ end
 
 function CMD:pokerjoin(args)
 	-- body
-	self:send_request_gate("pokerrejoin", args)
+	self:send_request_gate("pokerjoin", args)
 	return servicecode.NORET
 end
 
 function CMD:pokerleave(args)
 	-- body
-	self:send_request_gate("pokerrejoin", args)
+	self:send_request_gate("pokerleave", args)
 	return servicecode.NORET
 end
 
