@@ -22,15 +22,15 @@
 #endif // DEBUG
 
 #define ONE_MB	          (1024*1024)
-#define DEFAULT_ROLL_SIZE (128*ONE_MB)		// ÈÕÖ¾ÎÄ¼þ´ïµ½512M£¬¹ö¶¯Ò»¸öÐÂÎÄ¼þ
+#define DEFAULT_ROLL_SIZE (128*ONE_MB)		// ï¿½ï¿½Ö¾ï¿½Ä¼ï¿½ï¿½ïµ½512Mï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 #define DEFAULT_PATH      ("logs")
-#define DEFAULT_INTERVAL  (5)			    // ÈÕÖ¾Í¬²½µ½´ÅÅÌ¼ä¸ôÊ±¼ä
+#define DEFAULT_INTERVAL  (5)			    // ï¿½ï¿½Ö¾Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¼ï¿½ï¿½Ê±ï¿½ï¿½
 
 struct xloggerdd {
 	logger_level loglevel;
-	size_t rollsize;        // ÎÄ¼þ¶à´óÊ±ºò¹öµ°
+	size_t rollsize;        // ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½
 	FILE* handle[LOG_MAX];
-	size_t written_bytes[LOG_MAX];	// ÒÑÐ´ÈëÎÄ¼þµÄ×Ö½ÚÊý
+	size_t written_bytes[LOG_MAX];	// ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
 
 	char path[32];
 
@@ -62,15 +62,15 @@ get_log_filename(char *basepath, logger_level level, char *filename, size_t coun
 	char timebuf[32] = { 0 };
 	strftime(timebuf, sizeof(timebuf), "%Y%m%d", tm);
 	if (level == LOG_DEBUG) {
-		snprintf(filename, count, "%s/%s-%s-%lld.log", basepath, timebuf, "debug", cs);
+		snprintf(filename, count, "%s/%s-%s-%ull.log", basepath, timebuf, "debug", cs);
 	} else if (level == LOG_INFO) {
-		snprintf(filename, count, "%s/%s-%s-%lld.log", basepath, timebuf, "info", cs);
+		snprintf(filename, count, "%s/%s-%s-%ull.log", basepath, timebuf, "info", cs);
 	} else if (level == LOG_WARNING) {
-		snprintf(filename, count, "%s/%s-%s-%lld.log", basepath, timebuf, "warning", cs);
+		snprintf(filename, count, "%s/%s-%s-%ull.log", basepath, timebuf, "warning", cs);
 	} else if (level == LOG_ERROR) {
-		snprintf(filename, count, "%s/%s-%s-%lld.log", basepath, timebuf, "error", cs);
+		snprintf(filename, count, "%s/%s-%s-%ull.log", basepath, timebuf, "error", cs);
 	} else if (level == LOG_FATAL) {
-		snprintf(filename, count, "%s/%s-%s-%lld.log", basepath, timebuf, "fatal", cs);
+		snprintf(filename, count, "%s/%s-%s-%ull.log", basepath, timebuf, "fatal", cs);
 	}
 	return strlen(filename);
 }
@@ -140,7 +140,7 @@ check_dir(struct xloggerdd *inst) {
 			CreateDirectoryA(tmp, NULL);
 		}
 #else
-		// Èç¹û²»´æÔÚ£¬´´½¨ÎÄ¼þ¼Ð
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
 		DIR* dir = opendir(tmp);
 		if (dir == NULL) {
 			switch (errno) {
