@@ -14,6 +14,8 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 #ifdef _MSC_VER
 #include <Windows.h>
