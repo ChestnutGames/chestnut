@@ -62,15 +62,15 @@ get_log_filename(char *basepath, logger_level level, char *filename, size_t coun
 	char timebuf[32] = { 0 };
 	strftime(timebuf, sizeof(timebuf), "%Y%m%d", tm);
 	if (level == LOG_DEBUG) {
-		snprintf(filename, count, "%s/%s-%s-%ulld.log", basepath, timebuf, "debug", cs);
+		snprintf(filename, count, "%s/%s-%s-%llu.log", basepath, timebuf, "debug", cs);
 	} else if (level == LOG_INFO) {
-		snprintf(filename, count, "%s/%s-%s-%ulld.log", basepath, timebuf, "info", cs);
+		snprintf(filename, count, "%s/%s-%s-%llu.log", basepath, timebuf, "info", cs);
 	} else if (level == LOG_WARNING) {
-		snprintf(filename, count, "%s/%s-%s-%ulld.log", basepath, timebuf, "warning", cs);
+		snprintf(filename, count, "%s/%s-%s-%llu.log", basepath, timebuf, "warning", cs);
 	} else if (level == LOG_ERROR) {
-		snprintf(filename, count, "%s/%s-%s-%ulld.log", basepath, timebuf, "error", cs);
+		snprintf(filename, count, "%s/%s-%s-%llu.log", basepath, timebuf, "error", cs);
 	} else if (level == LOG_FATAL) {
-		snprintf(filename, count, "%s/%s-%s-%ulld.log", basepath, timebuf, "fatal", cs);
+		snprintf(filename, count, "%s/%s-%s-%llu.log", basepath, timebuf, "fatal", cs);
 	}
 	return strlen(filename);
 }
