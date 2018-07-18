@@ -6,8 +6,8 @@
 * 2 解压 tar -xvzf OpenSSL_1_1_1-pre3.tar.gz
 * 3 mkdir /usr/local/openssl
 * 4 ./config --prefix=/usr/local/openssl
-* 5 ./config -t
-* 6 make && make install
+* 5 make
+* 6 make install
 * 7 可以去/usr/local/openssl查看安装了些什么
 * 8 cd /usr/local
 * 9 ldd /usr/local/openssl/bin/openssl
