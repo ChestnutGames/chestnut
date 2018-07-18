@@ -1,20 +1,15 @@
-这里面编译好的windows版，而linux版本请自己安装  
-安装
+# windows版已经编译好
+# linux版请自己安装  
+## 步骤如下
 
-1.
-wget https://codeload.github.com/openssl/openssl/tar.gz/OpenSSL_1_1_1-pre3.tar.gz
-
-2.
-tar -xvzf OpenSSL_1_1_1-pre3.tar.gz
-
-./config --prefix=/usr/local/openssl
-
-./config -t
-
-make
-
-make install
-
-which openssl
-
-openssl version
+* 1 下载资源 wget https://codeload.github.com/openssl/openssl/tar.gz/OpenSSL_1_1_1-pre3.tar.gz
+* 2 解压 tar -xvzf OpenSSL_1_1_1-pre3.tar.gz
+* 3 mkdir /usr/local/openssl
+* 4 ./config --prefix=/usr/local/openssl
+* 5 ./config -t
+* 6 make && make install
+* 7 可以去/usr/local/openssl查看安装了些什么
+* 8 cd /usr/local
+* 9 ldd /usr/local/openssl/bin/openssl
+* 10 which openssl
+* 11 openssl version
