@@ -220,6 +220,7 @@ lbinarysearch(lua_State *L) {
 		break;
 		}*/
 	}
+    return 0;
 }
 
 /*

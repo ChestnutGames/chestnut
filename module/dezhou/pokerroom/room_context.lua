@@ -523,7 +523,7 @@ end
 function cls:start(channel_id)
 	-- body
 	assert(self)
-	local CMD = require "CMD"
+	local CMD = require "cmd"
 	local channel = mc.new {
 		channel = channel_id,
 		dispatch = function (_, _, cmd, ...)

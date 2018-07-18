@@ -120,6 +120,7 @@ lerase(lua_State *L) {
 ** @param #2 index
 ** @return 0
 */
+static int
 leraseat(lua_State *L) {
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_Integer idx = luaL_checkinteger(L, 2);
@@ -195,7 +196,7 @@ lpop_back(lua_State *L) {
 */
 static int
 lindexof(lua_State *L) {
-
+    return 0;
 }
 
 static int

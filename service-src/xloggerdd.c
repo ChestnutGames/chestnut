@@ -58,7 +58,7 @@ get_log_filename(char *basepath, logger_level level, char *filename, size_t coun
 	uint64_t ct = skynet_now();
 	uint64_t cs = st + ct / 100;
 
-	struct tm *tm = localtime(&cs);
+	struct tm *tm = localtime((const time_t *)&cs);
 	assert(tm != NULL);
 
 	char timebuf[32] = { 0 };
