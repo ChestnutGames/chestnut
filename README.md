@@ -4,6 +4,18 @@ Skynet is a lightweight online game framework, and it can be used in many other 
 
 ## Build
 
+CMake 3.12
+Visual Studio 2017
+Gnumake
+
+For Win, install Visual Studio 2017
+
+```
+git clone https://github.com/mephostopilis/chestnut.git
+cd chestnut
+make_win64.bat
+```
+
 For Linux, install autoconf first for jemalloc:
 
 ```

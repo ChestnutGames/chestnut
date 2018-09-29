@@ -3,14 +3,14 @@
 
 /skynet
 /skynet.pid
-3rd/lua/lua
-3rd/lua/luac
+/3rd/lua/lua
+/3rd/lua/luac
+/3rd/pthread-win32
 /cservice
 /luaclib
 /logs
-/build64
+/build_win64
 /build_linux64
-/bin
 
 #*.so
 

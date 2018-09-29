@@ -14,6 +14,12 @@ function CMD.start()
 	return true
 end
 
+function CMD.init_data()
+end
+
+function CMD.sayhi() 
+end
+
 function CMD.close()
 	-- body
 	return true
@@ -24,6 +30,8 @@ function CMD.kill()
 	skynet.exit()
 end
 
+------------------------------------------
+-- 签到
 function CMD.checkin(uid, agent)
 	-- body
 	local u = {

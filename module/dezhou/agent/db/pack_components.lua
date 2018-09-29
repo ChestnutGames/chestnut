@@ -41,7 +41,7 @@ function _M.pack_user_component(component)
 	db_user.headimg        = component.headimg
 	db_user.openid         = component.openid
 	db_user.nameid         = component.nameid
-	db_user.create_at = component.createAt
+	db_user.create_at      = component.createAt
 	db_user.update_at = component.updateAt
 	db_user.login_at  = component.loginAt
 	db_user.new_user  = component.newUser

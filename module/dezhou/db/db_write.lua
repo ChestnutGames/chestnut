@@ -11,7 +11,7 @@ function _M:write_room_mgr_users(db_users)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.error(self.dump(res))
+			log.error('%s', self.dump(res))
 			return false
 		end
 	end
@@ -26,7 +26,7 @@ function _M:write_room_mgr_rooms(db_rooms)
 		db_room.id, db_room.host, db_room.users, db_room.ju)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.error(self.dump(res))
+			log.error('%s', self.dump(res))
 		end
 	end
 	return true
@@ -41,7 +41,7 @@ function _M:write_room_users(db_users)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.error(self.dump(res))
+			log.error('%s', self.dump(res))
 		end
 	end
 	return true
@@ -55,7 +55,7 @@ function _M:write_room(db_room)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
-		log.error(self.dump(res))
+		log.error('%s', self.dump(res))
 	end
 	return true
 end
@@ -71,7 +71,7 @@ function _M:write_user(db_user)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
-		log.error(self.dump(res))
+		log.error('%s', self.dump(res))
 	end
 	return res
 end
@@ -85,7 +85,7 @@ function _M:write_user_room(db_user_room)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
-		log.error(self.dump(res))
+		log.error('%s', self.dump(res))
 	end
 	return true
 end
@@ -99,7 +99,7 @@ function _M:write_user_package(db_user_package)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.error(self.dump(res))
+			log.error('%s', self.dump(res))
 			return false
 		end
 	end
@@ -116,7 +116,7 @@ function _M:write_user_funcopen(db_user_funcopen)
 		-- log.info(sql)
 		local res = self.db:query(sql)
 		if res.errno then
-			log.error(self.dump(res))
+			log.error('%s', self.dump(res))
 			return false
 		end
 	end
@@ -133,7 +133,7 @@ function _M:write_offuser_room_created(db_user_room)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
-		log.error(self.dump(res))
+		log.error('%s', self.dump(res))
 	end
 	return true
 end

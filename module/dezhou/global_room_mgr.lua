@@ -1,4 +1,4 @@
-package.path = "./module/mahjong/lualib/?.lua;"..package.path
+package.path = "./module/dezhou/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
 local mc = require "skynet.multicast"
@@ -159,7 +159,7 @@ function CMD.kill()
 	skynet.exit()
 end
 
-
+------------------------------------------
 -- match
 function CMD.enqueue_agent(source, uid, rule, mode, scene, ... )
 	-- body

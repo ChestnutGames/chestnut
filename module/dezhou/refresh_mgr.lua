@@ -81,6 +81,8 @@ function CMD.kill()
 	skynet.exit()
 end
 
+------------------------------------------
+-- 游戏设计
 function CMD.checkin(uid, agent)
 	-- body
 end

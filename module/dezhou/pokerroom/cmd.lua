@@ -7,7 +7,7 @@ local xpcall = xpcall
 local CMD = {}
 
 ------------------------------------------
--- 服务事件
+-- 服务manager事件
 function CMD:start(channel_id)
 	-- body
 	return self:start(channel_id)
@@ -44,7 +44,7 @@ end
 ------------------------------------------
 
 ------------------------------------------
--- 房间协议
+-- 房间用户协议
 -- call by room_mgr
 function CMD:create(uid, args)
 	-- body
@@ -58,7 +58,7 @@ function CMD:on_join(agent)
 	return res
 end
 
--- call by agent
+-- send by agent
 function CMD:join(args)
 	-- body
 	assert(self)
@@ -72,7 +72,7 @@ function CMD:on_rejoin(args)
 	return self:rejoin(args.uid, args.agent)
 end
 
--- call by agent
+-- send by agent
 function CMD:rejoin(args)
 	-- body
 	assert(self)
@@ -86,11 +86,11 @@ function CMD:on_leave(uid)
 	return self:leave(uid)
 end
 
--- call by agent
+-- send by agent
 function CMD:leave(args)
 	-- body
 	assert(self)
-	assert(args.servicecode == servicecode.SUCCESS)
+	assert(args.errorcode == servicecode.SUCCESS)
 	return servicecode.NORET
 end
 
@@ -103,7 +103,7 @@ end
 function CMD:afk(args)
 	-- body
 	assert(self)
-	assert(args.servicecode == servicecode.SUCCESS)
+	assert(args.errorcode == servicecode.SUCCESS)
 	return servicecode.NORET
 end
 
@@ -172,7 +172,7 @@ end
 ------------------------------------------
 
 ------------------------------------------
--- 大佬2响应协议
+-- 德州响应协议
 function CMD:take_turn(args)
 	-- body
 	assert(self and args)
@@ -245,7 +245,7 @@ function CMD:roomover(args)
 	return servicecode.NORET
 end
 
--- 大佬2响应协议over
+-- 德州响应协议over
 ------------------------------------------
 
 

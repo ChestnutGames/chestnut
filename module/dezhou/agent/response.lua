@@ -283,7 +283,7 @@ function RESPONSE:pokerleave(args)
 	self.systems.room:forward_room_rsp("leave", args)
 end
 
--- 大佬2响应模块
+-- 德州响应模块
 ------------------------------------------
 
 return RESPONSE

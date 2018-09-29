@@ -10,6 +10,7 @@ local server_win = { ["sample1"] = true }
 local server_adr = { ["sample"]  = true }
 local appid  = "wx3207f9d59a3e3144"
 local secret = "d4b630461cbb9ebb342a8794471095cd"
+local assert = assert
 
 local function gen_uid()
 	-- body
@@ -44,19 +45,12 @@ end
 
 local function auth_win_myself(username, password)
 	-- body
-	if type(username) ~= 'string' then
-		error('username is not string.')
-	end
-	if type(username) == 'string' and #username <= 0 then
-		error("length of username less than 0")
-	end
-	if type(password) ~= 'string' then
-		error('password is not string.')
-	end
-	if type(password) == 'string' and #username <= 0 then
-		error("length of username less than 0")
-	end
+	assert(type(username) == 'string' and #username > 0)
+	assert(type(password) == 'string' and #password > 0)
 	local res = skynet.call(".DB", "lua", "read_account_by_username", username, password)
+	for k,v in pairs(res) do
+		print(k,v)
+	end
 	if #res.accounts == 1 then
 		local uid = res.accounts[1].uid
 		if #res.users <= 0 then

@@ -12,6 +12,10 @@ end
 function _M:read_room_mgr_users()
 	-- body
 	local res = self.db:query("CALL sp_room_mgr_users_select();")
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return res
+	end
 	if res.mulitresultset then
 		return res[1];
 	end
@@ -21,6 +25,10 @@ end
 function _M:read_room_mgr_rooms()
 	-- body
 	local res = self.db:query('CALL sp_room_mgr_rooms_select();')
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return {}
+	end
 	if res.mulitresultset then
 		return res[1];
 	end
@@ -30,34 +38,39 @@ end
 function _M:read_account_by_username(username, password)
 	-- body
 	local res = self.db:query(string.format("CALL sp_account_select('%s', '%s');", username, password))
-	if res.mulitresultset then
-		return res[1]
-	else
-		log.error(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
 		return {}
 	end
+	if res.mulitresultset then
+		return res[1]
+	end
+	return {}
 end
 
 function _M:read_room(id)
 	-- body
 	local res = self.db:query(string_format("CALL sp_room_select(%d);", id))
-	-- log.info(self.dump(res))
-	if res.mulitresultset then
-		return res[1]
-	else
-		log.error(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
 		return {}
 	end
+	if res.mulitresultset then
+		return res[1]
+	end
+	return {}
 end
 
 function _M:read_room_users(id)
 	-- body
 	local res = self.db:query(string_format("CALL sp_room_users_select(%d);", id))
-	-- log.info(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return {}
+	end
 	if res.mulitresultset then
 		return res[1]
 	else
-		log.error(self.dump(res))
 		return {}
 	end
 end

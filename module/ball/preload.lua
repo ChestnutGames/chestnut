@@ -7,3 +7,5 @@ require "base"
 	-- body
 	-- assert("please skynet.error instead of print.")
 -- end
+
+DEBUG = true

@@ -226,7 +226,7 @@ skynet.register_protocol {
 }
 
 skynet.start(function()
-    local address = "0.0.0.0:8101"
+    local address = skynet.getenv 'wsgated'
     skynet.error("Listening "..address)
     local id = assert(socket.listen(address))
     socket.start(id , function(id, addr)

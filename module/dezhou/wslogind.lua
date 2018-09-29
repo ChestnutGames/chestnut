@@ -129,7 +129,7 @@ skynet.register_protocol {
 }
 
 skynet.start(function()
-    local address = "0.0.0.0:8001"
+    local address = skynet.getenv 'wslogind'
     skynet.error("Listening "..address)
     local id = assert(socket.listen(address))
     socket.start(id , function(id, addr)

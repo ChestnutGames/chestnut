@@ -109,6 +109,7 @@ function CMD.start()
 	skynet.uniqueservice("wslogind")
 	local wsgated = skynet.uniqueservice('wsgated')
 	skynet.call(wsgated, "lua", "start")
+	log.info("wsgated start success.")
 
 	return true
 end
@@ -117,6 +118,7 @@ function CMD.init_data()
 	-- body
 	for _,v in pairs(init_data_servers) do
 		skynet.call(v, "lua", "init_data")
+		log.info("init data success.")
 	end
 	log.info("init_data over.")
 	return true

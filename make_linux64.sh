@@ -4,3 +4,4 @@ cd ..
 #cmake --build build_linux64 --config Release
 cmake --build build_linux64 --config Debug
 
+# pause
