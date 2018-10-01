@@ -33,9 +33,9 @@ local gameplay = {}
 gameplay.NONE             = "none"
 gameplay.PERFLOPSBLIND    = "perflopsblind"
 gameplay.PERFLOPBBLIND    = "perflopbblind"
-gameplay.PERFLOP          = "perflop"
-gameplay.FLOP             = "flop"
-gameplay.TURN             = "turn"
+gameplay.PERFLOP          = "perflop"         -- 每个玩家发两张牌，大盲注后的第一个人开始
+gameplay.FLOP             = "flop"            -- 公共牌发三张
+gameplay.TURN             = "turn"            -- 公共牌发一张
 gameplay.RIVER            = "river"
 
 local MOCK = false
@@ -44,8 +44,7 @@ local cls = class("RoomContext")
 
 function cls:ctor()
 	-- body
-
-	-- players
+	-- pre players
 	self.players = {}
 	for i=1,9 do
 		local tmp = Player.new(self, 0, 0)
@@ -62,7 +61,8 @@ function cls:ctor()
 	self.joined = 0
 	self.online = 0
 	self.maxju = 0        -- 玩的局数
-	self.uplayers = {}
+	self.uplayers = {}    -- 已经坐在桌子上的人
+	self.watchers = {}    -- 加入的观察者
 	self.mode = 0         -- 房间模式
 	self.rule = {}        -- 房间规则，作为模式的补充
 
@@ -79,7 +79,7 @@ function cls:ctor()
 	self.previdx = 0            -- 上一个玩家出牌
 	self.curidx = 0             -- 玩家索引，当前轮到谁
 	self.alert = self:create_alert(state.NONE)
-	self.alert.ev_join(self)
+	self.alert.ev_start(self)
 	self.playalert = self:create_gameplay_alert(gameplay.NONE)
 	self.flopCards = {}
 	self.turnCard = nil
@@ -142,6 +142,7 @@ function cls:get_player_by_uid(uid)
 	return self.uplayers[uid]
 end
 
+-- cards
 function cls:init_cards()
 	-- body
 	for i=1,4 do
@@ -153,6 +154,21 @@ function cls:init_cards()
 	end
 end
 
+function cls:print_cards()
+	-- body
+	for i,v in ipairs(self._cards) do
+		print(v:describe())
+	end
+end
+
+function cls:next_card()
+	-- body
+	local card = assert(self._cards[self._dealcardidx])
+	self._dealcardidx = self._dealcardidx + 1
+	return card
+end
+
+-- push
 function cls:push_client(name, args)
 	-- body
 	local roommode = ds.query('roommode')
@@ -221,20 +237,7 @@ function cls:check_roomover()
 	end
 end
 
--- 所有玩家都转移状态
-function cls:emit_player_event(event)
-	-- body
-	local roommode = ds.query('roommode')
-	local xmode = roommode[tostring(self.mode)]
-	for i=1,xmode.join do
-		local p = assert(self.players[i])
-		if not p:is_none() and
-			p.dealed then
-			p.alert[event](p)
-		end
-	end
-end
-
+------------------------------------------
 -- 创建状态机
 function cls:create_alert(initial_state)
 	-- body
@@ -254,11 +257,12 @@ function cls:create_alert(initial_state)
 		    {name = "ev_over",             from = state.CALL,    to = state.OVER},
 		    {name = "ev_settle",           from = state.OVER,    to = state.SETTLE},
 		    {name = "ev_restart",          from = state.SETTLE,    to = state.RESTART},
-		    {name = "ev_shuffle_after_restart",          from = state.RESTART,    to = state.SHUFFLE},
-		    {name = "ev_roomover",         from = state.SETTLE,    to = state.ROOMOVER},
+		    {name = "ev_join_after_restart",          from = state.RESTART,    to = state.JOIN},
+			{name = "ev_roomover",         from = state.SETTLE,    to = state.ROOMOVER},
+			-------------------------------------------------------------------------------	下面的没有用		
 		    {name = "ev_reset_join",       from = "*",   to = state.JOIN},               -- reset to join
-		    {name = "ev_reset_ready",      from = "*",   to = state.READY},               -- reset to join
-		    {name = "ev_reset_shuffle",    from = "*",   to = state.SHUFFLE},               -- reset to join
+		    {name = "ev_reset_ready",      from = "*",   to = state.READY},              -- reset to join
+		    {name = "ev_reset_shuffle",    from = "*",   to = state.SHUFFLE},            -- reset to join
 		    {name = "ev_reset_deal",       from = "*",   to = state.DEAL},               -- reset to join
 		    {name = "ev_reset_turn",       from = "*",   to = state.TURN},               -- reset to join
 		    {name = "ev_reset_lead",       from = "*",   to = state.LEAD},               -- reset to join
@@ -282,7 +286,15 @@ end
 function cls:on_state(event, from, to)
 	-- body
 	self.alert.last_state = from
-	if to == state.READY then
+	if to == state.JOIN then
+		-- 判断watchers里面的
+		for _,v in ipairs(self.watchers) do
+			self.uplayers[v.uid] = v
+		end
+		if self.online >= 2 then
+			self.alert.ev_shuffle(self)
+		end
+	elseif to == state.READY then
 		self:take_ready()
 	elseif to == state.SHUFFLE then
 		local ok, err = xpcall(self.take_shuffle, traceback, self)
@@ -404,6 +416,7 @@ function cls:create_gameplay_alert(initial_state)
 		    {name = "ev_flop",                 from = gameplay.PERFLOP,          to = gameplay.FLOP},
 		    {name = "ev_turn",                 from = gameplay.FLOP,             to = gameplay.TURN},
 			{name = "ev_river",                from = gameplay.TURN,             to = gameplay.RIVER},
+			{name = "ev_none_after_river",     from = gameplay.RIVER,            to = gameplay.NONE}
 		},
 		callbacks = {
 			on_perflopsblind = function(self, event, from, to, obj, msg) obj:on_gameplay_state(event, from, to, msg) end,
@@ -426,6 +439,7 @@ function cls:on_gameplay_state(event, from, to)
 	end
 end
 
+-- 对玩家的操作
 function cls:next_idx()
 	-- body
 	local roommode = ds.query('roommode')
@@ -483,11 +497,28 @@ function cls:decre_online()
 	assert(self.online >= 0)
 end
 
-function cls:print_cards()
+-- 所有玩家都转移状态
+function cls:emit_player_event(event)
 	-- body
-	for i,v in ipairs(self._cards) do
-		print(v:describe())
+	local roommode = ds.query('roommode')
+	local xmode = roommode[tostring(self.mode)]
+	for i=1,xmode.join do
+		local p = assert(self.players[i])
+		if not p:is_none() and
+			p.dealed then
+			p.alert[event](p)
+		end
 	end
+end
+
+function cls:count_player_sitdown()
+	local cnt = 0
+	for _,v in pairs(self.uplayers) do
+		if v.online and v.sitdown then
+			cnt = cnt + 1
+		end
+	end
+	return cnt
 end
 
 function cls:clear_player_dealed()
@@ -495,13 +526,7 @@ function cls:clear_player_dealed()
 	assert(self)
 end
 
-function cls:next_card()
-	-- body
-	local card = assert(self._cards[self._dealcardidx])
-	self._dealcardidx = self._dealcardidx + 1
-	return card
-end
-
+-- 计算剩余数
 function cls:count_left()
 	-- body
 	local cnt = 0
@@ -683,15 +708,17 @@ function cls:create(uid, args)
 	self._record = {}
 
 	self.alert = self:create_alert(state.NONE)
-	assert(self.alert.can('ev_join'))
-	self.alert.ev_join(self)
-
-	skynet.call('.CHATD', 'lua', 'room_create', self.id)
 	self.open = true
 	if self.open and not self.channelSubscribed then
 		self.channelSubscribed = true
 		self.channel:subscribe()
 	end
+	skynet.call('.CHATD', 'lua', 'room_create', self.id)
+
+
+	assert(self.alert.can('ev_join'))
+	self.alert.ev_join(self)
+
 	log.info("room create success.")
 	local res = {}
 	res.errorcode = 0
@@ -704,10 +731,6 @@ function cls:join(uid, agent, name, sex)
 	-- body
 	assert(uid and agent and name and sex)
 	local res = {}
-	-- if not self.alert.is(state.JOIN) then
-	-- 	res.errorcode = 15
-	-- 	return res
-	-- end
 
 	local roommode = ds.query('roommode')
 	local xmode = roommode[tostring(self.mode)]
@@ -726,11 +749,12 @@ function cls:join(uid, agent, name, sex)
 	me.name = name
 	me.sex = sex
 	me.online = true
+	me.alert.ev_wait_join(me)
 	self:incre_joined()
 	self:incre_online()
-	self.uplayers[uid] = me
-	me.alert.ev_wait_join(me)
-
+	-- self.uplayers[me.uid] = me
+	table.insert(self.watchers, me)
+	
 	-- 把信息存到room_mgr与chatd
 	skynet.call('.ROOM_MGR', "lua", "room_join", self.id, uid, agent, me.idx, me.chip)
 	skynet.call('.CHATD', "lua", "room_join", self.id, uid, agent)
@@ -775,9 +799,12 @@ function cls:join(uid, agent, name, sex)
 	args.p = p
 	self:push_client_except_idx(me.idx, "pokerjoin", args)
 
-	-- if self.joined >= self.max and self.online >= self.max then
-	-- 	self.alert.ev_ready(self)
-	-- end
+	-- 判断人数是否进入下一个状态
+	if self.online >= 2 then
+		if self.alert.is(state.CREATE) then
+			self.alert.ev_join(self)
+		end
+	end
 	return servicecode.NORET
 end
 
@@ -888,21 +915,20 @@ function cls:afk(uid)
 	assert(p.online)
 	p.online = false
 	self:decre_online()
-	-- self.alert.ev_reset_join(self)
 	-- 把信息存到
 	skynet.call('.ROOM_MGR', "lua", "room_afk", self.id, uid)
 	skynet.call('.CHATD', "lua", "room_afk", self.id, uid)
 
 	log.info('room(%d) join %d', self.id, self.joined)
-	if self.joined == 1 then
-		skynet.call(p.agent, 'lua', 'room_leave')
-	elseif self.playalert.is(gameplay.NONE) then
-		skynet.call(p.agent, 'lua', 'room_leave')
-	else
-		-- local args = {}
-		-- args.idx = p.idx
-		-- self:push_client_except_idx(p.idx, "offline", args)
-	end
+	-- if self.joined == 1 then
+	-- 	skynet.call(p.agent, 'lua', 'room_leave')
+	-- elseif self.playalert.is(gameplay.NONE) then
+	-- 	skynet.call(p.agent, 'lua', 'room_leave')
+	-- else
+	-- 	local args = {}
+	-- 	args.idx = p.idx
+	-- 	self:push_client_except_idx(p.idx, "offline", args)
+	-- end
 	return true
 end
 
@@ -1089,12 +1115,11 @@ end
 -- turn state
 function cls:take_ready()
 	-- body
-	self:emit_player_event("ev_wait_ready")
-	-- self:push_client("big2take_ready")
 end
 
 function cls:take_shuffle()
 	-- body
+	-- 此时洗牌，不发牌
 	assert(self.alert.is(state.SHUFFLE))
 
 	-- 开始洗牌后才开始计算消耗品
@@ -1345,6 +1370,7 @@ end
 
 function cls:take_call()
 	-- body
+	-- 主要是广播
 	assert(self.alert.is(state.CALL))
 	local roommode = ds.query('roommode')
 	local xmode = roommode[tostring(self.mode)]
@@ -1363,7 +1389,7 @@ function cls:take_call()
 	args.idx = self.curidx
 	args.opcode = p.opcode
 	args.lead = p:pack_leadcards()
-	self:push_client("big2call", args)
+	self:push_client("pokercall", args)
 
 	if MOCK then
 		skynet.timeout(100 * 20, function ()

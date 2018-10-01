@@ -34,9 +34,6 @@ function cls:load_cache_to_data()
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
 	unpack_components.unpack_package_component(entity.package, res.db_user_package)
-	if #res.db_user_rooms == 1 then
-		unpack_components.unpack_room_component(entity.room, res.db_user_rooms[1])
-	end
 	unpack_components.unpack_funcopen_component(entity.funcopen, res.db_user_funcopen)
 	return true
 end
@@ -47,7 +44,6 @@ function cls:save_user(uid, entity)
 	assert(uid and entity)
 	local data = {}
 	data.db_user = pack_components.pack_user_component(entity.user)
-	data.db_user_room = pack_components.pack_room_component(entity.room, uid)
 	data.db_user_package = pack_components.pack_package_component(entity.package, uid)
 	data.db_user_funcopen = pack_components.pack_funcopen_component(entity.funcopen, uid)
 	skynet.call(".DB", "lua", "write_user", data)
@@ -59,7 +55,6 @@ function cls:save_data_to_cache()
 	local uid = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
-	-- assert(self:save_account(uid, entity))
 	assert(self:save_user(uid, entity))
 	return true
 end

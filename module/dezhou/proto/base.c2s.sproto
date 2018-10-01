@@ -1,0 +1,121 @@
+####################################### 
+# 一般模块 [1, 100)
+handshake 1 {
+    response {
+    	errorcode 0 : integer
+    }
+}
+
+logout 2 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+inituser 3 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+
+####################################### 
+# 系统模块 [100, 500)
+# 第一条消息，主要是一个写个人信息
+first 104 {
+    response {
+        errorcode 0 : integer
+        nickname  1 : string
+    }
+}
+
+checkindaily 105 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+board 106 {
+    response {
+        errorcode 0 : integer
+        text      1 : string
+    }
+}
+
+adver 107 {
+    response {
+        errorcode 0 : integer
+        text      1 : string
+    }
+}
+
+fetchinbox 108 {
+    request {
+        fromdate  0 : integer
+    }
+    response {
+        errorcode 0 : integer
+        list      1 : *mail
+    }
+}
+
+syncsysmail 109 {
+    request {
+        all       0 : *integer
+    }
+    response {
+        errorcode 0 : integer
+        inbox     1 : *mail
+    }
+}
+
+viewedmail 110 {
+    request {
+        mailid    0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+records 111 {
+    response {
+        errorcode 0 : integer
+        records   1 : *record
+    }
+}
+
+record 112 {
+    request {
+        id 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+        r         1 : string
+    }
+}
+
+avatar 113 {
+    response {
+        errorcode 0 : integer
+        nickname 1 : string
+        nameid 2 : string
+        rcard 3 : integer
+    }
+}
+
+room_info 114 {
+    response {
+        errorcode 0 : integer
+        isCreated 1 : boolean
+        joined    2 : boolean
+        roomid    3 : integer
+    }
+}
+
+package_info 115 {
+    response {
+        errorcode 0 : integer
+        all       1 : *item
+    }
+}

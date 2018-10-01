@@ -1,0 +1,130 @@
+####################################### 
+# 一般模块 [1, 100)
+handshake 1 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
+logout 2 {
+    request {
+        subid 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+online 3 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+offline 4 {
+    request {
+        idx 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+match 5 {
+    request {
+        id 0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+####################################### 
+# 系统模块 [100, 500)
+rcard 101 {
+    request {
+        num       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+radio 102 {
+    request {
+        board     0 : string
+        adver     1 : string
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+inbox 103 {
+    request {
+        list      0 : *mail
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+board 104 {
+    request {
+        text      0 : string
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+adver 105  {
+    request {
+        text      0 : string
+    }
+    response {
+        errorcode 0 : integer
+    }   
+}
+
+records 106 {
+    request {
+        list      0 : *record
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+add_item 107 {
+    request {
+        i 0 : item
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+sub_item 108 {
+    request {
+        i 0 : item
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+rchat 109 {
+    request {
+        idx       0 : integer
+        type      1 : integer
+        textid    2 : integer
+        sdsteam   3 : string
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
