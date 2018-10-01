@@ -1,0 +1,4 @@
+EXPORTS
+	xlogger_create
+	xlogger_release
+	xlogger_init

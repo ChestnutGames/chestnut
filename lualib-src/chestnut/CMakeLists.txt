@@ -14,7 +14,6 @@ SET(SKIPLIST_H ./skiplist/skiplist.h)
 SET(SKIPLIST_C ./skiplist/skiplist.c ./skiplist/lua-skiplist.c)
 
 IF(MSVC)
-
 source_group("src" FILES ${CHESTNUT_H} ${CHESTNUT_C})
 #source_group("aabb" FILES ${AABB_H} ${AABB_CC})
 source_group("aoi" FILES ${AOI_H} ${AOI_C})
@@ -28,8 +27,7 @@ include_directories(aoi)
 include_directories(cjson)
 include_directories(crab)
 include_directories(rudp)
-include_directories(../../foundation)
-include_directories(../../foundation/libfixmath/libfixmath)
+include_directories(../../foundation/include)
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 
@@ -57,26 +55,20 @@ ADD_DEFINITIONS(-D_DEBUG)
 ENDIF()
 
 add_library(chestnut SHARED ${CHESTNUT_H} ${CHESTNUT_C} ${AOI_H} ${AOI_C} ${SSL_H} ${SSL_C} ${SKIPLIST_H} ${SKIPLIST_C})
-
 set_target_properties(chestnut PROPERTIES PREFIX "")
 set_target_properties(chestnut PROPERTIES SUFFIX ".so")
-
-IF(MSVC)
-set_target_properties(chestnut PROPERTIES FOLDER "lualib") 
 set_target_properties(chestnut PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 set_target_properties(chestnut PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 
+IF(MSVC)
+set_target_properties(chestnut PROPERTIES FOLDER "lualib")
 IF(CMAKE_CL_64)
 #target_link_libraries(chestnut ../../../libbase)
 target_link_libraries(chestnut ws2_32 ../../../strawberry)
 target_link_libraries(chestnut ../../../3rd/openssl/libcrypto ../../../3rd/openssl/libssl)
+target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
 ENDIF(CMAKE_CL_64)
 ELSE(MSVC)
-
-SET(EXECUTABLE_OUTPUT_PATH ../../../luaclib)
-SET(LIBRARY_OUTPUT_PATH ../../../luaclib)
-
-# linux
 ENDIF()
 
-ADD_DEPENDENCIES(chestnut xloggerd)
+ADD_DEPENDENCIES(chestnut strawberry)
