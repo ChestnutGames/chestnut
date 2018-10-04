@@ -11,6 +11,7 @@
 /logs
 /build_win64
 /build_linux64
+/hello
 
 #*.so
 
