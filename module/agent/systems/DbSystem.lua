@@ -32,9 +32,17 @@ function cls:load_cache_to_data()
 	local entity = index:get_entity(uid)
 	log.info("uid(%d) load_cache_to_data", uid)
 	local res = skynet.call(".DB", "lua", "read_user", uid)
+	assert(#res.db_users == 1)
 	unpack_components.unpack_user_component(entity.user, res.db_users[1])
-	unpack_components.unpack_package_component(entity.package, res.db_user_package)
-	unpack_components.unpack_funcopen_component(entity.funcopen, res.db_user_funcopen)
+	if #res.db_user_packages > 0 then
+		unpack_components.unpack_package_component(entity.package, res.db_user_packages)
+	end
+	if #res.db_user_funcopens > 0 then
+		unpack_components.unpack_funcopen_component(entity.funcopen, res.db_user_funcopens)
+	end
+	if #res.db_user_rooms > 0 then
+		unpack_components.unpack_room_component(entity.room, res.db_user_rooms[1])
+	end
 	return true
 end
 
@@ -43,9 +51,10 @@ function cls:save_user(uid, entity)
 	assert(self)
 	assert(uid and entity)
 	local data = {}
-	data.db_user = pack_components.pack_user_component(entity.user)
-	data.db_user_package = pack_components.pack_package_component(entity.package, uid)
-	data.db_user_funcopen = pack_components.pack_funcopen_component(entity.funcopen, uid)
+	data.db_user          = pack_components.pack_user_component(entity.user)
+	data.db_user_package  = pack_components.pack_package_component(entity.package, uid)
+	data.db_user_funcopens = pack_components.pack_funcopen_component(entity.funcopen, uid)
+	data.db_user_room     = pack_components.pack_room_component(entity.room, uid)
 	skynet.call(".DB", "lua", "write_user", data)
 	return true
 end

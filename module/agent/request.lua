@@ -8,7 +8,12 @@ local REQUEST = {}
 
 function REQUEST:handshake()
 	-- body
-	self:send_request_gate("handshake")
+	local login_type = skynet.getenv 'login_type'
+	if login_type == 'so' then
+		self:send_request("handshake")
+	else
+		self:send_request_gate("handshake")
+	end
 	local res = {}
 	res.errorcode = 0
 	return res

@@ -1,10 +1,9 @@
-package.path = "./service/chestnut/gated/?.lua;" .. package.path
+package.path = "./module/gated/?.lua;" .. package.path
 local msgserver = require "msgserver"
 local crypt = require "skynet.crypt"
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
-
 
 local loginservice = ".LOGIND"
 local servername
@@ -115,8 +114,12 @@ end
 function server.disconnect_handler(username, fd)
 	local u = username_map[username]
 	if u then
-		u.online = false
-		skynet.call(u.agent, "lua", "afk")
+		if u.online then
+			skynet.call(u.agent, "lua", "afk")
+			u.online = false
+		else
+			log.error('disconnet when onlien is false')
+		end
 	end
 end
 
@@ -125,14 +128,18 @@ function server.start_handler(username, fd, ... )
 	-- body
 	local u = username_map[username]
 	if u then
-		u.online = true
-		local agent = u.agent
-		if agent then
-			local conf = {
-				client = fd,
-			}
-			log.info("start_handler")
-			skynet.call(agent, "lua", "auth", conf)
+		if u.online == nil or u.online == false then
+			local agent = u.agent
+			if agent then
+				local conf = {
+					client = fd,
+				}
+				log.info("start_handler")
+				skynet.call(agent, "lua", "auth", conf)
+				u.online = true
+			end
+		else
+			log.error('online is true, start auth ...')
 		end
 	end
 end
@@ -142,11 +149,13 @@ function server.msg_handler(username, msg, sz,... )
 	-- body
 	local u = username_map[username]
 	if u then
-		local agent = u.agent
-		if agent then
-			skynet.redirect(agent, skynet.self(), "client", 0, msg, sz)
-		else
-			log.error("not find agent")
+		if u.online then
+			local agent = u.agent
+			if agent then
+				skynet.redirect(agent, skynet.self(), "client", 0, msg, sz)
+			else
+				log.error("not find agent")
+			end
 		end
 	end
 end

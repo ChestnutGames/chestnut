@@ -2,12 +2,10 @@ local skynet = require "skynet"
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local list = require "chestnut.list"
-local util = require "chestnut.time"
-local redis = require "chestnut.redis"
+local util = require "chestnut.time_utils"
 local servicecode = require "chestnut.servicecode"
 local card = require "card"
 local player = require "player"
-local errorcode = require "errorcode"
 local opcode = require "opcode"
 local hutype = require "hutype"
 local jiaotype = require "jiaotype"
@@ -18,7 +16,6 @@ local overtype = require "overtype"
 local gangmultiple = require "gangmultiple"
 local json = require "rapidjson"
 local table_mgr = require "mjlib.base_table.table_mgr"
-
 
 local state = {}
 state.NONE       = 0
@@ -60,10 +57,14 @@ function cls:ctor()
 		self._players[i] = tmp
 	end
 
-	-- rule
+	-- room
 	self._id = 0
 	self._open = false
-	self._host = nil
+	self._host = 0
+	self._type = 0
+	self._mode = 0
+
+	-- mahjong rule
 	self._local = region.Sichuan
 	self._overtype = overtype.XUEZHAN
 	self._maxmultiple = 8
@@ -78,6 +79,7 @@ function cls:ctor()
 	self._tiandihu = 0
 	self._maxju = 0
 
+	-- players
 	self._max = 4
 	self._joined = 0
 	self._online = 0
@@ -88,8 +90,8 @@ function cls:ctor()
 	self._kcards = {}
 	self:init_cards()
 
+	-- gameplay
 	self._countdown = 20 -- s
-
 	self._state = state.NONE
 	self._laststate = state.NONE
 
@@ -110,13 +112,12 @@ function cls:ctor()
 
 	self._firsthu  = 0    -- next first hu reset
 	self._hucount  = 0    -- hu total player
-
-	self._stime = 0
-	self._record = {}
-
 	self._ju = 0
 	self._overtimer = nil
 
+	-- record
+	self._stime = 0
+	self._record = {}
 	return self
 end
 
@@ -322,7 +323,8 @@ function cls:check_over( ... )
 	return false
 end
 
-------------------------------------------------protocol
+------------------------------------------
+-- 服务协议
 function cls:start()
 	-- body
 	assert(self)
@@ -331,172 +333,142 @@ end
 
 function cls:init_data()
 	-- body
-	local pack = redis:get(string.format("tb_room:%d", self._id))
-	if pack then
-		log.info("pack = [%s]", pack)
-		local data = json.decode(pack)
-		local db_room = data.room
-		local open = db_room.open
-		if not open then
-			return
-		end
-		self._id = db_room.id
-	    self._host = db_room.host
-	    self._open = db_room.open
-	    self._local = db_room['local']
-	    self._overtype = db_room.overtype
-	    self._maxmultiple = db_room.maxmultiple
-	    self._hujiaozhuanyi = db_room.hujiaozhuanyi
-	    self._zimo = db_room.zimo
-	    self._dianganghua = db_room.dianganghua
-	    self._daiyaojiu = db_room.daiyaojiu
-	    self._duanyaojiu = db_room.duanyaojiu
-	    self._jiangdui = db_room.jiangdui
-	    self._tiandihu = db_room.tiandihu
-	    self._maxju = db_room.maxju
+	local pack = skynet.call('.DB', "lua", "read_room", self._id)
+	-- 初始所有房间数据
+	local db_room = pack.db_rooms[1]
+	local open = db_room.open
+	if not open then
+		return
+	end
+	self._type = db_room.type
+	self._mode = db_room.mode
+	self._host = db_room.host
+	self._open = db_room.open
+	local rule = json.decode(db_room.rule)
+	self._local = rule['local']
+	self._overtype = rule.overtype
+	self._maxmultiple = rule.maxmultiple
+	self._hujiaozhuanyi = rule.hujiaozhuanyi
+	self._zimo = rule.zimo
+	self._dianganghua = rule.dianganghua
+	self._daiyaojiu = rule.daiyaojiu
+	self._duanyaojiu = rule.duanyaojiu
+	self._jiangdui = rule.jiangdui
+	self._tiandihu = rule.tiandihu
+	self._maxju = rule.maxju
 
-	    -- gameplay data
-	    self._state = db_room.state
-	    self._laststate = db_room.last_state
-	    self._firsttake = db_room.firsttake
-	    self._firstidx = db_room.firstidx
-	    self._curtake = db_room.curtake
-	    self._curidx = db_room.curidx
-	    self._lastidx = db_room.lastidx
-		if db_room.lastcard then
-			self._lastcard = self._kcards[db_room.lastcard]
-		end
-	    self._firsthu = db_room.firsthu
-	    self._hucount = db_room.hucount
-	    self._ju = db_room.ju
-
-		for _,db_user in pairs(data.users) do
-			local player = self._players[db_user.idx]
-			player._uid = db_user.uid
-			player._idx = db_user.idx
-			player._chip = db_user.chip
-			player._state = db_user.state
-			player._laststate = db_user.last_state
-			player._que = db_user.que
-			player._takecardsidx = db_user.takecardsidx
-			player._takecardscnt = db_user.takecardscnt
-			player._takecardslen = db_user.takecardslen
-			for k,v in pairs(db_user.takecards) do
-				local cc = self._kcards[v]
-				cc:set_pos(tonumber(k))
-				player:insert_take_cards_with_pos(cc)
-			end
-			for k,v in pairs(db_user.cards) do
-				local cc = self._kcards[v]
-				cc:set_pos(tonumber(k))
-				player:insert_take_cards_with_pos(cc)
-			end
-			for k,v in pairs(db_user.leadcards) do
-				-- local cc = self._kcards[v]
-				-- cc:set_pos(tonumber(k))
-			end
-			for k,v in pairs(db_user.putcards) do
-				-- local cc = self._kcards[v]
-				-- cc:set_pos(tonumber(k))
-			end
-			player._putidx = db_user.putidx
-			player._holdcard = self._kcards[db_user.holdcard]
-			for k,v in pairs(db_user.hucards) do
-				print(k,v)
-			end
-		end
+	-- 初始房间玩家数据
+	local db_users = pack.db_users
+	for _,db_user in pairs(db_users) do
+		local player = self._players[db_user.idx]
+		player._uid = db_user.uid
+		player._idx = db_user.idx
+		player._chip = db_user.chip
+		player._state = db_user.state
+		player._laststate = db_user.last_state
+		player._que = db_user.que
 	end
 	return true
 end
 
-function cls:sayhi()
+function cls:sayhi(type, mode, host, users)
 	-- body
-	assert(self)
+	assert(type)
+	if self._type == 1 then
+		-- 自建房间
+		assert(self._type == type)
+		assert(self._mode == mode)
+		assert(self._host == host)
+		if self._host ~= 0 then
+			-- 此房间并没有解散，初始数据
+			skynet.call('.CHATD', 'lua', 'room_create', self._id, skynet.self())
+			-- skynet.call('.CHATD', 'lua', 'room_init_users', self._id, v.users)
+		end
+	elseif self._type == 2 then
+		-- 匹配房间
+		skynet.call('.CHATD', 'lua', 'room_create', self._id, skynet.self())
+	end
 	return true
 end
 
 function cls:save_data()
 	-- body
 	if not self._open then
-		-- log.info("roomid = %d, save_data self._open is false", self._id)
+		-- log.error("roomid = %d, save_data self._open is false", self._id)
 		return
 	end
-	local db_users = {}
-	local db_room = {}
-	for k,v in pairs(self._players) do
-		if v._uid > 0 then      -- > 0 才是有人加入
-			local db_user = {}
-			db_user.uid = assert(v._uid)
-			db_user.idx = assert(v._idx)
-			db_user.chip = assert(v._chip)
-			db_user.state = assert(v._state)
-			db_user.last_state   = assert(v._laststate)
-			db_user.que          = assert(v._que)
-			db_user.takecardsidx = assert(v._takecardsidx)
-			db_user.takecardscnt = assert(v._takecardscnt)
-			db_user.takecardslen = assert(v._takecardslen)
-			db_user.takecards = {}
-			for pos,card in pairs(v._takecards) do
-				db_user.takecards[string.format("%d", pos)] = card:get_value()
+	-- 创建类房间存数据
+	if self._type == 1 then
+		-- 存储房间数据
+		local db_room = {}
+		db_room.id = assert(self._id)
+		db_room.type = self._type
+		db_room.mode = self._mode
+		db_room.host = assert(self._host)
+		db_room.open = assert(self._open) and 1 or 0
+		local rule = {}
+		rule['local'] = self._local
+		rule.overtype = self._overtype
+		rule.maxmultiple = self._maxmultiple
+		rule.hujiaozhuanyi = self._hujiaozhuanyi
+		rule.zimo = self._zimo
+		rule.dianganghua = self._dianganghua
+		rule.daiyaojiu = self._daiyaojiu
+		rule.duanyaojiu = self._duanyaojiu
+		rule.jiangdui = self._jiangdui
+		rule.tiandihu = self._tiandihu
+		rule.maxju = self._maxju
+		db_room.rule = json.encode(rule)
+
+		-- 存储玩家数据
+		local db_users = {}
+		for k,v in pairs(self._players) do
+			if v._uid > 0 then      -- > 0 才是有人加入
+				local db_user = {}
+				db_user.uid = assert(v._uid)
+				db_user.roomid = self._id
+				db_user.idx = assert(v._idx)
+				db_user.chip = assert(v._chip)
+				db_user.state = assert(v._state)
+				db_user.last_state   = assert(v._laststate)
+				db_user.que          = assert(v._que)
+				db_user.takecardsidx = assert(v._takecardsidx)
+				db_user.takecardscnt = assert(v._takecardscnt)
+				db_user.takecardslen = assert(v._takecardslen)
+				db_user.takecards = {}
+				for pos,card in pairs(v._takecards) do
+					db_user.takecards[string.format("%d", pos)] = card:get_value()
+				end
+				db_user.cards = {}
+				for pos,card in pairs(v._cards) do
+					db_user.cards[string.format("%d", pos)] = card:get_value()
+				end
+				db_user.leadcards = {}
+				for pos,card in pairs(v._leadcards) do
+					db_user.leadcards[string.format("%d", pos)] = card:get_value()
+				end
+				db_user.putcards = {}
+				for pos,card in pairs(v._putcards) do
+					db_user.putcards[string.format("%d", pos)] = card:get_value()
+				end
+				db_user.putidx = assert(v._putidx)
+				if v._holdcard then
+					db_user.holdcard = assert(v._holdcard:get_value())
+				end
+				db_user.hucards = {}
+				for pos,card in pairs(v._hucards) do
+					db_user.hucards[string.format("%d", pos)] = card:get_value()
+				end
+				db_users[string.format("%d", k)] = db_user
 			end
-			db_user.cards = {}
-			for pos,card in pairs(v._cards) do
-				db_user.cards[string.format("%d", pos)] = card:get_value()
-			end
-			db_user.leadcards = {}
-			for pos,card in pairs(v._leadcards) do
-				db_user.leadcards[string.format("%d", pos)] = card:get_value()
-			end
-			db_user.putcards = {}
-			for pos,card in pairs(v._putcards) do
-				db_user.putcards[string.format("%d", pos)] = card:get_value()
-			end
-			db_user.putidx = assert(v._putidx)
-			if v._holdcard then
-				db_user.holdcard = assert(v._holdcard:get_value())
-			end
-			db_user.hucards = {}
-			for pos,card in pairs(v._hucards) do
-				db_user.hucards[string.format("%d", pos)] = card:get_value()
-			end
-			db_users[string.format("%d", k)] = db_user
 		end
-	end
-	db_room.open = assert(self._open)
-	db_room.id = assert(self._id)
-	db_room.host = assert(self._host)
-	db_room['local'] = self._local
-	db_room.overtype = self._overtype
-	db_room.maxmultiple = self._maxmultiple
-	db_room.hujiaozhuanyi = self._hujiaozhuanyi
-	db_room.zimo = self._zimo
-	db_room.dianganghua = self._dianganghua
-	db_room.daiyaojiu = self._daiyaojiu
-	db_room.duanyaojiu = self._duanyaojiu
-	db_room.jiangdui = self._jiangdui
-	db_room.tiandihu = self._tiandihu
-	db_room.maxju = self._maxju
 
-	-- gameplay data
-	db_room.state      = assert(self._state)
-	db_room.last_state = assert(self._laststate)
-	db_room.firsttake  = assert(self._firsttake)
-	db_room.firstidx   = assert(self._firstidx)
-	db_room.curtake    = assert(self._curtake)
-	db_room.curidx     = assert(self._curidx)
-	db_room.lastidx    = assert(self._lastidx)
-	if self._lastcard then
-		db_room.lastcard = self._lastcard:get_value()
-	end
-	db_room.firsthu = self._firsthu
-	db_room.hucount = self._hucount
-	db_room.ju = self._ju
+		local pack = {}
+		pack.db_room = db_room
+		pack.db_users = db_users
 
-	local data = {}
-	data.users = db_users
-	data.room = db_room
-	local pack = json.encode(data)
-	redis:set(string.format("tb_room:%d", self._id), pack)
+		skynet.call(".DB", "lua", "write_room", pack)
+	end
 end
 
 function cls:close()
@@ -506,24 +478,12 @@ function cls:close()
 	return true
 end
 
-function cls:afk(uid)
-	-- body
-	log.info('roomid = %d, uid(%d) afk', self._id, uid)
-	local p = self:get_player_by_uid(uid)
-	assert(p)
-	p:set_online(false)
-	self:decre_online()
-	self._state = state.JOIN
-
-	local args = {}
-	args.idx = p:get_idx()
-	self:push_client_except_idx(p:get_idx(), "offline", args)
-	return true
-end
-
+------------------------------------------
+-- 房间协议
 function cls:create(uid, args)
 	-- body
-	assert(uid)
+	-- 自建房间
+	self._type = 1
 	self._host = uid
 	self._open = true
 	if args.provice == region.Sichuan then
@@ -563,6 +523,7 @@ function cls:create(uid, args)
 	local res = {}
 	res.errorcode = 0
 	res.roomid = self._id
+	res.mode   = self._mode
 	res.room_max = self._max
 	return res
 end
@@ -624,6 +585,7 @@ function cls:join(uid, agent, name, sex)
 	res.errorcode = 0
 	res.roomid = self._id
 	res.room_max = self._max
+	res.mode = self._mode
 	res.me = p
 	res.ps = {}
 	for _,v in ipairs(self._players) do
@@ -731,6 +693,21 @@ function cls:rejoin(uid, agent)
 	return servicecode.NORET
 end
 
+function cls:afk(uid)
+	-- body
+	log.info('roomid = %d, uid(%d) afk', self._id, uid)
+	local p = self:get_player_by_uid(uid)
+	assert(p)
+	p:set_online(false)
+	self._online = self._online - 1
+	self._state = state.JOIN
+
+	local args = {}
+	args.idx = p:get_idx()
+	self:push_client_except_idx(p:get_idx(), "offline", args)
+	return true
+end
+
 function cls:leave(uid)
 	-- body
 	local p = self:get_player_by_uid(uid)
@@ -738,8 +715,8 @@ function cls:leave(uid)
 	local idx = p:get_idx()
 	p:set_online(false)
 	p:set_uid(0)
-	self:decre_online()
-	self:decre_joined()
+	self._online = self._online - 1
+	self._joined = self._joined - 1
 	self._state = state.JOIN
 	local res = {}
 	res.errorcode = 0
@@ -751,6 +728,16 @@ function cls:leave(uid)
 	return servicecode.NORET
 end
 
+function cls:recycle()
+	-- body
+	assert(self)
+	skynet.call('.CHATD', 'lua', 'room_recycle', self.id)
+	self.open = false
+	return true
+end
+
+------------------------------------------
+-- 麻将协议
 function cls:step(idx, ... )
 	-- body
 	assert(idx)
@@ -1607,6 +1594,7 @@ function cls:timeout_restart(idx, ... )
 	-- body
 end
 
+------------------------------------------
 -- turn state
 function cls:take_shuffle( ... )
 	-- body

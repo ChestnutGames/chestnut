@@ -8,6 +8,7 @@ local RESPONSE = require "response"
 local CMD = require "cmd"
 local traceback = debug.traceback
 local assert = assert
+local login_type = skynet.getenv 'login_type'
 
 local ctx
 
@@ -63,7 +64,11 @@ skynet.register_protocol {
 			local ok, result = xpcall(request, traceback, ...)
 			if ok then
 				if result then
-					ctx:send_package_gate("push_client", result)
+					if login_type == 'so' then
+						ctx:send_package(result)
+					else
+						ctx:send_package_gate("push_client", result)
+					end
 				end
 			else
 				log.error("agent dispatch error:")

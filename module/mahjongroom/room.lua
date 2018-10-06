@@ -1,4 +1,4 @@
-package.path = "./module/mahjong/room/?.lua;./module/mahjong/lualib/?.lua;"..package.path
+package.path = "./module/mahjongroom/?.lua;./module/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"

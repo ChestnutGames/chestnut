@@ -143,11 +143,17 @@ function cls:create(args)
 		return res
 	end
 
+	if room.joined then
+		local res = {}
+		res.errorcode = 11
+		return res
+	end
+
 	local agent = skynet.self()
 	local res = skynet.call(".ROOM_MGR", "lua", "create", uid, agent, args)
 	if res.errorcode == 0 then
-		room.isCreated = true
 		room.id        = res.roomid
+		room.isCreated = true
 	end
 	return res
 end

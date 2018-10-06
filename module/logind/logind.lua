@@ -29,7 +29,7 @@ function server.auth_handler(token)
 	password = crypt.base64decode(password)
 	assert(password == "Password", "Invalid password")
 	log.info("auth_handler %s@%s:%s", user, server, password)
-	local res = skynet.call("." .. signupd_name, "lua", "signup", server, user)
+	local res = skynet.call("." .. signupd_name, "lua", "signup", server, user, password)
 	if res.code == 200 then
 		return server, res.uid
 	else

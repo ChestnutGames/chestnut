@@ -1,4 +1,4 @@
-package.path = "./module/dezhou/lualib/?.lua;"..package.path
+package.path = "./module/lualib/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
 local mc = require "skynet.multicast"
@@ -22,17 +22,17 @@ local NORET = {}
 local users = {}   -- 玩家信息,玩家创建的房间
 local rooms = {}   -- 私人打牌的
 local num = 0      -- 正在打牌的桌子数
-local pool = {}    -- 闲置的大佬2桌子
-local bank = 101010
-local id = bank + 1
-local MAX_ROOM_NUM = 0
+local pool = {}    -- 闲置的桌子
+local startid = 101010 -- 101010
+local id = startid
+local MAX_ROOM_NUM = 10
 
 -- 匹配
 local mmrooms = {}  -- 匹配的房间,按模式分类的
 local mrooms = {}   -- 所有匹配的房间
-local q = queue()  -- 排队的队列
+local q = queue()   -- 排队的队列
 
--- @breif 生成房间id，
+-- @breif 生成自创建房间id，
 -- @return 0,成功, 13 超过最大房间数
 local function next_id()
 	-- body
@@ -41,8 +41,8 @@ local function next_id()
 	else
 		while rooms[id] do
 			id = id + 1
-			if id > bank + MAX_ROOM_NUM then
-				id = bank + 1
+			if id >= startid + MAX_ROOM_NUM then
+				id = startid
 			end
 		end
 		return 0, id
@@ -67,27 +67,28 @@ function CMD.start(channel_id)
 	channel:subscribe()
 
 	-- 初始一些配置
+	startid = 101010 -- 101010
 	MAX_ROOM_NUM = tonumber(ds.query('consts')['2']['Value'])
 	assert(MAX_ROOM_NUM > 1)
 	log.info('MAX_ROOM_NUM ==> %d', MAX_ROOM_NUM)
 
 	-- 初始所有自定义桌子
 	for i=1,MAX_ROOM_NUM do
-		local roomid = bank + i
-		local addr = skynet.newservice("pokerroom/room", roomid)
+		local roomid = startid + i - 1
+		local addr = skynet.newservice("mahjongroom/room", roomid)
 		skynet.call(addr, "lua", "start", channel_id)
-		pool[roomid] = { id = roomid, addr = addr }
+		pool[roomid] = { mode=0, id = roomid, addr = addr, joined=0, users={} }
 	end
 
 	-- 初始化所有匹配房间
-	local offset = MAX_ROOM_NUM
+	local offsetid = startid + MAX_ROOM_NUM
 	local roommode = ds.query('roommode')
 	for _,v in pairs(roommode) do
 		mmrooms[v.id] = {}
 		for i=1,v.num do
-			offset = offset + i
-			local roomid = bank + offset
-			local addr = skynet.newservice("pokerroom/room", roomid)
+			offsetid = offsetid + i
+			local roomid = offsetid - 1
+			local addr = skynet.newservice("mahjongroom/room", roomid)
 			skynet.call(addr, "lua", "start", channel_id)
 			local room = { mode=v.id, id=roomid, addr=addr, joined=0, users={} }
 			mmrooms[v.id][roomid] = room
@@ -99,6 +100,7 @@ end
 
 function CMD.init_data()
 	-- body
+	-- 初始自定义房间数据
 	local pack = skynet.call('.DB', "lua", "read_room_mgr")
 	if pack then
 		for _,db_user in pairs(pack.db_users) do
@@ -113,7 +115,9 @@ function CMD.init_data()
 			if db_room.host ~= 0 then
 				local room = {}
 				room.id = assert(db_room.id)
+				room.mode = assert(db_room.mode)
 				room.host = assert(db_room.host)
+				room.ju = assert(db_room.ju)
 				room.users = {}
 				local xusers = json.decode(db_room.users)
 				for k,v in pairs(xusers) do
@@ -123,38 +127,20 @@ function CMD.init_data()
 					user.chip = assert(v.chip)
 					room.users[tonumber(k)] = user
 				end
-				room.ju = assert(db_room.ju)
 				rooms[tonumber(room.id)] = room
 			end
 		end
 	end
-	-- 初始所有房间数据,当前房间是没有addr
-	-- for k,_ in pairs(rooms) do
-	-- 	local room = pool[k]
-	-- 	local ok = skynet.call(room.addr, "lua", "init_data")
-	-- 	assert(ok)
-	-- end
-	return true
-end
 
-function CMD.sayhi()
-	-- body
-	-- 验证mgr数据与room数据的一致
+	-- 验证每个房间是否还有存在的可能你
 	for k,v in pairs(rooms) do
 		if v.ju < 1 then
-			local room = pool[k]
-			local ok = skynet.call(room.addr, "lua", "sayhi", v.host, assert(v.users), 0)
-			if ok then
-				v.addr = room.addr
-				pool[k] = nil
-				num = num + 1
-				if k > id then
-					id = k
-				end
-				skynet.call('.CHATD', 'lua', 'room_create', v.id, v.addr)
-				skynet.call('.CHATD', 'lua', 'room_init_users', v.id, v.users)
-			else
-				log.error("room data wrong.")
+			local room = assert(pool[k])
+			v.addr = room.addr
+			pool[k] = nil
+			num = num + 1
+			if k > id then
+				id = k
 			end
 		else
 			-- 此房间应该解散，修改离线用户数据
@@ -165,18 +151,48 @@ function CMD.sayhi()
 			rooms[k] = nil
 		end
 	end
+
+	-- 初始所有房间数据
+	for _,v in pairs(rooms) do
+		local ok = skynet.call(v.addr, "lua", "init_data")
+		assert(ok)
+	end
+	return true
+end
+
+function CMD.sayhi()
+	-- body
+	-- 创建类房间sayhi恢复一些操作
+	for k,v in pairs(rooms) do
+		local ok = skynet.call(room.addr, "lua", "sayhi", 1, v.mode, v.host, assert(v.users))
+		assert(ok)
+	end
+
 	-- 创建匹配房间
+	-- 匹配类房间在sayhi的时候就必须准备好
+	-- 而创建房间需要房主，所以需要等到create的时候才真的创建
 	for _,v in pairs(mrooms) do
 		assert(v.addr)
 		skynet.call(v.addr, "lua", "sayhi", 2, v.mode, 0, v.users)
-		skynet.call(v.addr, "lua", "create", 0, true)
 	end
-
 	return true
 end
 
 function CMD.save_data()
 	-- body
+	-- 清除已经解散的数据
+	for k,v in pairs(users) do
+		if v.roomid == 0 then
+			users[k] = nil
+		end
+	end
+	for k,v in pairs(rooms) do
+		if v.host == 0 then
+			pool[k] = v
+			rooms[k] = nil
+		end
+	end
+	-- 存创建房间的用户与房间数据
 	local db_users = {}
 	local db_rooms = {}
 	for k,v in pairs(users) do
@@ -189,6 +205,7 @@ function CMD.save_data()
 		local db_room = {}
 		db_room.id = assert(v.id)
 		db_room.host = assert(v.host)
+		db_room.mode = assert(v.mode)
 		local xusers = {}
 		for k,v in pairs(v.users) do
 			local user = {}
@@ -205,19 +222,6 @@ function CMD.save_data()
 	data.db_users = db_users
 	data.db_rooms = db_rooms
 	skynet.call(".DB", "lua", "write_room_mgr", data)
-
-	-- 清除已经解散的数据
-	for k,v in pairs(users) do
-		if v.roomid == 0 then
-			users[k] = nil
-		end
-	end
-	for k,v in pairs(rooms) do
-		if v.host == 0 then
-			pool[k] = v
-			rooms[k] = nil
-		end
-	end
 	return NORET
 end
 
@@ -265,7 +269,7 @@ function CMD.match(uid, agent, mode)
 end
 
 ------------------------------------------
--- 打开房间
+-- 创建房间
 function CMD.create(uid, agent, args)
 	-- body
 	log.info("ROOM_MGR create")
@@ -281,7 +285,7 @@ function CMD.create(uid, agent, args)
 			res.errorcode = errorcode
 			return res
 		end
-		assert(roomid >= bank + 1 and roomid <= bank + MAX_ROOM_NUM)
+		assert(roomid >= startid and roomid < startid + MAX_ROOM_NUM)
 		local room = assert(pool[roomid])
 
 		res = skynet.call(room.addr, "lua", "create", uid, args)
@@ -314,8 +318,10 @@ function CMD.apply(roomid)
 	-- body
 	assert(roomid)
 	log.info("apply roomid: %d, return room addr", roomid)
+	-- 判断创建类房间是否存在
 	local room = rooms[roomid]
 	if room then
+		assert(room.addr)
 		return { errorcode = 0, addr = room.addr }
 	else
 		room = mrooms[roomid]

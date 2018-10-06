@@ -84,7 +84,7 @@ end
 
 function _M.pack_funcopen_component(component, uid)
 	-- body
-	local db_funcopen = {}
+	local db_funcopens = {}
 	local funcs = assert(component.funcs)
 	for k,item in pairs(funcs) do
 		-- print(k, item)
@@ -94,9 +94,9 @@ function _M.pack_funcopen_component(component, uid)
 		db_item.open = assert(item.open)
 		db_item.create_at = assert(item.createAt)
 		db_item.update_at = os.time()
-		table.insert(db_funcopen, db_item)
+		table.insert(db_funcopens, db_item)
 	end
-	return db_funcopen
+	return db_funcopens
 end
 
 return _M

@@ -69,13 +69,11 @@ CREATE TABLE `tb_record` (
 DROP TABLE IF EXISTS `tb_room`;
 CREATE TABLE `tb_room` (
   `id` int(11) NOT NULL,
-  `host` bigint(20) DEFAULT NULL,
-  `open` int(11) DEFAULT NULL,
-  `firstidx` int(11) DEFAULT NULL,
-  `curidx` int(11) DEFAULT NULL,
-  `ju` int(11) DEFAULT NULL,
-  `state` varchar(255) DEFAULT NULL,
-  `laststate` varchar(255) DEFAULT NULL,
+  `type` int(11) NOT NULL,
+  `mode` int(11) NOT NULL,
+  `host` bigint(20) NOT NULL,
+  `open` int(11) NOT NULL,
+  `rule` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -85,7 +83,8 @@ CREATE TABLE `tb_room` (
 DROP TABLE IF EXISTS `tb_room_mgr_rooms`;
 CREATE TABLE `tb_room_mgr_rooms` (
   `id` int(11) NOT NULL,
-  `host` bigint(18) DEFAULT NULL,
+  `mode` int(11) NOT NULL,
+  `host` bigint(20) DEFAULT NULL,
   `users` varchar(255) DEFAULT NULL,
   `ju` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -310,6 +309,21 @@ END
 DELIMITER ;
 
 -- ----------------------------
+-- Procedure structure for sp_account_insert_or_update
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_account_insert_or_update`;
+DELIMITER ;;
+CREATE PROCEDURE `sp_account_insert_or_update`(IN `in_username` varchar(64),IN `in_password` varchar(64), IN `in_uid` bigint(20))
+BEGIN
+	# Routine body goes here...
+  INSERT INTO tb_account(username, password, uid)
+	VALUES (in_username, in_password, in_uid)
+	ON DUPLICATE KEY UPDATE username=in_username, password=in_password, uid=in_uid;
+END
+;;
+DELIMITER ;
+
+-- ----------------------------
 -- Procedure structure for sp_offuser_room_update_created
 -- ----------------------------
 DROP PROCEDURE IF EXISTS `sp_offuser_room_update_created`;
@@ -332,12 +346,12 @@ DELIMITER ;
 -- ----------------------------
 DROP PROCEDURE IF EXISTS `sp_room_insert_or_update`;
 DELIMITER ;;
-CREATE PROCEDURE `sp_room_insert_or_update`(IN `in_id` int,IN `in_host` bigint,IN `in_open` int,IN `in_firstidx` int,IN `in_curidx` int,IN `in_ju` int,IN `in_state` varchar(255),IN `in_laststate` varchar(255))
+CREATE PROCEDURE `sp_room_insert_or_update`(IN `in_id` int,IN `in_type` int, IN `in_mode` int,IN `in_host` bigint,IN `in_open` int,IN `in_rule` varchar(255))
 BEGIN
-	#Routine body goes here...
-	INSERT INTO tb_room(id, `host`, `open`, firstidx, curidx, ju, state, laststate)
-	VALUES (in_id, in_host, in_open, in_firstidx, in_curidx, in_ju, in_state, in_laststate)
-	ON DUPLICATE KEY UPDATE id=in_id, `host`=in_host, `open`=in_open, firstidx=in_firstidx, curidx=in_curidx, ju=in_ju, state=in_state, laststate=in_laststate;
+	# Routine body goes here...
+	INSERT INTO tb_room(id, type, mode, `host`, `open`, rule)
+	VALUES (in_id, in_type, in_mode, in_host, in_open, in_rule)
+	ON DUPLICATE KEY UPDATE id=in_id, type=in_type, mode=in_mode, `host`=in_host, `open`=in_open, rule=in_rule;
 END
 ;;
 DELIMITER ;
@@ -347,12 +361,12 @@ DELIMITER ;
 -- ----------------------------
 DROP PROCEDURE IF EXISTS `sp_room_mgr_rooms_insert_or_update`;
 DELIMITER ;;
-CREATE PROCEDURE `sp_room_mgr_rooms_insert_or_update`(IN `in_id` int,IN `in_host` bigint,IN `in_users` varchar(255), IN `in_ju` int)
+CREATE PROCEDURE `sp_room_mgr_rooms_insert_or_update`(IN `in_id` int,IN `in_host` bigint,IN `in_users` varchar(255), IN `in_ju` int, IN `in_mode` int)
 BEGIN
 	-- Routine body goes here...
-	INSERT INTO tb_room_mgr_rooms(id, `host`, users, ju)
-	VALUES (in_id, in_host, in_users, in_ju)
-	ON DUPLICATE KEY UPDATE id=in_id, `host`=in_host, users=in_users, ju=in_ju;
+	INSERT INTO tb_room_mgr_rooms(id, `host`, users, ju, mode)
+	VALUES (in_id, in_host, in_users, in_ju, in_mode)
+	ON DUPLICATE KEY UPDATE id=in_id, `host`=in_host, users=in_users, ju=in_ju, mode=in_mode;
 END
 ;;
 DELIMITER ;

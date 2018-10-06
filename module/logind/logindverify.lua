@@ -17,6 +17,14 @@ local function gen_uid()
 	return guid()
 end
 
+local function new_account(username, password, uid) 
+	local account = {}
+	account.username = username
+	account.password = password
+	account.uid = uid
+	skynet.call(".DB", "lua", "write_new_account", account)
+end
+
 local function new_user(uid, sex, nickname, province, city, country, headimg, openid)
 	-- body
 	assert(uid and sex and nickname and province and city and country and headimg)
@@ -29,10 +37,13 @@ local function new_user(uid, sex, nickname, province, city, country, headimg, op
 	user.country        = country
 	user.headimg        = headimg
 	user.openid         = openid
-	user.create_time    = skynet.time()
-	user.login_times    = 0
-
-	-- skynet.call(".DB", "lua", "write_new_user", user)
+	user.nameid         = 0
+	user.create_at      = os.time()
+	user.update_at      = os.time()
+	user.login_at       = os.time()
+	user.new_user       = 1
+	user.level          = 1
+	skynet.call(".DB", "lua", "write_new_user", user)
 end
 
 local function new_unionid(unionid, uid)
@@ -46,15 +57,17 @@ end
 
 local function auth_win_myself(username, password)
 	-- body
+	print(username, password)
 	assert(type(username) == 'string' and #username > 0)
 	assert(type(password) == 'string' and #password > 0)
 	local res = skynet.call(".DB", "lua", "read_account_by_username", username, password)
 	for k,v in pairs(res) do
 		print(k,v)
 	end
-	if #res.accounts == 1 then
+	if type(res.accounts) == 'table' and #res.accounts == 1 then
 		local uid = res.accounts[1].uid
 		if #res.users <= 0 then
+			-- 初始默认用户数据
 			local sex = 1
 			local r = math.random(1, 10)
 			if r > 5 then
@@ -62,23 +75,12 @@ local function auth_win_myself(username, password)
 			else
 				sex = 0
 			end
-
-			local db_user = {}
-			db_user.uid = uid
-			db_user.sex = sex
-			db_user.nickname = username
-			db_user.province = "Beijing"
-			db_user.city = "Beijing"
-			db_user.country = "CN"
-			db_user.headimg = ""
-			db_user.openid = 0
-			db_user.nameid = 0
-			db_user.create_at = os.time()
-			db_user.update_at = os.time()
-			db_user.login_at = os.time()
-			db_user.new_user = 1
-			db_user.level = 1
-			skynet.call(".DB", "lua", "write_new_user", db_user)
+			local nickname = username
+			local province = 'Beijing'
+			local city     = "Beijing"
+			local country  = "CN"
+			local headimg  = "xx"
+			new_user(uid, sex, nickname, province, city, country, headimg, 0)
 		end
 		return uid
 	else
@@ -86,14 +88,16 @@ local function auth_win_myself(username, password)
 		local uid = gen_uid()          -- integer
 		log.info(string.format("new user uid = %d", uid))
 
+		local sex      = 1
 		local nickname = "hell"
 		local province = 'Beijing'
 		local city     = "Beijing"
 		local country  = "CN"
 		local headimg  = "xx"
-		new_unionid(unionid, uid)
-		new_user(uid, sex, nickname, province, city, country, headimg, unionid)
 
+		new_account(username, password, uid)
+		-- new_unionid(unionid, uid)
+		new_user(uid, sex, nickname, province, city, country, headimg, 0)
 		return uid
 	end
 end

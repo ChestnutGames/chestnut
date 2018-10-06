@@ -20,8 +20,8 @@ function M:check(key)
 end
 
 function M:load()
-    self:_load("module/mahjong/room/mjlib/base_table/tbl/tbl", self.tbl)
-    self:_load("module/mahjong/room/mjlib/base_table/tbl/eye_tbl", self.eye_tbl)
+    self:_load("module/mahjongroom/mjlib/base_table/tbl/tbl", self.tbl)
+    self:_load("module/mahjongroom/mjlib/base_table/tbl/eye_tbl", self.eye_tbl)
 end
 
 function M:dump(file, tbl)

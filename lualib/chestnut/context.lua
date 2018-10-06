@@ -121,6 +121,7 @@ function cls:send_request_gate(name, args)
 		return
 	end
 	assert(name)
+
 	self.response_session = self.response_session + 1 % max
 	self.response_session_name[self.response_session] = name
 	local request = self._send_request(name, args, self.response_session)

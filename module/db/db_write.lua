@@ -22,8 +22,8 @@ function _M:write_room_mgr_rooms(db_rooms)
 	-- body
 	for _,db_room in pairs(db_rooms) do
 		local sql = string_format([==[CALL
-		sp_room_mgr_rooms_insert_or_update(%d, %d, '%s', %d);]==],
-		db_room.id, db_room.host, db_room.users, db_room.ju)
+		sp_room_mgr_rooms_insert_or_update(%d, %d, '%s', %d, %d);]==],
+		db_room.id, db_room.host, db_room.users, db_room.ju, db_room.mode)
 		local res = self.db:query(sql)
 		if res.errno then
 			log.error('%s', self.dump(res))
@@ -50,8 +50,8 @@ end
 function _M:write_room(db_room)
 	-- body
 	local sql = string_format([==[CALL
-	sp_room_insert_or_update(%d, %d, %d, %d, %d, %d, '%s', '%s');]==],
-	db_room.id, db_room.host, db_room.open, db_room.firstidx, db_room.curidx, db_room.ju, db_room.state, db_room.laststate)
+	sp_room_insert_or_update(%d, %d, %d, %d, %d, '%s');]==],
+	db_room.id, db_room.type, db_room.mode, db_room.host, db_room.open, db_room.rule)
 	-- log.info(sql)
 	local res = self.db:query(sql)
 	if res.errno then
@@ -62,6 +62,17 @@ end
 
 ------------------------------------------
 -- about user
+function _M:write_account(db_account) 
+	local sql = string_format([==[CALL
+		sp_account_insert_or_update('%s', '%s', %d);]==],
+		db_account.username, db_account.password, db_account.uid)
+	local res = self.db:query(sql)
+	if res.errno then
+		log.error('%s', self.dump(res))
+	end
+	return res
+end
+
 function _M:write_user(db_user)
 	local sql = string_format([==[CALL
 		sp_user_insert_or_update (%d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d, %d, %d);]==],
@@ -106,9 +117,9 @@ function _M:write_user_package(db_user_package)
 	return true
 end
 
-function _M:write_user_funcopen(db_user_funcopen)
+function _M:write_user_funcopen(db_user_funcopens)
 	-- body
-	for _,db_user_funcitem in ipairs(db_user_funcopen) do
+	for _,db_user_funcitem in ipairs(db_user_funcopens) do
 		local sql = string_format([==[CALL
 		sp_user_funcopen_insert_or_update(%d, %d, %d, %d, %d);]==],
 		db_user_funcitem.uid, db_user_funcitem.id, db_user_funcitem.open,

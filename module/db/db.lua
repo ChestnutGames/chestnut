@@ -94,7 +94,8 @@ function QUERY.kill()
 	skynet.exit()
 end
 
-----------------------------------------------------------read
+------------------------------------------
+-- read data
 function QUERY.read_sysmail()
 	-- body
 	local res = db_read.read_sysmail(ctx)
@@ -106,7 +107,7 @@ function QUERY.read_account_by_username(username, password)
 	local res = {}
 	local accounts = db_read.read_account_by_username(ctx, username, password)
 	if #accounts == 1 then
-		local users = db_read.read_user_by_uid(ctx, accounts[1].uid)
+		local users = db_read.read_users_by_uid(ctx, accounts[1].uid)
 		res.accounts = accounts
 		res.users = users
 	end
@@ -116,10 +117,10 @@ end
 function QUERY.read_user(uid)
 	-- body
 	local res = {}
-	res.db_users = db_read.read_user_by_uid(ctx, uid)
-	res.db_user_rooms = db_read.read_user_room(ctx, uid)
-	res.db_user_package = db_read.read_user_package(ctx, uid)
-	res.db_user_funcopen = db_read.read_user_funcopen(ctx, uid)
+	res.db_users = db_read.read_users_by_uid(ctx, uid)
+	res.db_user_rooms = db_read.read_user_rooms(ctx, uid)
+	res.db_user_packages = db_read.read_user_packages(ctx, uid)
+	res.db_user_funcopens = db_read.read_user_funcopens(ctx, uid)
 	return res
 end
 
@@ -141,6 +142,11 @@ end
 
 ------------------------------------------
 -- 写数据
+function QUERY.write_new_account(db_account)
+	db_write.write_account(ctx, db_account)
+	return true
+end
+
 function QUERY.write_new_user(db_user)
 	-- body
 	db_write.write_user(ctx, db_user)
@@ -150,9 +156,9 @@ end
 function QUERY.write_user(data)
 	-- body
 	db_write.write_user(ctx, data.db_user)
-	-- db_write.write_user_room(ctx, data.db_user_room)
+	db_write.write_user_room(ctx, data.db_user_room)
 	db_write.write_user_package(ctx, data.db_user_package)
-	db_write.write_user_funcopen(ctx, data.db_user_funcopen)
+	db_write.write_user_funcopen(ctx, data.db_user_funcopens)
 	return true
 end
 

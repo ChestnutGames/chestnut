@@ -28,9 +28,9 @@ function CMD:init_data()
 	return self:init_data()
 end
 
-function CMD:sayhi()
+function CMD:sayhi(...)
 	-- body
-	return self:sayhi()
+	return self:sayhi(...)
 end
 
 function CMD:save_data()
@@ -49,14 +49,11 @@ function CMD:kill()
 	skynet.exit()
 end
 
-function CMD:afk(uid)
-	-- body
-	return self:afk(uid)
-end
-
+------------------------------------------
+-- 房间协议
 function CMD:create(uid, args, ... )
 	-- body
-	return self:create(uid, args)
+	return self:create(uid, args, ...)
 end
 
 function CMD:on_join(agent, ... )
@@ -76,6 +73,11 @@ function CMD:on_rejoin(args)
 	return self:rejoin(args.uid, args.agent)
 end
 
+function CMD:on_afk(uid)
+	-- body
+	return self:afk(uid)
+end
+
 function CMD:on_leave(uid)
 	-- body
 	return self:leave(uid)
@@ -86,11 +88,64 @@ function CMD:leave(args, ... )
 	assert(args.servicecode == servicecode.SUCCESS)
 end
 
+------------------------------------------
+-- 麻将协议 request
 function CMD:on_ready(args, ... )
 	-- body
 	return self:ready(args.idx)
 end
 
+function CMD:on_lead(args, ... )
+	-- body
+	return self:lead(args.idx, args.card, args.isHoldcard)
+end
+
+function CMD:on_call(args, ... )
+	-- body
+	return self:call(args.op)
+end
+
+function CMD:on_step(args, ... )
+	-- body
+	local ok, res = xpcall(context.step, debug.msgh, self, args.idx)
+	if not ok then
+		log.error(res)
+		local res = {}
+		res.servicecode = servicecode.SERVER_ERROR
+		return res
+	else
+		return res
+	end
+end
+
+function CMD:on_restart(args, ... )
+	-- body
+	self:restart(args.idx)
+	local res = {}
+	res.servicecode = servicecode.SUCCESS
+	return res
+end
+
+function CMD:on_rchat(args, ... )
+	-- body
+	self:chat(args)
+	local res = {}
+	res.servicecode = servicecode.SUCCESS
+	return res
+end
+
+function CMD:on_xuanpao(args, ... )
+	-- body
+	return self:xuanpao(args)
+end
+
+function CMD:on_xuanque(args, ... )
+	-- body
+	return self:xuanque(args)
+end
+
+------------------------------------------
+-- 麻将协议 response
 function CMD:ready(args, ... )
 	-- body
 	return servicecode.NORET
@@ -194,55 +249,6 @@ end
 function CMD:roomover( ... )
 	-- body
 	return servicecode.NORET
-end
-
-function CMD:on_lead(args, ... )
-	-- body
-	return self:lead(args.idx, args.card, args.isHoldcard)
-end
-
-function CMD:on_call(args, ... )
-	-- body
-	return self:call(args.op)
-end
-
-function CMD:on_step(args, ... )
-	-- body
-	local ok, res = xpcall(context.step, debug.msgh, self, args.idx)
-	if not ok then
-		log.error(res)
-		local res = {}
-		res.servicecode = servicecode.SERVER_ERROR
-		return res
-	else
-		return res
-	end
-end
-
-function CMD:on_restart(args, ... )
-	-- body
-	self:restart(args.idx)
-	local res = {}
-	res.servicecode = servicecode.SUCCESS
-	return res
-end
-
-function CMD:on_rchat(args, ... )
-	-- body
-	self:chat(args)
-	local res = {}
-	res.servicecode = servicecode.SUCCESS
-	return res
-end
-
-function CMD:on_xuanpao(args, ... )
-	-- body
-	return self:xuanpao(args)
-end
-
-function CMD:on_xuanque(args, ... )
-	-- body
-	return self:xuanque(args)
 end
 
 return CMD

@@ -77,47 +77,55 @@ end
 
 ------------------------------------------
 -- about user
-function _M:read_user_by_uid(uid)
+function _M:read_users_by_uid(uid)
 	-- body
 	local res = self.db:query(string_format("CALL sp_user_select(%d);", uid))
+	-- print(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return {}
+	end
 	if res.mulitresultset then
 		return res[1]
 	end
 	return res
 end
 
-function _M:read_user_room(uid)
+function _M:read_user_rooms(uid)
 	-- body
 	local res = self.db:query(string_format("CALL sp_user_room_select(%d);", uid))
-	-- log.info(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return {}
+	end
 	if res.mulitresultset then
 		return res[1]
-	else
-		log.error(self.dump(res))
 	end
 	return res
 end
 
-function _M:read_user_package(uid)
+function _M:read_user_packages(uid)
 	-- body
 	local res = self.db:query(string_format("CALL sp_user_package_select(%d);", uid))
-	-- log.info(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return {}
+	end
 	if res.mulitresultset then
 		return res[1]
-	else
-		log.error(self.dump(res))
 	end
 	return res
 end
 
-function _M:read_user_funcopen(uid)
+function _M:read_user_funcopens(uid)
 	-- body
 	local res = self.db:query(string_format("CALL sp_user_funcopen_select(%d);", uid))
-	-- log.info(self.dump(res))
+	if res.errno then
+		log.error('%s', self.dump(res))
+		return {}
+	end
 	if res.mulitresultset then
 		return res[1]
-	else
-		log.error(self.dump(res))
 	end
 	return res
 end
