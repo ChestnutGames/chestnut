@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define BACKLOG 32
+#define BACKLOG 128
 
 struct connection {
 	int id;	// skynet_socket id
@@ -89,9 +89,9 @@ static void
 _ctrl(struct gate * g, const void * msg, int sz) {
 	struct skynet_context * ctx = g->ctx;
 #ifdef _MSC_VER
-	char tmp[32 + 1];
+	char tmp[32+1];
 #else
-	char tmp[sz + 1];
+	char tmp[sz+1];
 #endif // _MSC_VER
 	memcpy(tmp, msg, sz);
 	tmp[sz] = '\0';
@@ -172,21 +172,26 @@ _report(struct gate * g, const char * data, ...) {
 static void
 _forward(struct gate *g, struct connection * c, int size) {
 	struct skynet_context * ctx = g->ctx;
+	int fd = c->id;
+	if (fd <= 0) {
+		// socket error
+		return;
+	}
 	if (g->broker) {
 		void * temp = skynet_malloc(size);
 		databuffer_read(&c->buffer,&g->mp,temp, size);
-		skynet_send(ctx, 0, g->broker, g->client_tag | PTYPE_TAG_DONTCOPY, 1, temp, size);
+		skynet_send(ctx, 0, g->broker, g->client_tag | PTYPE_TAG_DONTCOPY, fd, temp, size);
 		return;
 	}
 	if (c->agent) {
 		void * temp = skynet_malloc(size);
 		databuffer_read(&c->buffer,&g->mp,temp, size);
-		skynet_send(ctx, c->client, c->agent, g->client_tag | PTYPE_TAG_DONTCOPY, 1 , temp, size);
+		skynet_send(ctx, c->client, c->agent, g->client_tag | PTYPE_TAG_DONTCOPY, fd , temp, size);
 	} else if (g->watchdog) {
 		char * tmp = skynet_malloc(size + 32);
 		int n = snprintf(tmp,32,"%d data ",c->id);
 		databuffer_read(&c->buffer,&g->mp,tmp+n,size);
-		skynet_send(ctx, 0, g->watchdog, PTYPE_TEXT | PTYPE_TAG_DONTCOPY, 1, tmp, size + n);
+		skynet_send(ctx, 0, g->watchdog, PTYPE_TEXT | PTYPE_TAG_DONTCOPY, fd, tmp, size + n);
 	}
 }
 
@@ -288,7 +293,7 @@ _cb(struct skynet_context * ctx, void * ud, int type, int session, uint32_t sour
 			break;
 		}
 		// The last 4 bytes in msg are the id of socket, write following bytes to it
-		const uint8_t * idbuf = (uint8_t *)msg + sz - 4;
+		const uint8_t * idbuf = msg + sz - 4;
 		uint32_t uid = idbuf[0] | idbuf[1] << 8 | idbuf[2] << 16 | idbuf[3] << 24;
 		int id = hashid_lookup(&g->hash, uid);
 		if (id>=0) {
@@ -312,7 +317,7 @@ _cb(struct skynet_context * ctx, void * ud, int type, int session, uint32_t sour
 static int
 start_listen(struct gate *g, char * listen_addr) {
 	struct skynet_context * ctx = g->ctx;
-	char * portstr = strchr(listen_addr,':');
+	char * portstr = strrchr(listen_addr,':');
 	const char * host = "";
 	int port;
 	if (portstr == NULL) {
@@ -344,13 +349,8 @@ gate_init(struct gate *g , struct skynet_context * ctx, char * parm) {
 		return 1;
 	int max = 0;
 	int sz = strlen(parm)+1;
-#ifdef _MSC_VER
-	char watchdog[32];
-	char binding[32];
-#else
 	char watchdog[sz];
 	char binding[sz];
-#endif // _MSC_VER
 	int client_tag = 0;
 	char header;
 	int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);

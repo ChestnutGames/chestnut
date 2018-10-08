@@ -131,6 +131,7 @@ thread_timer(void *p) {
 	skynet_initthread(THREAD_TIMER);
 	for (;;) {
 		skynet_updatetime();
+		skynet_socket_updatetime();
 		CHECK_ABORT
 		wakeup(m,m->count-1);
 		usleep(2500);
@@ -184,7 +185,7 @@ start(int thread) {
 	assert(thread <= 32);
 	pthread_t pid[32 + 3];
 #else
-	pthread_t pid[thread + 3];
+	pthread_t pid[thread+3];
 #endif
 
 	struct monitor *m = skynet_malloc(sizeof(*m));
@@ -223,7 +224,7 @@ start(int thread) {
 	for (i=0;i<thread;i++) {
 		wp[i].m = m;
 		wp[i].id = i;
-		if (i < (int)(sizeof(weight)/sizeof(weight[0]))) {
+		if (i < sizeof(weight)/sizeof(weight[0])) {
 			wp[i].weight= weight[i];
 		} else {
 			wp[i].weight = 0;
@@ -242,8 +243,8 @@ static void
 bootstrap(struct skynet_context * logger, const char * cmdline) {
 	int sz = strlen(cmdline);
 #if defined(_MSC_VER)
-	char name[32 + 1];
-	char args[32 + 1];
+	char name[32];
+	char args[32];
 #else
 	char name[sz+1];
 	char args[sz+1];

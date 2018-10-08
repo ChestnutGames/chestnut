@@ -82,7 +82,7 @@ get_api(struct skynet_module *mod, const char *api_name) {
 	size_t name_size = strlen(mod->name);
 	size_t api_size = strlen(api_name);
 #if defined(_MSC_VER)
-	char tmp[255 + 1];
+	char tmp[255];
 #else
 	char tmp[name_size + api_size + 1];
 #endif

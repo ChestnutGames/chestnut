@@ -12,7 +12,7 @@ skynet_log_open(struct skynet_context * ctx, uint32_t handle) {
 		return NULL;
 	size_t sz = strlen(logpath);
 #if defined(_MSC_VER)
-	char tmp[255 + 16];
+	char tmp[255];
 #else
 	char tmp[sz + 16];
 #endif

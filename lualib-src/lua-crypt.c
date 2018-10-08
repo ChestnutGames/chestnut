@@ -7,11 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-
-#ifdef _MSC_VER
 #include <unistd.h>
-#endif // _MSC_VER
-
 
 #define SMALL_CHUNK 256
 
@@ -965,7 +961,7 @@ luaopen_skynet_crypt(lua_State *L) {
 	if (!init) {
 		// Don't need call srandom more than once.
 		init = 1 ;
-		srandom(time(NULL));
+		srandom((random() << 8) ^ (time(NULL) << 16) ^ getpid());
 	}
 	luaL_Reg l[] = {
 		{ "hashkey", lhashkey },
