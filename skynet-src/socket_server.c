@@ -339,7 +339,7 @@ clear_wb_list(struct wb_list *list) {
 	list->tail = NULL;
 }
 
-struct socket_server * 
+struct socket_server *
 socket_server_create(uint64_t time) {
 #ifdef _MSC_VER
 	cpoll_startup();
@@ -683,12 +683,22 @@ send_list_udp(struct socket_server *ss, struct socket *s, struct wb_list *list, 
 		}
 		int err = sendto(s->fd, tmp->ptr, tmp->sz, 0, &sa.s, sasz);
 		if (err < 0) {
-			switch(errno) {
+#ifdef _MSC_VER
+			int err = WSAGetLastError();
+			switch (err) {
+			case WSAEINTR:
+			case WSAEWOULDBLOCK:
+				return -1;
+			}
+			fprintf(stderr, "socket-server : udp (%d) sendto error %s.\n", s->id, strwsaerror(err));
+#else
+			switch (errno) {
 			case EINTR:
 			case AGAIN_WOULDBLOCK:
 				return -1;
 			}
 			fprintf(stderr, "socket-server : udp (%d) sendto error %s.\n",s->id, strerror(errno));
+#endif
 			drop_udp(ss, s, list, tmp);
 			return -1;
 		}
@@ -1337,6 +1347,8 @@ forward_message_udp(struct socket_server *ss, struct socket *s, struct socket_lo
 		return -1;
 #endif // _MSC_VER
 	}
+	stat_read(ss,s,n);
+
 	uint8_t * data;
 	if (slen == sizeof(sa.v4)) {
 		if (s->protocol != PROTOCOL_UDP)

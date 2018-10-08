@@ -436,8 +436,8 @@ cmd_name(struct skynet_context * context, const char * param) {
 	char name[32 + 1];
 	char handle[32 + 1];
 #else
-	char name[size+1];
-	char handle[size+1];
+	char name[size + 1];
+	char handle[size + 1];
 #endif // defined(_MSC_VER)
 	sscanf(param,"%s %s",name,handle);
 	if (handle[0] != ':') {
@@ -488,9 +488,9 @@ static const char *
 cmd_launch(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
 #if defined(_MSC_VER)
-	char tmp[32+1];
+	char tmp[32 + 1];
 #else
-	char tmp[sz+1];
+	char tmp[sz + 1];
 #endif
 	strcpy(tmp,param);
 	char * args = tmp;
@@ -514,9 +514,9 @@ static const char *
 cmd_setenv(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
 #if defined(_MSC_VER)
-	char key[32+1];
+	char key[32 + 1];
 #else
-	char key[sz+1];
+	char key[sz + 1];
 #endif
 	int i;
 	for (i=0;param[i] != ' ' && param[i];i++) {

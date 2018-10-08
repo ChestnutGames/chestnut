@@ -293,7 +293,7 @@ _cb(struct skynet_context * ctx, void * ud, int type, int session, uint32_t sour
 			break;
 		}
 		// The last 4 bytes in msg are the id of socket, write following bytes to it
-		const uint8_t * idbuf = msg + sz - 4;
+		const uint8_t * idbuf = (uint8_t *)msg + sz - 4;
 		uint32_t uid = idbuf[0] | idbuf[1] << 8 | idbuf[2] << 16 | idbuf[3] << 24;
 		int id = hashid_lookup(&g->hash, uid);
 		if (id>=0) {
@@ -349,8 +349,13 @@ gate_init(struct gate *g , struct skynet_context * ctx, char * parm) {
 		return 1;
 	int max = 0;
 	int sz = strlen(parm)+1;
+#ifdef _MSC_VER
+	char watchdog[32];
+	char binding[32];
+#else
 	char watchdog[sz];
 	char binding[sz];
+#endif // _MSC_VER
 	int client_tag = 0;
 	char header;
 	int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);

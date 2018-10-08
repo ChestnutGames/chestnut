@@ -606,7 +606,7 @@ harbor_command(struct harbor * h, const char * msg, size_t sz, int session, uint
 	case 'S' :
 	case 'A' : {
 #ifdef _MSC_VER
-		char buffer[32+1];
+		char buffer[32];
 #else
 		char buffer[s+1];
 #endif
