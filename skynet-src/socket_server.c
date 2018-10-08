@@ -341,7 +341,7 @@ clear_wb_list(struct wb_list *list) {
 
 struct socket_server *
 socket_server_create(uint64_t time) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 	cpoll_startup();
 #endif
 	int i;
@@ -384,7 +384,9 @@ socket_server_create(uint64_t time) {
 	ss->event_index = 0;
 	memset(&ss->soi, 0, sizeof(ss->soi));
 	FD_ZERO(&ss->rfds);
+#if !defined(_MSC_VER)
 	assert(ss->recvctrl_fd < FD_SETSIZE);
+#endif
 
 	return ss;
 }

@@ -26,6 +26,9 @@ EXPORTS
 	socket_server_udp_address
 	socket_server_userobject
 
+	socket_info_create
+	socket_info_release
+
 	skynet_timeout
 	skynet_updatetime
 	skynet_timer_init
@@ -50,6 +53,7 @@ EXPORTS
 	skynet_socket_udp_send
 	skynet_socket_udp_address
 	skynet_socket_shutdown
+	skynet_socket_info
 
 	skynet_context_new
 	skynet_context_grab

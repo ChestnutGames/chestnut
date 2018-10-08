@@ -1,5 +1,5 @@
 #include "dlfcn.h"
-#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN  // 屏蔽Windows.h里部分api
 #include <Windows.h>
 #include <stdio.h>
 
