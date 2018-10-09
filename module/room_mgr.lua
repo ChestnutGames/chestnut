@@ -152,7 +152,7 @@ function CMD.init_data()
 		end
 	end
 
-	-- 初始所有房间数据
+	-- 初始所有自创建房间数据
 	for _,v in pairs(rooms) do
 		local ok = skynet.call(v.addr, "lua", "init_data")
 		assert(ok)
@@ -164,7 +164,7 @@ function CMD.sayhi()
 	-- body
 	-- 创建类房间sayhi恢复一些操作
 	for k,v in pairs(rooms) do
-		local ok = skynet.call(room.addr, "lua", "sayhi", 1, v.mode, v.host, assert(v.users))
+		local ok = skynet.call(v.addr, "lua", "sayhi", 1, v.mode, v.host, assert(v.users))
 		assert(ok)
 	end
 
