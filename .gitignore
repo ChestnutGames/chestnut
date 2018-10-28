@@ -17,5 +17,7 @@
 
 *.dSYM
 .DS_Store
-strawberry*
 *.log
+*.exe
+*.exp
+*.ilk

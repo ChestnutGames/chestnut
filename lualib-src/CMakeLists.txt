@@ -47,7 +47,7 @@ ELSE(MSVC)
 #target_link_libraries(skynet ../../../bin/linux/strawberry)
 ENDIF(MSVC)
 
-ADD_DEPENDENCIES(skynet chestnut)
+ADD_DEPENDENCIES(skynet strawberry)
 
 
 # bson

@@ -1,4 +1,4 @@
-local skiplist = require "chestnut.skiplist.core"
+local skiplist = require "skiplist.core"
 
 local mt = {}
 mt.__index = mt

@@ -8,7 +8,11 @@ extern "C" {
 #include <lua.h>
 #include <lauxlib.h>
 
-#include <base/fixedptmath3d.h>
+#if defined(SKYNET)
+#include <fixedptmath/fixedptmath3d.h>
+#else
+#include "fixedptmath3d.h"
+#endif
 
 	static void *
 		check_userdata(lua_State *L, int idx) {
@@ -797,7 +801,6 @@ extern "C" {
 		return 1;
 	}
 
-	// luaopen_ejoy3d_math3d(lua_State *L) {
 	LUAMOD_API int
 		luaopen_chestnut_fixedptmath3d(lua_State *L) {
 		luaL_checkversion(L);
