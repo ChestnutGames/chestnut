@@ -1,13 +1,12 @@
-root        = "./../../"
-module_path = root.."module/ball/"
+root        = "./"
+module_path = "./module/"
 
-cpath       = root.."cservice/?.so;".."./cservice/?.so"
-luaservice  = module_path.."?.lua;"..root.."service/?.lua;".."./service/?.lua"
-lualoader   = "lualib/loader.lua"
-preload     = root.."lualib/preload.lua"
+cpath       = "./cservice/?.so"
+luaservice  = module_path.."?.lua;./service/chestnut/?.lua;./service/?.lua"
+lualoader   = "./lualib/loader.lua"
+preload     = "./module/preload.lua"
 -- preload = "./game-slave1/preload.lua"	-- run preload.lua before every lua service run
 snax        = module_path.."logind/?.lua;"..root.."test/?.lua"
 -- snax_interface_g = "snax_g"
-lua_path    = module_path.."lualib/?.lua;"..module_path.."lualib/?/init.lua;"..module_path.."?.lua;"..module_path.."?/init.lua;"..root.."lualib/?.lua;"..root.."lualib/?/init.lua;".."lualib/?.lua;".."lualib/?/init.lua"
-lua_cpath   = module_path.."luaclib/?.so;"..root.."luaclib/?.so;".."luaclib/?.so"
-
+lua_path    = module_path.."lualib/?.lua;"..module_path.."lualib/?/init.lua;"..module_path.."?.lua;./lualib/?.lua;./lualib/?/init.lua"
+lua_cpath   = "./luaclib/?.so"

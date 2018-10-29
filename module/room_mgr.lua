@@ -19,6 +19,7 @@ local assert = assert
 -- room.users ==> user = { uid, agent }
 
 local NORET = {}
+local ROOM_NAME = 'ballroom/room'
 local users = {}   -- 玩家信息,玩家创建的房间
 local rooms = {}   -- 私人打牌的
 local num = 0      -- 正在打牌的桌子数
@@ -75,7 +76,7 @@ function CMD.start(channel_id)
 	-- 初始所有自定义桌子
 	for i=1,MAX_ROOM_NUM do
 		local roomid = startid + i - 1
-		local addr = skynet.newservice("mahjongroom/room", roomid)
+		local addr = skynet.newservice(ROOM_NAME, roomid)
 		skynet.call(addr, "lua", "start", channel_id)
 		pool[roomid] = { mode=0, id = roomid, addr = addr, joined=0, users={} }
 	end
@@ -88,7 +89,7 @@ function CMD.start(channel_id)
 		for i=1,v.num do
 			offsetid = offsetid + i
 			local roomid = offsetid - 1
-			local addr = skynet.newservice("mahjongroom/room", roomid)
+			local addr = skynet.newservice(ROOM_NAME, roomid)
 			skynet.call(addr, "lua", "start", channel_id)
 			local room = { mode=v.id, id=roomid, addr=addr, joined=0, users={} }
 			mmrooms[v.id][roomid] = room

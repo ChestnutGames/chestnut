@@ -98,6 +98,15 @@ function CMD.start()
 			servername = gated_name,
 			--nodelay = true,
 		})
+
+		local udpgated = skynet.getenv("udpgated")
+		if udpgated then
+			-- local address, port = string.match(udpgated, "([%d.]+)%:(%d+)")
+			-- local gated_name = skynet.getenv("gated_name") or "sample"
+			-- local max_client = skynet.getenv("maxclient") or 1024
+			local udpgate = skynet.uniqueservice("rudpserver_mgr")
+			skynet.call(udpgate, "lua", "start")
+		end
 	else 
 		skynet.uniqueservice("wslogind")
 		local wsgated = skynet.uniqueservice('wsgated')

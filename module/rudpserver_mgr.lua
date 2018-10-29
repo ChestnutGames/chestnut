@@ -1,7 +1,6 @@
 local skynet = require "skynet"
 require "skynet.manager"
 local queue = require "chestnut.queue"
-local udpserver = require "udpserver"
 
 local gate_max = 10
 local q
@@ -10,12 +9,12 @@ local CMD = {}
 
 function CMD.start( ... )
 	-- body
-	local host = skynet.getenv "udp_host"
-	local port = skynet.getenv "udp_port"
+	local udpgated = skynet.getenv("udpgated")
+	local host, port = string.match(udpgated, "([%d.]+)%:(%d+)")
 	q = queue()
 	for i=1,gate_max do
 		local xport = port + i
-		local udpgate = skynet.newservice("udpserver")
+		local udpgate = skynet.newservice("rudpserver")
 		skynet.call(udpgate, "lua", "start", host, xport)
 		q:enqueue(udpgate)
 	end

@@ -1,84 +1,130 @@
 local skynet = require "skynet"
-local list = require "chestnut.list"
-local assert = assert
-local k = 0
-local lasttick = 0
 
-local cls = class("context")
+local CMD = {}
 
-function cls:ctor(id, ... )
+function CMD:start(mode, ... )
 	-- body
-	-- self.ball = ball()
-	-- self.pool = Chestnut.EntitasPP.Pool.Create()
-	-- self.joinsystem = Chestnut.Ball.JoinSystem.Create()
-	-- self.mapsystem = Chestnut.Ball.MapSystem.Create()
-	-- self.movesystem = Chestnut.Ball.MoveSystem.Create()
-	-- self.indexsystem = Chestnut.Ball.IndexSystem.Create()
-	
-	-- self.pool:Test()
-
-	-- self.pool:CreateSystemPtr(self.joinsystem)
-	-- self.pool:CreateSystemPtr(self.mapsystem)
-	-- self.pool:CreateSystemPtr(self.movesystem)
-	-- self.pool:CreateSystemPtr(self.indexsystem)
-
-	-- self.systemcontainer = systemcontainer.new(self.pool)
-
-	-- self.systemcontainer:add(self.joinsystem)
-	-- self.systemcontainer:add(self.mapsystem)
-	-- self.systemcontainer:add(self.movesystem)
-	-- self.systemcontainer:add(self.indexsystem)
-
-	-- self.systemcontainer:setpool()
-
-	-- self.tinyworld = tiny.world(basesystem)
-	self.id = id
-	self.mode = nil
-	self.max_number = 10
-	return self
+	return self:start(mode)
 end
 
-function cls:push_client(name, args, ... )
-	-- body
-	for _,v in pairs(self._playeres) do
-		local agent = v:get_agent()
-		skynet.send(agent, "lua", name, args)
-	end
-end
-
-------------------------------------------
--- 服务协议
-function cls:start(mode, ... )
-	-- body
-	self.mode = mode
-	
-	-- load map id
-	-- self.systemcontainer:initialize()
-
-	-- update
-	-- skynet.fork(function ( ... )
-	-- 	-- body
-	-- 	skynet.sleep(100 / 5) -- 5fps
-	-- 	self:fixedupdate()
-	-- end)
+function CMD:init_data()
 	return true
 end
 
-function cls:close( ... )
+function CMD:sayhi(...)
+end
+
+function CMD:save_data()
+end
+
+function CMD:close( ... )
 	-- body
-	for _,user in pairs(users) do
-		gate.req.unregister(user.session)
-	end
 	return true
+end
+
+function CMD:kill( ... )
+	-- body
+	skynet.exit()
 end
 
 ------------------------------------------
 -- 房间协议
-function cls:create() 
+function CMD:create(uid, args, ... )
+	-- body
+	return self:create(uid, args, ...)
 end
 
-function cls:join(uid, agent, name, sex, secret, ... )
+function CMD:on_join(agent, ... )
 	-- body
+	local res = self:join(agent.uid, agent.agent, agent.name, agent.sex)
+	return res
+end
+
+function CMD:join(args, ... )
+	-- body
+	assert(args.errorcode == 0)
+	return servicecode.NORET
+end
+
+function CMD:on_rejoin(args)
+	-- body
+	return self:rejoin(args.uid, args.agent)
+end
+
+function CMD:on_afk(uid)
+	-- body
+	return self:afk(uid)
+end
+
+function CMD:on_leave(uid)
+	-- body
+	return self:leave(uid)
+end
+
+function CMD:leave(args, ... )
+	-- body
+	assert(args.servicecode == servicecode.SUCCESS)
+end
+
+function CMD:match(conf, ... )
+	-- body
+	return self:match(conf)
+end
+
+--[[
+	4 bytes localtime
+	4 bytes eventtime		-- if event time is ff ff ff ff , time sync
+	4 bytes session
+	padding data
+]]
+
+-- every frame
+local function tick( ... )
+	-- body
+	while true do 
+		k = k + 1
+		local t1 = skynet.now()
+		local delta = (t1 - lasttick) / 100.0 -- s
+		lasttick = t1
+		ctx:update(delta, k)		
+
+		skynet.sleep(2)
+	end
+end
+
+function CMD:update(data)
+	assert(#data >= 16)
+	local session, protocol = string.unpack("<II", data, 9)	
+	local protocol = string.unpack("<I", data, 13)
+	if protocol == 1 then
+		-- log.info("protocol 1")
+		local time = skynet.now()
+		data = string.pack("<I", time) .. data
+	elseif protocol == 2 then
+		local time = skynet.now()
+		data = string.pack("<I", time) .. data
+		-- data = data:sub(1, 16)
+		-- local ball_data = scene:pack_balls()
+		-- data = data .. string.pack("<I", 4 + #ball_data) .. string.pack("<I", protocol) .. ball_data
+	end
+	local gate = ctx:get_gate()
+	gate.post.post(session, data)
+end
+
+-- called by aoi
+function CMD:aoi_message(watcher, marker, ... )
+	-- body
+	local scene = ctx:get_scene()
+	local collision, ball = scene:aoi_check_collision(watcher, marker)
+	if collision then
+		local player = ball:get_player()
+		player:remove(ball)
+		local session = player:get_session()
+		ctx:broadcast_die({session=session, ballid=ball:get_id()})
+	end
+end
+
+function CMD:join(uid, agent, secret)
 	local res = nil
 	local gate = ctx:get_gate()
 	local p = ctx:getup(uid)
@@ -94,14 +140,7 @@ function cls:join(uid, agent, name, sex, secret, ... )
 	return res
 end
 
-function cls:rejoin(uid)
-end
-
-function cls:afk(uid)
-end
-
-function cls:leave(uid, ... )
-	-- body
+function CMD.leave(session)
 	local gate = ctx:get_gate()
 	skynet.call(gate, "lua", "unregister", session)
 
@@ -124,49 +163,7 @@ function cls:leave(uid, ... )
 	-- ctx:remove(session)
 end
 
-------------------------------------------
--- gameplay协议
---[[
-	4 bytes localtime
-	4 bytes eventtime		-- if event time is ff ff ff ff , time sync
-	4 bytes session
-	padding data
-]]
-
--- every frame
-local function tick( ... )
-	-- body
-	while true do 
-		k = k + 1
-		local t1 = skynet.now()
-		local delta = (t1 - lasttick) / 100.0 -- s
-		lasttick = t1
-		ctx:update(delta, k)		
-
-		skynet.sleep(2)
-	end
-end
-
-function cls:update(data)
-	assert(#data >= 16)
-	local session, protocol = string.unpack("<II", data, 9)	
-	local protocol = string.unpack("<I", data, 13)
-	if protocol == 1 then
-		-- log.info("protocol 1")
-		local time = skynet.now()
-		data = string.pack("<I", time) .. data
-	elseif protocol == 2 then
-		local time = skynet.now()
-		data = string.pack("<I", time) .. data
-		-- data = data:sub(1, 16)
-		-- local ball_data = scene:pack_balls()
-		-- data = data .. string.pack("<I", 4 + #ball_data) .. string.pack("<I", protocol) .. ball_data
-	end
-	local gate = ctx:get_gate()
-	gate.post.post(session, data)
-end
-
-function cls:query(session)
+function CMD.query(session)
 	local user = users[session]
 	-- todo: we can do more
 	if user then
@@ -174,7 +171,7 @@ function cls:query(session)
 	end
 end
 
-function cls:born(session, ... )
+function CMD.born(session, ... )
 	-- body
 	local aoi = ctx:get_aoi()
 	local scene = ctx:get_scene()
@@ -222,7 +219,7 @@ function cls:born(session, ... )
 	return { errorcode = errorcode.SUCCESS, b = res }
 end
 
-function cls:opcode(session, args, ... )
+function CMD.opcode(session, args, ... )
 	-- body
 	local player = session_players[session]
 	if player then
@@ -251,4 +248,6 @@ function cls:opcode(session, args, ... )
 	end
 end
 
-return cls
+
+
+return CMD

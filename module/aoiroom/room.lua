@@ -1,15 +1,19 @@
-package.path = "./module/ballroom/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
 local crypt = require "skynet.crypt"
-local log = require "chestnut.skynet.log"
+local log = require "skynet.log"
 
-local context = require "ballroom.context"
-local CMD = require "ballroom.cmd"
+local list = require "list"
+local errorcode = require "errorcode"
+local context = require "room.context"
+local CMD = require "room.cmd"
 
 -- context variable
 local id = tonumber( ... )
 local ctx
+local k = 0
+local lasttick = 0
+
 
 skynet.start(function ( ... )
 	-- body

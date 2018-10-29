@@ -1,8 +1,8 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local crypt = require "skynet.crypt"
-local log = require "skynet.log"
-local rudp = require "chestnut.rudp"
+local log = require "chestnut.skynet.log"
+local rudp = require "rudp"
 
 
 local udphost, udpport
