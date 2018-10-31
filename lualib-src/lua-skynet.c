@@ -19,6 +19,10 @@
 #include <sys/time.h>
 #endif
 
+#if defined(_MSC_VER)
+#include <timeutils.h>
+#endif
+
 #include "skynet.h"
 
 // return nsec

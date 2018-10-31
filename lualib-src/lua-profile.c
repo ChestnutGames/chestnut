@@ -13,6 +13,7 @@
 
 #if defined(_MSC_VER)
 #include <unistd.h>
+#include <timeutils.h>
 #endif
 
 #define NANOSEC 1000000000

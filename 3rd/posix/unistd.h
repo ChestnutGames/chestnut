@@ -18,20 +18,6 @@ void srandom(unsigned int seed);
 pid_t getpid();
 int kill(pid_t pid, int exit_code);
 
-typedef unsigned int useconds_t;
-
-/*
-** @return 0 on success, -1 on error
-*/
-int usleep(useconds_t usec);
-unsigned int sleep(unsigned int seconds);
-
-
-/************************************************************************************************/
-enum { CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID, CLOCK_THREAD_CPUTIME_ID };
-int clock_gettime(int what, struct timespec *tp);
-
-
 /**********************************************************************************************/
 
 typedef struct {

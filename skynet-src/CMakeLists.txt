@@ -1,8 +1,8 @@
 project(strawberry)
 
-SET(POSIX_CXX ../3rd/posix/cpoll/cpoll.cpp)
-file(GLOB POSIX_H ../3rd/posix/*.h)
-file(GLOB POSIX_C ../3rd/posix/*.c)
+set ( POSIX_CXX ../3rd/posix/cpoll/cpoll.cpp)
+file ( GLOB POSIX_H ../3rd/posix/*.h)
+file ( GLOB POSIX_C ../3rd/posix/*.c)
 
 file(GLOB LIBLUA_H ../3rd/lua/*.h)
 aux_source_directory(../3rd/lua LIBLUA_C)
@@ -14,9 +14,9 @@ file(GLOB STRAWBERRY_C *.c)
 include_directories(.)
 include_directories(../3rd/lua)
 
-IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
 ADD_DEFINITIONS(-D_DEBUG)
-ENDIF()
+endif()
 
 IF(MSVC)
 source_group("posix" FILES ${POSIX_H} ${POSIX_C})

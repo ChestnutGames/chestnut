@@ -6,6 +6,10 @@
 #include "skynet_handle.h"
 #include "spinlock.h"
 
+#if defined(_MSC_VER)
+#include "timeutils.h"
+#endif
+
 #include <time.h>
 #include <assert.h>
 #include <string.h>
