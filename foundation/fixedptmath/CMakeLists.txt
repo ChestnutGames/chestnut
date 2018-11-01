@@ -1,3 +1,5 @@
+# cmake_minimum_required(VERSION 3.12)
+
 project(libfixedptmath)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -11,7 +13,7 @@ endif ()
 aux_source_directory(. LIBFIXEDPTMATH_C)
 aux_source_directory(./libfixmath LIBFIXEDPTMATH_C)
 
-add_library(libfixedptmath ${LIBFIXEDPTMATH_C})
+add_library(libfixedptmath STATIC ${LIBFIXEDPTMATH_C})
 set_target_properties(libfixedptmath
     PROPERTIES
     PREFIX ""
