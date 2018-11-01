@@ -21,6 +21,6 @@ set_target_properties(libfixedptmath
     PREFIX ""
     ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../..
     ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../..
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../..
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../..
     LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../..
 )

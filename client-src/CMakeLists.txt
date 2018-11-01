@@ -13,9 +13,9 @@ IF(MSVC)
 	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
 
 ELSE(MSVC)
-	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -Wno-unused-function -Wno-unused-variable -Werror")
+	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared -Werror")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")
-	set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-unused-function -Wno-unused-variable -Werror")
+	set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -fPIC --shared -Werror")
 	set (CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 ENDIF(MSVC)
 

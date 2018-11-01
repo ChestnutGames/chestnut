@@ -9,9 +9,9 @@ IF(MSVC)
 	ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
 	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
 ELSE(MSVC)
-	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -Wno-unused-function -Wno-unused-variable -Werror")
+	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared -Werror")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")
-	set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-unused-function -Wno-unused-variable -Werror")
+	set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -fPIC --shared -Werror")
 	set (CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 ENDIF()
 
@@ -29,7 +29,7 @@ set_target_properties(sproto PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../
 
 
 if (MSVC)
-target_link_libraries(sproto ws2_32 ../../../strawberry)
+	target_link_libraries(sproto ws2_32 ../../../strawberry)
 endif (MSVC)
 
-ADD_DEPENDENCIES(sproto strawberry)
+add_dependencies(sproto strawberry)

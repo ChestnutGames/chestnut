@@ -36,7 +36,7 @@ set_target_properties(md5
 )
 
 if (MSVC)
-target_link_libraries(md5 ws2_32 ../../../strawberry)
+	target_link_libraries(md5 ws2_32 ../../../strawberry)
 endif(MSVC)
 
 add_dependencies(md5 strawberry)

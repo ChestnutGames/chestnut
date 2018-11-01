@@ -1,19 +1,12 @@
-#*.o
-#*.a
+*.o
+*.a
+*.so
 
-/skynet
-/skynet.pid
-/3rd/lua/lua
-/3rd/lua/luac
-/3rd/pthread-win32
 /cservice
 /luaclib
 /logs
 /build_win64
 /build_linux64
-/hello
-
-#*.so
 
 *.dSYM
 .DS_Store

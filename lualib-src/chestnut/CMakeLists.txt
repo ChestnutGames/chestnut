@@ -1,8 +1,5 @@
 project(chestnut)
 
-SET(CHESTNUT_H ./snapshot.h)
-aux_source_directory(. CHESTNUT_C)
-
 # include
 include_directories(../../foundation)
 include_directories(../../3rd/lua)
@@ -17,9 +14,9 @@ IF(MSVC)
 	add_definitions(-DLUA_BUILD_AS_DLL)
 	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
 ELSE(MSVC)
-	SET(CMAKE_C_FLAGS "-std=gnu99 -Wall")
+	SET(CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared")
 	SET(CMAKE_C_FLAGS_DEBUG "-g -O0")
-	SET(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
+	SET(CMAKE_CXX_FLAGS "-std=c++11 -Wall -fPIC --shared")
 	SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 ENDIF(MSVC)
 
@@ -29,24 +26,23 @@ ENDIF()
 
 add_definitions(-DSKYNET)
 
+# target
+SET(CHESTNUT_H ./snapshot.h)
+aux_source_directory(. CHESTNUT_C)
 add_library(chestnut SHARED ${CHESTNUT_H} ${CHESTNUT_C})
 set_target_properties(chestnut PROPERTIES PREFIX "")
 set_target_properties(chestnut PROPERTIES SUFFIX ".so")
+set_target_properties(chestnut PROPERTIES FOLDER "lualib")
 set_target_properties(chestnut PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 set_target_properties(chestnut PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(chestnut PROPERTIES FOLDER "lualib")
 
 if(MSVC)
-#target_link_libraries(chestnut ../../../libbase)
-	target_link_libraries(chestnut ws2_32)
-	target_link_libraries(chestnut ../../../strawberry)
-	target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
-    target_link_libraries(chestnut ../../../libfixedptmath)
-else(MSVC)
-    #target_link_directories(chestnut PUBLIC ../../..)
-    #link_directories(../..)
-    target_link_libraries(chestnut libfixedptmath)
+	target_link_libraries(chestnut ws2_32 ../../../strawberry)
+	target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)    
 endif()
 
+#target_link_directories(chestnut PUBLIC ../../..)
+#link_directories(../..)
+target_link_libraries(chestnut libfixedptmath)
 
 add_dependencies(chestnut strawberry libfixedptmath)
