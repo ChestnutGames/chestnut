@@ -41,7 +41,7 @@ endif ()
 add_dependencies(bson strawberry)
 
 set_target_properties(skynet bson
-	PROPERTIES 
+	PROPERTIES
 	PREFIX ""
 	SUFFIX ".so"
 	FOLDER "lualib"
@@ -49,5 +49,6 @@ set_target_properties(skynet bson
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
 	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	LIBRARY_OUTPUT_DIRECTORY ../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../luaclib
 )

@@ -27,12 +27,15 @@ ENDIF()
 add_library(lpeg SHARED ${LPEG_H} ${LPEG_C})
 set_target_properties(lpeg PROPERTIES PREFIX "")
 set_target_properties(lpeg PROPERTIES SUFFIX ".so")
-set_target_properties(lpeg PROPERTIES FOLDER "3rd") 
+set_target_properties(lpeg PROPERTIES FOLDER "3rd")
 set_target_properties(lpeg PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
 	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
 
 if (MSVC)
 	target_link_libraries(lpeg ws2_32 ../../../strawberry)

@@ -25,12 +25,15 @@ add_library(rapidjson SHARED ${RAPIDJSON_HXX} ${RAPIDJSON_CXX})
 
 set_target_properties(rapidjson PROPERTIES PREFIX "")
 set_target_properties(rapidjson PROPERTIES SUFFIX ".so")
-set_target_properties(rapidjson PROPERTIES FOLDER "lualib") 
-set_target_properties(rapidjson PROPERTIES 
-	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
+set_target_properties(rapidjson PROPERTIES FOLDER "lualib")
+set_target_properties(rapidjson PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
 
 IF(MSVC)
 	target_link_libraries(rapidjson ws2_32 ../../../strawberry)

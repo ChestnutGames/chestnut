@@ -25,11 +25,14 @@ add_library(rudp SHARED ${RUDP_H} ${RUDP_C})
 set_target_properties(rudp PROPERTIES PREFIX "")
 set_target_properties(rudp PROPERTIES SUFFIX ".so")
 set_target_properties(rudp PROPERTIES FOLDER "lualib")
-set_target_properties(rudp PROPERTIES 
-	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
+set_target_properties(rudp PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
 
 IF(MSVC)
 	target_link_libraries(rudp ws2_32 ../../../strawberry)

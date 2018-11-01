@@ -22,15 +22,16 @@ ENDIF()
 add_library(sproto SHARED ${SPROOT_H} ${SPROTO_C})
 
 set_target_properties(sproto
-	PROPERTIES 
+	PROPERTIES
 	PREFIX ""
 	SUFFIX ".so"
 	FOLDER "lualib"
-	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
 )
 
 if (MSVC)

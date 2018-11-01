@@ -80,12 +80,14 @@ set_target_properties(xloggerd
 	PREFIX ""
 	SUFFIX ".so"
 	FOLDER "service"
-	RUNTIME_OUTPUT_DIRECTORY ../../cservice
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../cservice
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../cservice
-	ARCHIVE_OUTPUT_DIRECTORY ../../cservice
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../cservice
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../cservice
+	RUNTIME_OUTPUT_DIRECTORY ../../../cservice
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../cservice
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY ../../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../../cservice
+    LIBRARY_OUTPUT_DIRECTORY ../../../cservice
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../cservice
 )
 
 IF(MSVC)

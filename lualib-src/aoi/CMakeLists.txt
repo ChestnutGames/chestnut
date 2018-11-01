@@ -1,7 +1,7 @@
 project(aoi)
 
 set (AOI_H ./aoi.h)
-set (AOI_C ./aoi.c ./lua-aoi.c) 
+set (AOI_C ./aoi.c ./lua-aoi.c)
 
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
@@ -27,10 +27,13 @@ endif()
 add_library(aoi SHARED ${AOI_H} ${AOI_C})
 set_target_properties(aoi PROPERTIES PREFIX "")
 set_target_properties(aoi PROPERTIES SUFFIX ".so")
-set_target_properties(aoi PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(aoi PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 set_target_properties(aoi PROPERTIES FOLDER "lualib")
-
+set_target_properties(aoi PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
 if (MSVC)
 	target_link_libraries(aoi ws2_32 ../../../strawberry)
 endif (MSVC)

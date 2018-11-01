@@ -37,11 +37,14 @@ set_target_properties(chestnut PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
 	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
 
 if(MSVC)
 	target_link_libraries(chestnut ws2_32 ../../../strawberry)
-	target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)    
+	target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
 endif()
 
 #target_link_directories(chestnut PUBLIC ../../..)
