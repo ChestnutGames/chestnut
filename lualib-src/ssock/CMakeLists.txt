@@ -6,6 +6,7 @@ include_directories(../../3rd/openssl/include)
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 IF(MSVC)
 =======
 IF(MSVC)	
@@ -13,6 +14,9 @@ IF(MSVC)
 =======
 IF(MSVC)	
 >>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
+=======
+IF(MSVC)	
+>>>>>>> f6c4b0ac679435bd21a828c907e545d053798ed7
 	include_directories(../../3rd/pthread-win32)
 	include_directories(../../3rd/posix)
 	add_definitions(-DLUA_BUILD_AS_DLL)
@@ -51,6 +55,7 @@ IF(MSVC)
 ELSE(MSVC)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	find_library(CRYPTO_LIB libcrypto.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	find_library(SSL_LIB libssl.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	message(${CRYPTO_LIB})
@@ -59,14 +64,19 @@ ELSE(MSVC)
 =======
 =======
 >>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
+=======
+>>>>>>> f6c4b0ac679435bd21a828c907e545d053798ed7
 	find_library(CRYPTO_LIB crypto ../../../3rd/openssl/lib NO_DEFAULT_PATH)
 	find_library(SSL_LIB ssl ../../../3rd/openssl/lib NO_DEFAULT_PATH)
 	message(${CRYPTO_LIB})
 	target_link_libraries(strawberry ${CRYPTO_LIB} ${SSL_LIB})
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
 =======
 >>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
+=======
+>>>>>>> f6c4b0ac679435bd21a828c907e545d053798ed7
 ENDIF()
 
 add_dependencies(ssock strawberry)
