@@ -45,13 +45,15 @@ IF(MSVC)
 ELSE(MSVC)
 	add_executable(strawberry ${LIBLUA_H} ${LIBLUA_C} ${STRAWBERRY_H} ${STRAWBERRY_C})
 	find_library(JEMALLOC_LIB jemalloc_pic ../3rd/jemalloc/lib NO_DEFAULT_PATH)
-	target_link_libraries(${JEMALLOC_LIB})
+    message(${JEMALLOC_LIB})
+	target_link_libraries(strawberry ${JEMALLOC_LIB})
 	target_link_libraries(strawberry pthread m dl rt)
 ENDIF()
 
-set_target_properties(strawberry 
+set_target_properties(strawberry
 	PROPERTIES
 	ENABLE_EXPORTS ON
+    RUNTIME_OUTPUT_DIRECTORY ../..
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../..
 	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../..
 )
