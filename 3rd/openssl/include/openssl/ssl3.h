@@ -1,16 +1,11 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- */
-
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * ECC cipher suite support in OpenSSL originally developed by
- * SUN MICROSYSTEMS, INC., and contributed to the OpenSSL project.
  */
 
 #ifndef HEADER_SSL3_H
@@ -73,6 +68,18 @@ extern "C" {
 # define SSL3_CK_ADH_DES_40_CBC_SHA              0x03000019
 # define SSL3_CK_ADH_DES_64_CBC_SHA              0x0300001A
 # define SSL3_CK_ADH_DES_192_CBC_SHA             0x0300001B
+
+/* a bundle of RFC standard cipher names, generated from ssl3_ciphers[] */
+# define SSL3_RFC_RSA_NULL_MD5                   "TLS_RSA_WITH_NULL_MD5"
+# define SSL3_RFC_RSA_NULL_SHA                   "TLS_RSA_WITH_NULL_SHA"
+# define SSL3_RFC_RSA_DES_192_CBC3_SHA           "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+# define SSL3_RFC_DHE_DSS_DES_192_CBC3_SHA       "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA"
+# define SSL3_RFC_DHE_RSA_DES_192_CBC3_SHA       "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA"
+# define SSL3_RFC_ADH_DES_192_CBC_SHA            "TLS_DH_anon_WITH_3DES_EDE_CBC_SHA"
+# define SSL3_RFC_RSA_IDEA_128_SHA               "TLS_RSA_WITH_IDEA_CBC_SHA"
+# define SSL3_RFC_RSA_RC4_128_MD5                "TLS_RSA_WITH_RC4_128_MD5"
+# define SSL3_RFC_RSA_RC4_128_SHA                "TLS_RSA_WITH_RC4_128_SHA"
+# define SSL3_RFC_ADH_RC4_128_MD5                "TLS_DH_anon_WITH_RC4_128_MD5"
 
 # define SSL3_TXT_RSA_NULL_MD5                   "NULL-MD5"
 # define SSL3_TXT_RSA_NULL_SHA                   "NULL-SHA"
@@ -256,9 +263,15 @@ extern "C" {
 # define SSL3_CT_FORTEZZA_DMS                    20
 /*
  * SSL3_CT_NUMBER is used to size arrays and it must be large enough to
- * contain all of the cert types defined either for SSLv3 and TLSv1.
+ * contain all of the cert types defined for *either* SSLv3 and TLSv1.
  */
-# define SSL3_CT_NUMBER                  9
+# define SSL3_CT_NUMBER                  10
+
+# if defined(TLS_CT_NUMBER)
+#  if TLS_CT_NUMBER != SSL3_CT_NUMBER
+#    error "SSL/TLS CT_NUMBER values do not match"
+#  endif
+# endif
 
 /* No longer used as of OpenSSL 1.1.1 */
 # define SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS       0x0001
@@ -277,12 +290,13 @@ extern "C" {
 
 # define TLS1_FLAGS_ENCRYPT_THEN_MAC_WRITE       0x0400
 
+# define TLS1_FLAGS_STATELESS                    0x0800
+
 # define SSL3_MT_HELLO_REQUEST                   0
 # define SSL3_MT_CLIENT_HELLO                    1
 # define SSL3_MT_SERVER_HELLO                    2
 # define SSL3_MT_NEWSESSION_TICKET               4
 # define SSL3_MT_END_OF_EARLY_DATA               5
-# define SSL3_MT_HELLO_RETRY_REQUEST             6
 # define SSL3_MT_ENCRYPTED_EXTENSIONS            8
 # define SSL3_MT_CERTIFICATE                     11
 # define SSL3_MT_SERVER_KEY_EXCHANGE             12
@@ -291,7 +305,9 @@ extern "C" {
 # define SSL3_MT_CERTIFICATE_VERIFY              15
 # define SSL3_MT_CLIENT_KEY_EXCHANGE             16
 # define SSL3_MT_FINISHED                        20
+# define SSL3_MT_CERTIFICATE_URL                 21
 # define SSL3_MT_CERTIFICATE_STATUS              22
+# define SSL3_MT_SUPPLEMENTAL_DATA               23
 # define SSL3_MT_KEY_UPDATE                      24
 # ifndef OPENSSL_NO_NEXTPROTONEG
 #  define SSL3_MT_NEXT_PROTO                     67

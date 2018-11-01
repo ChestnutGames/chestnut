@@ -1,6 +1,6 @@
 *.o
-*.a
-*.so
+#*.a
+#*.so
 
 /cservice
 /luaclib
@@ -11,6 +11,6 @@
 *.dSYM
 .DS_Store
 *.log
-*.exe
-*.exp
-*.ilk
+#*.exe
+#*.exp
+#*.ilk
