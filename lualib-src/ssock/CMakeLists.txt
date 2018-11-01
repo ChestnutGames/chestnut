@@ -5,7 +5,11 @@ include_directories(../../skynet-src)
 include_directories(../../3rd/openssl/include)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 IF(MSVC)
+=======
+IF(MSVC)	
+>>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
 =======
 IF(MSVC)	
 >>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
@@ -46,16 +50,22 @@ IF(MSVC)
 	target_link_libraries(ssock ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
 ELSE(MSVC)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	find_library(CRYPTO_LIB libcrypto.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	find_library(SSL_LIB libssl.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	message(${CRYPTO_LIB})
     target_link_libraries(ssock ${CRYPTO_LIB} ${SSL_LIB})
     # target_link_libraries(ssock crypto ssl)
 =======
+=======
+>>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
 	find_library(CRYPTO_LIB crypto ../../../3rd/openssl/lib NO_DEFAULT_PATH)
 	find_library(SSL_LIB ssl ../../../3rd/openssl/lib NO_DEFAULT_PATH)
 	message(${CRYPTO_LIB})
 	target_link_libraries(strawberry ${CRYPTO_LIB} ${SSL_LIB})
+<<<<<<< HEAD
+>>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
+=======
 >>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
 ENDIF()
 
