@@ -26,8 +26,11 @@ add_library(crab SHARED ${CRAB_C})
 set_target_properties(crab PROPERTIES PREFIX "")
 set_target_properties(crab PROPERTIES SUFFIX ".so")
 set_target_properties(crab PROPERTIES FOLDER "lualib")
-set_target_properties(crab PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(crab PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
+set_target_properties(crab PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
 
 IF(MSVC)
 	target_link_libraries(crab ws2_32 ../../../strawberry)

@@ -23,11 +23,17 @@ ENDIF()
 SET(SSL_H ./ssock.h ./sssl.h)
 SET(SSL_C ./ssock.c ./sssl.c ./lua-ssock.c) 
 add_library(ssock SHARED ${SSL_H} ${SSL_C})
-set_target_properties(ssock PROPERTIES PREFIX "")
-set_target_properties(ssock PROPERTIES SUFFIX ".so")
-set_target_properties(ssock PROPERTIES FOLDER "lualib")
-set_target_properties(ssock PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(ssock PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
+set_target_properties(ssock
+	PROPERTIES 
+	PREFIX ""
+	SUFFIX ".so"
+	FOLDER "lualib"
+	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+)
 
 IF(MSVC)
 	#target_link_libraries(chestnut ../../../libbase)

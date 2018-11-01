@@ -27,11 +27,13 @@ add_library(client SHARED ${CLIENT_C})
 set_target_properties(client PROPERTIES PREFIX "")
 set_target_properties(client PROPERTIES SUFFIX ".so")
 set_target_properties(client PROPERTIES FOLDER "lualib")
-set_target_properties(client PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
-set_target_properties(client PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
+set_target_properties(client PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
 
 IF(MSVC)
-#target_link_libraries(client ../../../libbase)
 	target_link_libraries(client ws2_32 ../../strawberry)
 ENDIF()
 

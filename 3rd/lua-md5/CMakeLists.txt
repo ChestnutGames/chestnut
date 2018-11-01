@@ -31,8 +31,10 @@ set_target_properties(md5
 	PREFIX ""
 	SUFFIX ".so"
 	FOLDER "3rd"
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
 )
 
 if (MSVC)

@@ -45,7 +45,9 @@ set_target_properties(skynet bson
 	PREFIX ""
 	SUFFIX ".so"
 	FOLDER "lualib"
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib
 	LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../luaclib
 )

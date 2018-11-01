@@ -75,10 +75,18 @@ IF(CMAKE_BUILD_TYPE MATCHES "Debug")
 ENDIF()
 
 add_library(xloggerd SHARED ${XLOGGERD_H} ${XLOGGERD_C})
-set_target_properties(xloggerd PROPERTIES PREFIX "")
-set_target_properties(xloggerd PROPERTIES SUFFIX ".so")
-set_target_properties(xloggerd PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../cservice)
-set_target_properties(xloggerd PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../cservice)
+set_target_properties(xloggerd
+	PROPERTIES
+	PREFIX ""
+	SUFFIX ".so"
+	FOLDER "service"
+	RUNTIME_OUTPUT_DIRECTORY ../../cservice
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../cservice
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY ../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../cservice
+)
 
 IF(MSVC)
 	set_target_properties(xloggerd PROPERTIES FOLDER "service")

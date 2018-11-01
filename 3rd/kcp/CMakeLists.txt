@@ -30,9 +30,15 @@ set (KCP_C ./ikcp.c ./lkcp.c)
 add_library(kcp SHARED ${KCP_H} ${KCP_C})
 set_target_properties(kcp PROPERTIES PREFIX "")
 set_target_properties(kcp PROPERTIES SUFFIX ".so")
-set_target_properties(kcp PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(kcp PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 set_target_properties(kcp PROPERTIES FOLDER "3rd")
+set_target_properties(kcp
+	PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../../luaclib)
+
 
 IF(MSVC)
 	target_link_libraries(kcp ws2_32 ../../../strawberry)
@@ -44,10 +50,14 @@ set (KCPTEST_H ./test.h)
 set (KCPTEST_C ./test.cpp)
 
 add_executable(kcptest ${KCPTEST_H} ${KCPTEST_C})
-set_target_properties(kcptest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../..)
-set_target_properties(kcptest PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../..)
-set_target_properties(kcptest PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../..)
-set_target_properties(kcptest PROPERTIES FOLDER "test")
+set_target_properties(kcptest
+	PROPERTIES
+	FOLDER "test"
+	RUNTIME_OUTPUT_DIRECTORY ../../..
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../..
+	ARCHIVE_OUTPUT_DIRECTORY ../../..
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../..
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../..)
 
 if (MSVC)
 	target_link_libraries(kcptest ws2_32)

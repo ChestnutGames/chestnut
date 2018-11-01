@@ -10,7 +10,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 	# message (${CMAKE_CXX_FLAGS})
 endif ()
 
-set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../../..)
+# set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../../..)
 
 aux_source_directory(. LIBFIXEDPTMATH_C)
 aux_source_directory(./libfixmath LIBFIXEDPTMATH_C)
@@ -19,8 +19,11 @@ add_library(libfixedptmath STATIC ${LIBFIXEDPTMATH_C})
 set_target_properties(libfixedptmath
     PROPERTIES
     PREFIX ""
+	RUNTIME_OUTPUT_DIRECTORY ../../..
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../..
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../..
+	ARCHIVE_OUTPUT_DIRECTORY ../../..
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../..
     ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../..
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../..
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../..
     LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../..
 )

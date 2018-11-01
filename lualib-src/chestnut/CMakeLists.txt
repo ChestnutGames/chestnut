@@ -33,8 +33,11 @@ add_library(chestnut SHARED ${CHESTNUT_H} ${CHESTNUT_C})
 set_target_properties(chestnut PROPERTIES PREFIX "")
 set_target_properties(chestnut PROPERTIES SUFFIX ".so")
 set_target_properties(chestnut PROPERTIES FOLDER "lualib")
-set_target_properties(chestnut PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(chestnut PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
+set_target_properties(chestnut PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 
 if(MSVC)
 	target_link_libraries(chestnut ws2_32 ../../../strawberry)

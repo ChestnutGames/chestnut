@@ -21,12 +21,17 @@ ENDIF()
 
 add_library(sproto SHARED ${SPROOT_H} ${SPROTO_C})
 
-set_target_properties(sproto PROPERTIES PREFIX "")
-set_target_properties(sproto PROPERTIES SUFFIX ".so")
-set_target_properties(sproto PROPERTIES FOLDER "lualib") 
-set_target_properties(sproto PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(sproto PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-
+set_target_properties(sproto
+	PROPERTIES 
+	PREFIX ""
+	SUFFIX ".so"
+	FOLDER "lualib"
+	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+)
 
 if (MSVC)
 	target_link_libraries(sproto ws2_32 ../../../strawberry)

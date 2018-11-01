@@ -60,8 +60,10 @@ set_target_properties(gate harbor logger snlua
 	PREFIX ""
 	SUFFIX ".so"
 	FOLDER "service"
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../cservice
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../cservice
+	RUNTIME_OUTPUT_DIRECTORY ../../cservice
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../cservice
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY ../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../cservice
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ../../cservice
 )

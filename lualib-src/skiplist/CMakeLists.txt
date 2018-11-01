@@ -26,8 +26,11 @@ add_library(skiplist SHARED ${SKIPLIST_H} ${SKIPLIST_C})
 set_target_properties(skiplist PROPERTIES PREFIX "")
 set_target_properties(skiplist PROPERTIES SUFFIX ".so")
 set_target_properties(skiplist PROPERTIES FOLDER "lualib")
-set_target_properties(skiplist PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
-set_target_properties(skiplist PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
+set_target_properties(skiplist PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY ../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../luaclib)
 
 IF(MSVC)
 	target_link_libraries(skiplist ws2_32 ../../../strawberry)
