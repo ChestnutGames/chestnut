@@ -36,13 +36,17 @@ set_target_properties(chestnut PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../.
 set_target_properties(chestnut PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib)
 set_target_properties(chestnut PROPERTIES FOLDER "lualib")
 
-IF(MSVC)
+if(MSVC)
 #target_link_libraries(chestnut ../../../libbase)
 	target_link_libraries(chestnut ws2_32)
 	target_link_libraries(chestnut ../../../strawberry)
 	target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
-ENDIF()
+    target_link_libraries(chestnut ../../../libfixedptmath)
+else(MSVC)
+    #target_link_directories(chestnut PUBLIC ../../..)
+    #link_directories(../..)
+    target_link_libraries(chestnut libfixedptmath)
+endif()
 
-target_link_libraries(chestnut ../../../libfixedptmath)
 
 add_dependencies(chestnut strawberry libfixedptmath)
