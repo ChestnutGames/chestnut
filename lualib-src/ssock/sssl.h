@@ -2,21 +2,42 @@
 #ifndef SSSL_H
 #define SSSL_H
 
+#include "write_buffer.h"
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-struct ssock;
-struct sssl;
-struct sssl *sssl_alloc(struct ssock *fd);
-void         sssl_free(struct sssl *self);
-int          sssl_connect(struct sssl *self);
-int          sssl_poll(struct sssl *self, const char *buf, int sz);
-int          sssl_send(struct sssl *self, const char *buf, int sz);
-void         sssl_set_state(struct sssl *self, int v);
-int          sssl_shutdown(struct sssl *self, int how);
-int          sssl_close(struct sssl *self);
-int          sssl_clear(struct sssl *self);
+// #define SSSL_NORMAL     0
+#define SSSL_CONNECT    1
+#define SSSL_CONNECTING 2
+#define SSSL_CONNECTED  3
+#define SSSL_CLOSE      4
+#define SSSL_ERROR      5
+
+typedef int (*sssl_cb)(void *ud, const char * cmd, int how);
+
+struct sssl_ctx;
+struct sssl_ctx *
+sssl_alloc(void *ud, sssl_cb cb);
+
+void         
+sssl_free(struct sssl_ctx *self);
+
+int          
+sssl_connect(struct sssl_ctx *self, const char *host, int port);
+
+struct write_buffer *
+sssl_poll(struct sssl_ctx *self, int idx, const char *buf, int sz);
+
+int          
+sssl_send(struct sssl_ctx *self, int idx, const char *buf, int sz);
+
+int          
+sssl_recv(struct sssl_ctx *self, int idx, const char *buf, int sz);
+
+int          sssl_get_state(struct sssl_ctx *self, int idx);
+int          sssl_shutdown(struct sssl_ctx *self, int idx, int how);
+int          sssl_close(struct sssl_ctx *self, int idx);
 
 
 

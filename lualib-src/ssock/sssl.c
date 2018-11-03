@@ -1,26 +1,30 @@
 #include "sssl.h"
-#include "ssock.h"
 
 #include <assert.h>
 #include <string.h>
 
-#define SSSL_NORMAL     0
-#define SSSL_CONNECT    1
-#define SSSL_CONNECTING 2
-#define SSSL_CONNECTED  3
-#define SSSL_SHUTDOWN   4
-#define SSSL_CLOSE      5
-#define SSSL_ERROR      6
+#define MAX_SSL_NUM (1)
+#define BUFFER_SIZE (2048)
+#define CMD_CONNECT    'C'
+#define CMD_CONNECTED  'D'
+#define CMD_SENT_SHUTDOWNED   'S'
+#define CMD_RECEIVED_SHUTDOWNED 'X'
 
 struct sssl {
-	SSL_CTX   *ssl_ctx;
 	SSL       *ssl;
 	BIO       *send_bio;
 	BIO       *recv_bio;
-	/*ringbuf_t  send_rb;
-	ringbuf_t  recv_rb;*/
-	struct ssock *fd;
+	struct wb_list *l;
 	int        state;
+	int        xsend;   // shutdown send
+	int        xrecv;   // shutdown recv
+};
+
+struct sssl_ctx {
+	SSL_CTX    *ssl_ctx;
+	void       *ud;
+	sssl_cb     callback;
+	struct sssl e[1];
 };
 
 static int
@@ -31,51 +35,24 @@ sssl_handle_err(struct sssl *self, int code, const char *tips);
 ** @return 获取的数据的size
 */
 static int
-sssl_write_ssock(struct sssl *self) {
-	int w = 0;
-	int l = 4096;
-	char buf[4096] = { 0 };
-	int nread = BIO_read(self->send_bio, buf, l);
-	if (nread <= 0) {
-		sssl_handle_err(self, nread, "sssl write ssock, BIO_read error.");
-		return nread;
-	}
-	while (nread > 0) {
-		ssock_writex(self->fd, buf + w, nread);
-		w += nread;
-
-		nread = BIO_read(self->send_bio, buf + w, l - w);
+sssl_write_to_so(struct sssl *self) {
+	int offset = 0;
+	char BUF[BUFFER_SIZE] = { 0 };
+	for (; ; ) {
+		int nread = BIO_read(self->send_bio, BUF + offset, BUFFER_SIZE - offset);
 		if (nread <= 0) {
-			sssl_handle_err(self, nread, "sssl write ssock. BIO_read error.");
-			return nread;
+			sssl_handle_err(self, nread, "sssl write ssock, BIO_read error.");
+			break;
 		}
+		offset += nread;
 	}
-	return w;
-}
-
-static int
-sssl_read_data(struct sssl *self) {
-	int lr = 0;
-	int l = 4096;
-	char buf[4096] = { 0 };
-	int nread = SSL_read(self->ssl, buf, l);
-	if (nread <= 0) {
-		sssl_handle_err(self, nread, "sssl read data, BIO_read error.");
-		return nread;
+	if (offset > 0) {
+		struct write_buffer * wb = wb_list_alloc_wb(self->l, offset);
+		memcpy(wb->buffer, BUF, offset);
+		wb->len = offset;
+		wb_list_push_wb(self->l, wb);
 	}
-	while (nread > 0) {
-		ssock_datax(self->fd, buf + lr, nread);
-		lr += nread;
-
-		nread = SSL_read(self->ssl, buf + lr, l - lr);
-		if (nread <= 0) {
-			sssl_handle_err(self, nread, "sssl read data, BIO_read error.");
-			return nread;
-		}
-	}
-
-	printf("sssl read data length: %d bytes\r\n", lr);
-	return lr;
+	return 0;
 }
 
 /*
@@ -92,7 +69,7 @@ sssl_handle_err(struct sssl *self, int code, const char *tips) {
 		printf("SSL_ERROR_WANT_READ : %s\r\n", tips);
 	} else if (err == SSL_ERROR_WANT_WRITE) {
 		printf("SSL_ERROR_WANT_WRITE : %s\r\n", tips);
-		sssl_write_ssock(self);
+		sssl_write_to_so(self);
 	} else if (err == SSL_ERROR_WANT_CONNECT) {
 		printf("SSL_ERROR_WANT_WRITE : %s\r\n", tips);
 	} else if (err == SSL_ERROR_SYSCALL) {
@@ -103,43 +80,36 @@ sssl_handle_err(struct sssl *self, int code, const char *tips) {
 	return err;
 }
 
-struct sssl *
-	sssl_alloc(struct ssock *fd) {
+struct sssl_ctx *
+	sssl_alloc(void *ud, sssl_cb cb) {
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
 	SSL_load_error_strings();
 	ERR_load_BIO_strings();
 
 	// ssl ctx
-	struct sssl *inst = (struct sssl *)malloc(sizeof(*inst));
+	struct sssl_ctx *inst = (struct sssl_ctx *)malloc(sizeof(*inst));
 	memset(inst, 0, sizeof(*inst));
 	inst->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
 
-	// ssl
-	inst->ssl = SSL_new(inst->ssl_ctx);
-
-	// bio
-	inst->send_bio = BIO_new(BIO_s_mem());
-	inst->recv_bio = BIO_new(BIO_s_mem());
-
-	/*inst->send_rb = ringbuf_new(4096);
-	inst->recv_rb = ringbuf_new(4096);*/
-
-	SSL_set_bio(inst->ssl, inst->recv_bio, inst->send_bio);
-
-	inst->fd = fd;
-	inst->state = SSSL_NORMAL;
+	inst->ud = ud;
+	inst->callback = cb;
 
 	return inst;
 }
 
 void
-sssl_free(struct sssl *self) {
-	assert(self->state == SSSL_CLOSE);
-	BIO_free(self->send_bio);
-	BIO_free(self->recv_bio);
+sssl_free(struct sssl_ctx *self) {
+	for (size_t i = 0; i < MAX_SSL_NUM; i++) {
+		struct sssl *ssl = &self->e[i];
+		assert(ssl->state == SSSL_CLOSE);
+		wb_list_free(ssl->l);
 
-	SSL_free(self->ssl);
+		BIO_free(ssl->send_bio);
+		BIO_free(ssl->recv_bio);
+
+		SSL_free(ssl->ssl);
+	}
 
 	SSL_CTX_free(self->ssl_ctx);
 	ERR_free_strings();
@@ -148,17 +118,32 @@ sssl_free(struct sssl *self) {
 }
 
 int
-sssl_connect(struct sssl *self) {
-	self->state = SSSL_CONNECT;
-	SSL_set_connect_state(self->ssl);
-	int ret = SSL_connect(self->ssl);
+sssl_connect(struct sssl_ctx *self, const char *host, int port) {
+	// ssl
+	self->e[0].ssl = SSL_new(self->ssl_ctx);
+
+	// bio
+	self->e[0].send_bio = BIO_new(BIO_s_mem());
+	self->e[0].recv_bio = BIO_new(BIO_s_mem());
+
+	SSL_set_bio(self->e[0].ssl, self->e[0].recv_bio, self->e[0].send_bio);
+	self->e[0].l = wb_list_new();
+	self->e[0].state = SSSL_CONNECT;
+
+	// callback socket connect
+	self->callback(self->ud, 'C', 0);
+	// ssl connect
+	self->e[0].state = SSSL_CONNECTING;
+
+	SSL_set_connect_state(self->e[0].ssl);
+	int ret = SSL_connect(self->e[0].ssl);
 	if (ret == 1) {
 		printf("SSL_connect successfully.");
 	} else {
-		sssl_handle_err(self, ret, "SSL_connect.");
+		sssl_handle_err(&self->e[0], ret, "SSL_connect.");
 	}
-	sssl_write_ssock(self);
-	return ret;
+	sssl_write_to_so(&self->e[0]);
+	return 0;
 }
 
 /*
@@ -167,118 +152,163 @@ sssl_connect(struct sssl *self) {
 **         正确，返回发送的数据，错误返回0
 */
 
-int
-sssl_poll(struct sssl *self, const char *buf, int sz) {
-	if (sz <= 0) {
-		return 0;
-	}
-	// 确保buf是正确的
-	assert(buf != NULL && sz > 0);
+struct write_buffer *
+	sssl_poll(struct sssl_ctx *self, int idx, const char *buf, int sz) {
+	assert(idx >= 0 && idx < MAX_SSL_NUM);
+	struct sssl *ssl = &self->e[idx];
 
-	int nw = 0;
-	while (nw < sz) {
-		int w = BIO_write(self->recv_bio, buf + nw, sz - nw);
-		nw += w;
+	// write raw data
+	if (buf != NULL && sz > 0) {
+		int nw = 0;
+		while (nw < sz) {
+			int w = BIO_write(ssl->recv_bio, buf + nw, sz - nw);
+			nw += w;
+		}
+		assert(nw == sz);
 	}
-	assert(nw == sz);
-	if (SSSL_CONNECT <= self->state && self->state <= SSSL_CONNECTED) {
+
+	// handshake 
+	if (SSSL_CONNECT <= ssl->state && ssl->state <= SSSL_CONNECTED) {
 		// 判断hanshake是否完成
-		if (!SSL_is_init_finished(self->ssl)) {
-			sssl_set_state(self, SSSL_CONNECTING);
-			int ret = SSL_do_handshake(self->ssl);
-			sssl_write_ssock(self);
+		if (!SSL_is_init_finished(ssl)) {
+			int ret = SSL_do_handshake(ssl);
+			sssl_write_to_so(ssl);
 			if (ret == 1) {
 				printf("openssl handshake success.\r\n");
-				sssl_set_state(self, SSSL_CONNECTED);
+				ssl->state = SSSL_CONNECTED;
+				self->callback(self->ud, 'D', 0);
 			} else {
 				sssl_handle_err(self, ret, "SSL_do_hanshake.");
 			}
 			return ret;
 		} else {
-			sssl_set_state(self, SSSL_CONNECTED);
-			sssl_read_data(self);
+			if (ssl->state != SSSL_CONNECTED) {
+				ssl->state = SSSL_CONNECTED;
+				self->callback(self->ud, 'D', 0);
+			}
+			if (ssl->xsend == 1) {
+				int ret = SSL_shutdown(ssl);
+				if (ret == 1) {
+					ssl->xsend = 2;
+					self->callback(self->ud, CMD_SENT_SHUTDOWNED, 0);
+					printf("SSL_shutdown successfully.");
+				} else if (ret == 0) {
+					sssl_handle_err(self, ret, "shutdown is not yet finished.");
+				} else {
+					sssl_handle_err(self, ret, "shutdown is not successful.");
+				}
+			}
+			if (ssl->xrecv == 1) {
+				int ret = SSL_shutdown(ssl);
+				if (ret == 1) {
+					ssl->xrecv = 2;
+					self->callback(self->ud, CMD_RECEIVED_SHUTDOWNED, 0);
+					printf("SSL_shutdown successfully.");
+				} else if (ret == 0) {
+					sssl_handle_err(self, ret, "shutdown is not yet finished.");
+				} else {
+					sssl_handle_err(self, ret, "shutdown is not successful.");
+				}
+			}
+			sssl_write_to_so(ssl);
 		}
 		// 内部判断ssl链接是断开
-	} else if (self->state == SSSL_SHUTDOWN) {
-		int ret = SSL_shutdown(self->ssl);
-		if (ret == 1) {
-			printf("SSL_shutdown successfully.");
-		} else if (ret == 0) {
-			sssl_handle_err(self, ret, "shutdown is not yet finished.");
-		} else {
-			sssl_handle_err(self, ret, "shutdown is not successful.");
-		}
 	}
-
-	return nw;
+	return wb_list_pop(ssl->l);
 }
 
 int
-sssl_send(struct sssl *self, const char *buf, int sz) {
-	assert(self->state == SSSL_CONNECTED);
-	if (sz <= 0) {
-		return 0;
+sssl_send(struct sssl_ctx *self, int idx, const char *buf, int sz) {
+	assert(idx >= 0 && idx < MAX_SSL_NUM);
+	struct sssl *ssl = &self->e[idx];
+	if (ssl->state != SSSL_CONNECTED) {
+		return -1;
+	}
+	if (ssl->xsend > 0) {
+		return -1;
+	}
+	if (buf == NULL || sz <= 0) {
+		return -1;
 	}
 	assert(buf != NULL && sz > 0);
-	int w = SSL_write(self->ssl, buf, sz);
-	if (w <= 0) { // not successful
-		self->state = SSSL_ERROR;
-		sssl_handle_err(self, w, "SSL_write error.");
-		return w;
-	}
-	while (w < sz) {
-		int tw = SSL_write(self->ssl, buf + w, sz - w);
+	int w = 0;
+	for (; w < sz;) {
+		int tw = SSL_write(ssl, buf + w, sz - w);
 		if (tw <= 0) {
-			self->state = SSSL_ERROR;
+			ssl->state = SSSL_ERROR;
 			sssl_handle_err(self, tw, "SSL_write error.");
 			return tw;
 		}
 		w += tw;
 	}
+
 	// 写入数据成功，把数据发送出去
 	assert(w == sz);
-	sssl_write_ssock(self);
 	return w;
 }
 
-void
-sssl_set_state(struct sssl *self, int v) {
-	if (self->state != v) {
-		self->state = v;
-		ssock_set_ss(self->fd, v);
+int
+sssl_recv(struct sssl_ctx *self, int idx, const char *buf, int sz) {
+	assert(idx >= 0 && idx < MAX_SSL_NUM);
+	struct sssl *ssl = &self->e[idx];
+
+	int lr = 0;
+	for (; lr < sz; ) {
+		int nread = SSL_read(ssl->ssl, buf + lr, sz - lr);
+		if (nread <= 0) {
+			sssl_handle_err(self, nread, "sssl read data, BIO_read error.");
+			return nread;
+		}
+		lr += nread;
 	}
+
+	printf("sssl read data length: %d bytes\r\n", lr);
+	return lr;
 }
 
 int
-sssl_shutdown(struct sssl *self, int how) {
-	if (self->state == SSSL_CLOSE) {
-		ssock_closex(self->fd);
+sssl_get_state(struct sssl_ctx *self, int idx) {
+	assert(idx >= 0 && idx < MAX_SSL_NUM);
+	struct sssl *ssl = &self->e[idx];
+	return ssl->state;
+}
+
+int
+sssl_shutdown(struct sssl_ctx *self, int idx, int how) {
+	assert(how > 0);
+	assert(idx >= 0 && idx < MAX_SSL_NUM);
+	struct sssl *ssl = &self->e[idx];
+
+	if (ssl->state == SSSL_CLOSE) {
 		return 0;
 	}
-	self->state = SSSL_SHUTDOWN;
 	if (how == 1) {
-		SSL_set_shutdown(self->ssl, SSL_SENT_SHUTDOWN);
+		SSL_set_shutdown(ssl->ssl, SSL_SENT_SHUTDOWN);
+		ssl->xsend = 1;
 	} else if (how == 2) {
-		SSL_set_shutdown(self->ssl, SSL_RECEIVED_SHUTDOWN);
+		SSL_set_shutdown(ssl->ssl, SSL_RECEIVED_SHUTDOWN);
+		ssl->xrecv = 1;
+	} else if (how == 3) {
+		SSL_set_shutdown(ssl->ssl, SSL_SENT_SHUTDOWN);
+		SSL_set_shutdown(ssl->ssl, SSL_RECEIVED_SHUTDOWN);
+		ssl->xsend = 1;
+		ssl->xrecv = 1;
 	} else {
-		SSL_set_shutdown(self->ssl, SSL_SENT_SHUTDOWN);
-		SSL_set_shutdown(self->ssl, SSL_RECEIVED_SHUTDOWN);
+		assert(0);
 	}
 
-	SSL_shutdown(self->ssl);
-	return 1;
+	SSL_shutdown(ssl->ssl);
+	return 0;
 }
 
 int
-sssl_close(struct sssl *self) {
-	if (self->state == SSSL_CLOSE) {
-		ssock_closex(self->fd);
+sssl_close(struct sssl_ctx *self, int idx) {
+	assert(idx >= 0 && idx < MAX_SSL_NUM);
+	struct sssl *ssl = &self->e[idx];
+
+	if (ssl->state == SSSL_CLOSE) {
 		return 0;
 	}
-	return sssl_shutdown(self, 0);
-}
-
-int
-sssl_clear(struct sssl *self) {
-	return SSL_clear(self->ssl);
+	ssl->state == SSSL_CLOSE;
+	SSL_clear(ssl->ssl);
 }

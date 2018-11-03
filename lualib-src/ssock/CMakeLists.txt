@@ -1,22 +1,10 @@
-project(ssock)
+project(sssl)
 
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 include_directories(../../3rd/openssl/include)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 IF(MSVC)
-=======
-IF(MSVC)	
->>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
-=======
-IF(MSVC)	
->>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
-=======
-IF(MSVC)	
->>>>>>> f6c4b0ac679435bd21a828c907e545d053798ed7
 	include_directories(../../3rd/pthread-win32)
 	include_directories(../../3rd/posix)
 	add_definitions(-DLUA_BUILD_AS_DLL)
@@ -32,10 +20,10 @@ IF(CMAKE_BUILD_TYPE MATCHES "Debug")
 	add_definitions(-D_DEBUG)
 ENDIF()
 
-SET(SSL_H ./ssock.h ./sssl.h)
-SET(SSL_C ./ssock.c ./sssl.c ./lua-ssock.c)
-add_library(ssock SHARED ${SSL_H} ${SSL_C})
-set_target_properties(ssock
+SET(SSL_H ./sssl.h ./write_buffer.h ./protoc.h)
+SET(SSL_C ./sssl.c ./write_buffer.c ./lua-sssl.c)
+add_library(sssl SHARED ${SSL_H} ${SSL_C})
+set_target_properties(sssl
 	PROPERTIES
 	PREFIX ""
 	SUFFIX ".so"
@@ -49,34 +37,41 @@ set_target_properties(ssock
 )
 
 IF(MSVC)
-	target_link_libraries(ssock ws2_32 ../../../strawberry)
-	target_link_libraries(ssock ../../../3rd/openssl/lib/libcrypto ../../../3rd/openssl/lib/libssl)
-	target_link_libraries(ssock ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
+	target_link_libraries(sssl ws2_32 ../../../strawberry)
+	target_link_libraries(sssl ../../../3rd/openssl/lib/libcrypto ../../../3rd/openssl/lib/libssl)
+	target_link_libraries(sssl ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
 ELSE(MSVC)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	find_library(CRYPTO_LIB libcrypto.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	find_library(SSL_LIB libssl.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	message(${CRYPTO_LIB})
-    target_link_libraries(ssock ${CRYPTO_LIB} ${SSL_LIB})
+    target_link_libraries(sssl ${CRYPTO_LIB} ${SSL_LIB})
     # target_link_libraries(ssock crypto ssl)
-=======
-=======
->>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
-=======
->>>>>>> f6c4b0ac679435bd21a828c907e545d053798ed7
-	find_library(CRYPTO_LIB crypto ../../../3rd/openssl/lib NO_DEFAULT_PATH)
-	find_library(SSL_LIB ssl ../../../3rd/openssl/lib NO_DEFAULT_PATH)
-	message(${CRYPTO_LIB})
-	target_link_libraries(strawberry ${CRYPTO_LIB} ${SSL_LIB})
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
-=======
->>>>>>> 575873cd484aea15ae9a087ed5c035ecbb42f187
-=======
->>>>>>> f6c4b0ac679435bd21a828c907e545d053798ed7
 ENDIF()
 
-add_dependencies(ssock strawberry)
+add_dependencies(sssl strawberry)
+
+
+SET(SSSLTEST_H ./https-client-c.h ./stringx.h ./urlparser.h ./ssock.h ./sssl.h ./write_buffer.h ./protoc.h)
+SET(SSSLTEST_C ./ssock.c ./sssl.c ./write_buffer.c ./ssock_test.c)
+add_executable(sssltest ${SSSLTEST_H} ${SSSLTEST_C})
+set_target_properties(sssltest
+	PROPERTIES
+	FOLDER "test"
+	RUNTIME_OUTPUT_DIRECTORY ../../..
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../..
+	ARCHIVE_OUTPUT_DIRECTORY ../../..
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../..
+	LIBRARY_OUTPUT_DIRECTORY ../../..
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../..
+)
+
+IF(MSVC)
+	target_link_libraries(sssltest ../../../3rd/openssl/lib/libcrypto ../../../3rd/openssl/lib/libssl)
+	target_link_libraries(sssltest ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
+ELSE(MSVC)
+	find_library(CRYPTO_LIB libcrypto.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
+	find_library(SSL_LIB libssl.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
+	message(${CRYPTO_LIB})
+    target_link_libraries(sssltest ${CRYPTO_LIB} ${SSL_LIB})
+    # target_link_libraries(ssock crypto ssl)
+ENDIF()
