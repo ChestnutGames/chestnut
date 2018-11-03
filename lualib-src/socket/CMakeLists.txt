@@ -1,50 +1,34 @@
-project(skynet)
+project(socket)
 
-file(GLOB SKYNET_H *.h)
-aux_source_directory(. SKYNET_C)
-list(REMOVE_ITEM SKYNET_C ./lua-clientsocket.c ./lua-bson.c)
-ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
-set(BUILD_USE_64BITS on)
-
-include_directories(.)
 include_directories(../../3rd/lua)
-include_directories(../../3rd/posix)
-include_directories(../../skynet-src/)
 
 IF(MSVC)
-ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
+    ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
+    ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
 ENDIF()
 
-IF(CMAKE_CL_64)
-SET(LIBRARY_OUTPUT_PATH ../../luaclib)	
-add_library(skynet SHARED ${SKYNET_H} ${SKYNET_C})
-#link_directories(${CMAKE_CURRENT_SOURCE_DIR}../../bin/win64/Debug)
-target_link_libraries(skynet ../../../bin/win64/Debug/posix ../../../bin/win64/Debug/liblua ../../../bin/win64/Debug/strawberry ../../../bin/win64/Debug/pthreadVC2 ws2_32)
-set_target_properties(skynet PROPERTIES FOLDER "lualib") 
-ADD_DEPENDENCIES(skynet lualib strawberry posix)
-ENDIF()
+set ( SOCKET_CORE luasocket.c timeout.c buffer.c io.c auxiliar.c compat.c options.c inet.c except.c select.c tcp.c udp.c)
 
+if (MSVC)
+    add_library(socket SHARED ${SOCKET_CORE} wsocket.c)
+else (MSVC)
+    add_library(socket SHARED ${SOCKET_CORE} usocket.c)
+endif ()
 
-project(bson)
+set_target_properties(socket PROPERTIES PREFIX "")
+set_target_properties(socket PROPERTIES SUFFIX ".so")
+set_target_properties(socket PROPERTIES FOLDER "lualib")
+set_target_properties(socket PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
 
-set(BSON_C ./lua-bson.c)
-set(BUILD_USE_64BITS on)
+if (MSVC)
+	target_link_libraries(socket ws2_32 ../../../strawberry)
+endif (MSVC)
 
-include_directories(.)
-include_directories(../../3rd/lua)
-include_directories(../../3rd/posix)
-include_directories(../../skynet-src/)
-
-ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
-IF(MSVC)
-ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
-ENDIF()
-
-IF(CMAKE_CL_64)
-SET(LIBRARY_OUTPUT_PATH ../../luaclib)	
-add_library(bson SHARED ${BSON_C})
-#link_directories(${CMAKE_CURRENT_SOURCE_DIR}../../bin/win64/Debug)
-target_link_libraries(bson ../../../bin/win64/Debug/posix ../../../bin/win64/Debug/liblua ../../../bin/win64/Debug/strawberry ../../../bin/win64/Debug/pthreadVC2)
-set_target_properties(bson PROPERTIES FOLDER "lualib") 
-ADD_DEPENDENCIES(bson lualib strawberry posix)
-ENDIF()
+add_dependencies(socket strawberry)

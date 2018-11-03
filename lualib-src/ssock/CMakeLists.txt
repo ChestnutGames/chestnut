@@ -55,7 +55,7 @@ SET(SSSLTEST_H ./https-client-c.h ./stringx.h ./urlparser.h ./ssock.h ./sssl.h .
 SET(SSSLTEST_C ./ssock.c ./sssl.c ./write_buffer.c ./ssock_test.c)
 add_executable(sssltest ${SSSLTEST_H} ${SSSLTEST_C})
 set_target_properties(sssltest
-	PROPERTIES
+	PROPERTIES#
 	FOLDER "test"
 	RUNTIME_OUTPUT_DIRECTORY ../../..
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../..
