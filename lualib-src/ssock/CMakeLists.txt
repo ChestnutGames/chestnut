@@ -51,7 +51,7 @@ ENDIF()
 add_dependencies(sssl strawberry)
 
 
-SET(SSSLTEST_H ./https-client-c.h ./stringx.h ./urlparser.h ./ssock.h ./sssl.h ./write_buffer.h ./protoc.h)
+SET(SSSLTEST_H ./stringx.h ./urlparser.h ./ssock.h ./sssl.h ./write_buffer.h ./protoc.h)
 SET(SSSLTEST_C ./ssock.c ./sssl.c ./write_buffer.c ./ssock_test.c)
 add_executable(sssltest ${SSSLTEST_H} ${SSSLTEST_C})
 set_target_properties(sssltest

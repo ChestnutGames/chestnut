@@ -4,20 +4,21 @@
 
 #include "sssl.h"
 
+#define SSOCK_CONNECT    1
+#define SSOCK_CONNECTING 2
+#define SSOCK_CONNECTED  3
+#define SSOCK_CLOSE      4
+#define SSOCK_ERROR      5
+
 typedef int (*ssock_cb)(struct http_response* resp, void *ud);
 
 struct ssock {
 	struct sssl *sssl;
-	int fd[1];
+	int fds[1];
 	int state[1];
+	int ssslidx[1];
 	int idx;
 };
-
-struct http_response* http_req(char *http_headers, struct parsed_url *purl);
-struct http_response* http_get(char *url, char *custom_headers);
-struct http_response* http_head(char *url, char *custom_headers);
-struct http_response* http_post(char *url, char *custom_headers, char *post_data);
-
 
 /*
 	Represents an HTTP html response
@@ -42,10 +43,17 @@ int            ssock_update(struct ssock *self);
 int            ssock_send(struct ssock *self, const char *buf, int size);
 
 
-int            ssock_req(struct ssock *self, char *http_headers, struct parsed_url *purl);
-int            ssock_get(struct ssock *self, char *url, char *custom_headers);
-int            ssock_head(struct ssock *self, char *url, char *custom_headers);
-int            ssock_post(struct ssock *self, char *url, char *custom_headers, char *post_data);
+struct http_response*
+ssock_req(struct ssock *self, char *http_headers, struct parsed_url *purl);
+
+struct http_response*
+ssock_get(struct ssock *self, char *url, char *custom_headers);
+
+struct http_response*
+ssock_head(struct ssock *self, char *url, char *custom_headers);
+
+struct http_response*
+ssock_post(struct ssock *self, char *url, char *custom_headers, char *post_data);
 
 int            ssock_shutdown(struct ssock *self, int how);
 int            ssock_close(struct ssock *self);

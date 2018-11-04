@@ -13,7 +13,7 @@ LDFLAGS = $(OPENSSL_LIBS_LOCATION) -lssl -lcrypto -lpthread -lm -ldl
 
 all: ./../../ssock
 
-./../../ssock: ssock_test.c sssl.c write_buffer.c
+./../../ssock: ssock_test.c ssock.c sssl.c write_buffer.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)	
 
 clean:

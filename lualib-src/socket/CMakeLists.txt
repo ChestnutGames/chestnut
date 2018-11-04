@@ -2,15 +2,11 @@ project(socket)
 
 include_directories(../../3rd/lua)
 
-IF(MSVC)
-    ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
-    ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
-ENDIF()
-
 set ( SOCKET_CORE luasocket.c timeout.c buffer.c io.c auxiliar.c compat.c options.c inet.c except.c select.c tcp.c udp.c)
 
 if (MSVC)
     add_library(socket SHARED ${SOCKET_CORE} wsocket.c)
+	target_compile_definitions (socket PRIVATE LUA_BUILD_AS_DLL)
 else (MSVC)
     add_library(socket SHARED ${SOCKET_CORE} usocket.c)
 endif ()
@@ -28,7 +24,5 @@ set_target_properties(socket PROPERTIES
 )
 
 if (MSVC)
-	target_link_libraries(socket ws2_32 ../../../strawberry)
+	target_link_libraries(socket ws2_32 ../../../lua)
 endif (MSVC)
-
-add_dependencies(socket strawberry)

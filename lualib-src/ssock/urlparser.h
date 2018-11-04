@@ -66,14 +66,19 @@ void parsed_url_free(struct parsed_url *purl)
 */
 char* hostname_to_ip(char *hostname)
 {
-	char *ip = "0.0.0.0";
+	/*char *ip = "0.0.0.0";
 	struct hostent *h;
 	if ((h=gethostbyname(hostname)) == NULL) 
 	{  
 		printf("gethostbyname");
 		return NULL;
 	}
+#if defined(_WIN32)
+	return inet_ntoa(*((struct in_addr *)h->h_addr_list[0]));
+#else
 	return inet_ntoa(*((struct in_addr *)h->h_addr));
+#endif*/
+	return NULL;
 }
 
 /*

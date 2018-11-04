@@ -3,9 +3,6 @@
 #define SSSL_H
 
 #include "write_buffer.h"
-#include <openssl/bio.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
 // #define SSSL_NORMAL     0
 #define SSSL_CONNECT    1
