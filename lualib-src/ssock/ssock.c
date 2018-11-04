@@ -130,7 +130,7 @@ int
 ssock_connect(struct ssock *self, const char *addr, int port) {
 	int idx = 0;
 	int fd = 0;
-	if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET) {
+	if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
 		printf("创建socket 失败.");
 		exit(0);
 	}
@@ -170,11 +170,14 @@ ssock_update(struct ssock *self) {
 		} else if (nread == 0) {
 			// 断联
 		} else if (nread < 0) {
-			// 出错
+			// 出错 i
+            //
+#if defined(_WIN32) || defined(_WIN64)
 			if (nread == WSAEWOULDBLOCK) {
 				struct write_buffer *wb = sssl_poll(self->sssl, 0, buf, 0);
 				send(self->fds[i], wb->ptr, wb->len, 0);
 			}
+#endif
 		}
 		// recv
 		sssl_recv(self->sssl, self->ssslidx[i], buf, 4096);

@@ -8,7 +8,7 @@
 #    LD_LIBRARY_PATH=../.. ./aesccm
 #    LD_LIBRARY_PATH=../.. ./aesgcm
 
-CFLAGS = $(OPENSSL_INCS_LOCATION)
+CFLAGS = $(OPENSSL_INCS_LOCATION) -std=gnu99 -Wall -Wextra
 LDFLAGS = $(OPENSSL_LIBS_LOCATION) -lssl -lcrypto -lpthread -lm -ldl
 
 all: ./../../ssock
@@ -17,4 +17,4 @@ all: ./../../ssock
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)	
 
 clean:
-	$(RM) aesccm aesgcm *.o
+	$(RM) 

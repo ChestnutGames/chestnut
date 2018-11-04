@@ -5,6 +5,7 @@
 #ifndef WRITE_BUFFER_H
 #define WRITE_BUFFER_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
