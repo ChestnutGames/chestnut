@@ -56,7 +56,7 @@ include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 include_directories(../../foundation)
 IF(MSVC)
-	include_directories(../../3rd/pthread-win32)
+	include_directories(../../3rd/pthread-win32/include)
 	include_directories(../../3rd/posix)
 ENDIF(MSVC)
 

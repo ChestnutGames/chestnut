@@ -5,7 +5,7 @@ include_directories(../../foundation)
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 IF(MSVC)
-	include_directories(../../3rd/pthread-win32)
+	include_directories(../../3rd/pthread-win32/include)
 	include_directories(../../3rd/posix)
 ENDIF(MSVC)
 
@@ -44,7 +44,7 @@ set_target_properties(chestnut PROPERTIES
 
 if(MSVC)
 	target_link_libraries(chestnut ws2_32 ../../../strawberry)
-	target_link_libraries(chestnut ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
+	target_link_libraries(chestnut ../../../3rd/pthread-win32/lib/pthread_lib)
 endif()
 
 #target_link_directories(chestnut PUBLIC ../../..)

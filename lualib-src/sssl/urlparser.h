@@ -27,6 +27,10 @@
 
 #include <ctype.h>
 
+#if defined(WIN32)
+#include <WinSock2.h>
+#endif
+
 /*
 	Represents an url
 */
@@ -68,19 +72,37 @@ void parsed_url_free(struct parsed_url *purl)
 */
 char* hostname_to_ip(char *hostname)
 {
+	struct addrinfo hints, *res, *cur;
+	int ret;
+	struct sockaddr_in *addr;
+	char m_ipaddr[16];
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;      /* Allow IPv4 */
+	hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+	hints.ai_protocol = 0;          /* Any protocol */
+	hints.ai_socktype = SOCK_STREAM;
+
+	ret = getaddrinfo(hostname, NULL, &hints, &res);
+
+	
 	/*char *ip = "0.0.0.0";
 	struct hostent *h;
 	if ((h=gethostbyname(hostname)) == NULL) 
 	{  
 		printf("gethostbyname");
 		return NULL;
-	}
+	}*/
 #if defined(_WIN32)
-	return inet_ntoa(*((struct in_addr *)h->h_addr_list[0]));
+	//return inet_ntoa(*((struct in_addr *)h->h_addr_list[0]));
+	
+	//inet_ntop(hptr->h_addrtype, *pptr, str, sizeof(str)))
+	char BUF[64];
+	//return (char *)inet_ntop(h->h_addrtype, h->h_addr_list[0], BUF, 64);
+	return NULL;
 #else
 	return inet_ntoa(*((struct in_addr *)h->h_addr));
-#endif*/
-	return NULL;
+#endif
 }
 
 /*

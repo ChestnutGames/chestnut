@@ -2,7 +2,7 @@
 #define SHASH_H
 
 #include <message/message.h>
-#include <base/uthash.h>
+#include <uthash/uthash.h>
 #include <assert.h>
 
 typedef void(*response_cb_t)(struct message *msg);

@@ -4,7 +4,7 @@ project(kcp)
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 if (MSVC)
-include_directories(../../3rd/pthread-win32)
+include_directories(../../3rd/pthread-win32/include)
 include_directories(../../3rd/posix)
 endif (MSVC)
 

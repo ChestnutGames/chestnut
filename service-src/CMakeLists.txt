@@ -5,7 +5,7 @@ include_directories(../3rd/lua)
 include_directories(../skynet-src)
 
 IF(MSVC)
-	include_directories(../3rd/pthread-win32)
+	include_directories(../3rd/pthread-win32/include)
 	include_directories(../3rd/posix)
 	add_definitions(-DLUA_BUILD_AS_DLL)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
