@@ -1,4 +1,4 @@
-local driver = require "ssock"
+local driver = require "sssl.core"
 
 local _M = {}
 

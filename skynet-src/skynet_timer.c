@@ -6,15 +6,15 @@
 #include "skynet_handle.h"
 #include "spinlock.h"
 
-#if defined(_MSC_VER)
-#include "timeutils.h"
-#endif
-
 #include <time.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#if defined(_MSC_VER)
+#include "timeutils.h"
+#endif
 
 #if defined(__APPLE__)
 #include <AvailabilityMacros.h>

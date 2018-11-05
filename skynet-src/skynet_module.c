@@ -3,6 +3,8 @@
 #include "skynet_module.h"
 #include "spinlock.h"
 
+#include <ejoy/array.h>
+
 #include <assert.h>
 #include <string.h>
 #include <dlfcn.h>
@@ -31,11 +33,7 @@ _try_open(struct modules *m, const char * name) {
 	int sz = path_size + name_size;
 	//search path
 	void * dl = NULL;
-#if defined(_MSC_VER)
-	char tmp[255];
-#else
-	char tmp[sz];
-#endif
+	ARRAY(char, tmp, sz);
 	do
 	{
 		memset(tmp,0,sz);
@@ -81,11 +79,7 @@ static void *
 get_api(struct skynet_module *mod, const char *api_name) {
 	size_t name_size = strlen(mod->name);
 	size_t api_size = strlen(api_name);
-#if defined(_MSC_VER)
-	char tmp[255 + 1];
-#else
-	char tmp[name_size + api_size + 1];
-#endif
+	ARRAY(char, tmp, name_size + api_size + 1);
 	memcpy(tmp, mod->name, name_size);
 	memcpy(tmp+name_size, api_name, api_size+1);
 	char *ptr = strrchr(tmp, '.');

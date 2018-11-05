@@ -6,7 +6,7 @@ extern "C" {
 
 #include <lua.h>
 #include <lauxlib.h>
-#include <base/math3d.h>
+#include <ejoy/math3d.h>
 
 static void *
 check_userdata(lua_State *L, int idx) {

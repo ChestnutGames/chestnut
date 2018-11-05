@@ -5,11 +5,10 @@
 #include <skynet.h>
 #include <skynet_server.h>
 #include <skynet_handle.h>
+#include <ejoy/list.h>
 #include <message/message.h>
 #include <message/xlogger_message.h>
 #include <xlog/xlog.h>
-#include <base/list.h>
-
 #include <string.h>
 #include <stdint.h>
 

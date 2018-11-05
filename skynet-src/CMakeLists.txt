@@ -1,6 +1,6 @@
 project(strawberry)
 
-include_directories(.)
+include_directories(../foundation)
 include_directories(../3rd/lua)
 
 IF(MSVC)

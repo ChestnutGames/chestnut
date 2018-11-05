@@ -2,7 +2,7 @@
 #ifndef xlogger_buffer_h
 #define xlogger_buffer_h
 
-#include <base/list.h>
+#include <ejoy/list.h>
 #include <string.h>
 
 #define ONE_MB	        (1024*1024)

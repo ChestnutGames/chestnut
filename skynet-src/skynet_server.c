@@ -14,6 +14,7 @@
 #include "spinlock.h"
 #include "atomic.h"
 
+#include <ejoy/array.h>
 #include <pthread.h>
 
 #include <string.h>
@@ -432,13 +433,8 @@ cmd_query(struct skynet_context * context, const char * param) {
 static const char *
 cmd_name(struct skynet_context * context, const char * param) {
 	int size = strlen(param);
-#if defined(_MSC_VER)
-	char name[32 + 1];
-	char handle[32 + 1];
-#else
-	char name[size + 1];
-	char handle[size + 1];
-#endif // defined(_MSC_VER)
+	ARRAY(char, name, size + 1);
+	ARRAY(char, handle, size + 1);
 	sscanf(param,"%s %s",name,handle);
 	if (handle[0] != ':') {
 		return NULL;
@@ -487,11 +483,7 @@ cmd_kill(struct skynet_context * context, const char * param) {
 static const char *
 cmd_launch(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
-#if defined(_MSC_VER)
-	char tmp[32 + 1];
-#else
-	char tmp[sz + 1];
-#endif
+	ARRAY(char, tmp, sz + 1);
 	strcpy(tmp,param);
 	char * args = tmp;
 	char * mod = strsep(&args, " \t\r\n");
@@ -513,11 +505,7 @@ cmd_getenv(struct skynet_context * context, const char * param) {
 static const char *
 cmd_setenv(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
-#if defined(_MSC_VER)
-	char key[32 + 1];
-#else
-	char key[sz + 1];
-#endif
+	ARRAY(char, key, sz + 1);
 	int i;
 	for (i=0;param[i] != ' ' && param[i];i++) {
 		key[i] = param[i];
