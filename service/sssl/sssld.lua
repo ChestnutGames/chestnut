@@ -1,98 +1,161 @@
 local skynet = require "skynet"
-local gateserver = require "snax.gateserver"
+local socketdriver = require "skynet.socket"
 
-local watchdog
-local connection = {}	-- fd -> connection : { fd , client, agent , ip, mode }
-local forwarding = {}	-- agent -> connection
 
-skynet.register_protocol {
-	name = "client",
-	id = skynet.PTYPE_CLIENT,
-}
 
-local handler = {}
+local maxclient	-- max client
+local client_number = 0
+local CMD = setmetatable({}, { __gc = function() netpack.clear(queue) end })
+local nodelay = false
 
-function handler.open(source, conf)
-	watchdog = conf.watchdog or source
+local connection = {}
+
+function gateserver.openclient(fd)
+	if connection[fd] then
+		socketdriver.start(fd)
+	end
 end
 
-function handler.message(fd, msg, sz)
-	-- recv a package, forward it
+function gateserver.closeclient(fd)
 	local c = connection[fd]
-	local agent = c.agent
-	if agent then
-		-- It's safe to redirect msg directly , gateserver framework will not free msg.
-		skynet.redirect(agent, c.client, "client", fd, msg, sz)
+	if c then
+		connection[fd] = false
+		socketdriver.close(fd)
+	end
+end
+
+assert(handler.message)
+assert(handler.connect)
+
+local function tick() 
+	while true do
+		
+		skynet.yield()
+	end
+end
+
+function CMD.open( source, conf )
+	assert(not socket)
+	local address = conf.address or "0.0.0.0"
+	local port = assert(conf.port)
+	maxclient = conf.maxclient or 1024
+	nodelay = conf.nodelay
+	skynet.error(string.format("Listen on %s:%d", address, port))
+	socket = socketdriver.listen(address, port)
+	socketdriver.start(socket)
+	if handler.open then
+		return handler.open(source, conf)
+	end
+end
+
+function CMD.close()
+	assert(socket)
+	socketdriver.close(socket)
+end
+
+function CMD.connect()
+end
+
+local MSG = {}
+
+local function dispatch_msg(fd, msg, sz)
+	if connection[fd] then
+		handler.message(fd, msg, sz)
 	else
-		skynet.send(watchdog, "lua", "socket", "data", fd, skynet.tostring(msg, sz))
-		-- skynet.tostring will copy msg to a string, so we must free msg here.
-		skynet.trash(msg,sz)
+		skynet.error(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg,sz)))
 	end
 end
 
-function handler.connect(fd, addr)
-	local c = {
-		fd = fd,
-		ip = addr,
-	}
-	connection[fd] = c
-	skynet.send(watchdog, "lua", "socket", "open", fd, addr)
+MSG.data = dispatch_msg
+
+local function dispatch_queue()
+	local fd, msg, sz = netpack.pop(queue)
+	if fd then
+		-- may dispatch even the handler.message blocked
+		-- If the handler.message never block, the queue should be empty, so only fork once and then exit.
+		skynet.fork(dispatch_queue)
+		dispatch_msg(fd, msg, sz)
+
+		for fd, msg, sz in netpack.pop, queue do
+			dispatch_msg(fd, msg, sz)
+		end
+	end
 end
 
-local function unforward(c)
-	if c.agent then
-		forwarding[c.agent] = nil
-		c.agent = nil
-		c.client = nil
+MSG.more = dispatch_queue
+
+function MSG.open(fd, msg)
+	if client_number >= maxclient then
+		socketdriver.close(fd)
+		return
 	end
+	if nodelay then
+		socketdriver.nodelay(fd)
+	end
+	connection[fd] = true
+	client_number = client_number + 1
+	handler.connect(fd, msg)
 end
 
 local function close_fd(fd)
 	local c = connection[fd]
-	if c then
-		unforward(c)
+	if c ~= nil then
 		connection[fd] = nil
+		client_number = client_number - 1
 	end
 end
 
-function handler.disconnect(fd)
-	close_fd(fd)
-	skynet.send(watchdog, "lua", "socket", "close", fd)
+function MSG.close(fd)
+	if fd ~= socket then
+		if handler.disconnect then
+			handler.disconnect(fd)
+		end
+		close_fd(fd)
+	else
+		socket = nil
+	end
 end
 
-function handler.error(fd, msg)
-	close_fd(fd)
-	skynet.send(watchdog, "lua", "socket", "error", fd, msg)
+function MSG.error(fd, msg)
+	if fd == socket then
+		socketdriver.close(fd)
+		skynet.error("gateserver close listen socket, accpet error:",msg)
+	else
+		if handler.error then
+			handler.error(fd, msg)
+		end
+		close_fd(fd)
+	end
 end
 
-function handler.warning(fd, size)
-	skynet.send(watchdog, "lua", "socket", "warning", fd, size)
+function MSG.warning(fd, size)
+	if handler.warning then
+		handler.warning(fd, size)
+	end
 end
 
-local CMD = {}
+skynet.register_protocol {
+	name = "socket",
+	id = skynet.PTYPE_SOCKET,	-- PTYPE_SOCKET = 6
+	unpack = function ( msg, sz )
+		return netpack.filter( queue, msg, sz)
+	end,
+	dispatch = function (_, _, q, type, ...)
+		queue = q
+		if type then
+			MSG[type](...)
+		end
+	end
+}
 
-function CMD.forward(source, fd, client, address)
-	local c = assert(connection[fd])
-	unforward(c)
-	c.client = client or 0
-	c.agent = address or source
-	forwarding[c.agent] = c
-	gateserver.openclient(fd)
-end
+skynet.start(function()
+	skynet.dispatch("lua", function (_, address, cmd, ...)
+		local f = CMD[cmd]
+		if f then
+			skynet.ret(skynet.pack(f(address, ...)))
+		else
+			skynet.ret(skynet.pack(handler.command(cmd, address, ...)))
+		end
+	end)
+end)
 
-function CMD.accept(source, fd)
-	local c = assert(connection[fd])
-	unforward(c)
-	gateserver.openclient(fd)
-end
-
-function CMD.kick(source, fd)
-	gateserver.closeclient(fd)
-end
-
-function handler.command(cmd, source, ...)
-	local f = assert(CMD[cmd])
-	return f(source, ...)
-end
-
-gateserver.start(handler)

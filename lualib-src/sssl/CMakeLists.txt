@@ -8,8 +8,6 @@ include_directories(../../foundation)
 IF(MSVC)
 	include_directories(../../3rd/pthread-win32/include)
 	include_directories(../../3rd/posix)
-	add_definitions(-DLUA_BUILD_AS_DLL)
-	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
 ELSE(MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -Wextra -Werror")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")
@@ -24,6 +22,7 @@ ENDIF()
 SET(SSL_H ./sssl.h ./write_buffer.h ./protoc.h)
 SET(SSL_C ./sssl.c ./write_buffer.c ./lua-sssl.c)
 add_library(sssl SHARED ${SSL_H} ${SSL_C})
+add_dependencies(sssl strawberry)
 set_target_properties(sssl
 	PROPERTIES
 	PREFIX ""
@@ -38,6 +37,8 @@ set_target_properties(sssl
 )
 
 IF(MSVC)
+	target_compile_definitions(sssl PRIVATE LUA_BUILD_AS_DLL)
+	target_compile_definitions(sssl PRIVATE DNOUSE_JEMALLOC HAVE_STRUCT_TIMESPEC USE_PTHREAD_LOCK _CRT_SECURE_NO_WARNINGS)
 	target_link_libraries(sssl ws2_32 ../../../strawberry)
 	target_link_libraries(sssl ../../../3rd/openssl/lib/libcrypto ../../../3rd/openssl/lib/libssl)
 	target_link_libraries(sssl ../../../3rd/pthread-win32/lib/pthread_lib)
@@ -49,7 +50,7 @@ ELSE(MSVC)
     # target_link_libraries(ssock crypto ssl)
 ENDIF()
 
-add_dependencies(sssl strawberry)
+
 
 
 SET(SSSLTEST_H ./stringx.h ./urlparser.h ./sssl_test.h ./sssl.h ./write_buffer.h ./protoc.h)
@@ -67,8 +68,8 @@ set_target_properties(sssltest
 )
 
 IF(MSVC)
+	target_compile_definitions(sssltest PRIVATE _CRT_SECURE_NO_WARNINGS)
 	target_link_libraries(sssltest ../../../3rd/openssl/lib/libcrypto ../../../3rd/openssl/lib/libssl)
-	#target_link_libraries(sssltest ../../../3rd/pthread-win32/bin/x64_MSVC2015.Debug/pthread_dll)
 ELSE(MSVC)
 	find_library(CRYPTO_LIB libcrypto.a ../../3rd/openssl/lib NO_DEFAULT_PATH)
 	find_library(SSL_LIB libssl.a ../../3rd/openssl/lib NO_DEFAULT_PATH)

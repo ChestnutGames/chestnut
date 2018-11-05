@@ -165,6 +165,10 @@ ssock_connect(struct ssock *self, const char *addr, int port) {
 
 int
 ssock_update(struct ssock *self) {
+	int max = 0;
+	for (size_t i = 0; i < 1; i++) {
+
+	}
 	for (size_t i = 0; i < 1; i++) {
 		char buf[4096] = { 0 };
 		int nread = recv(self->fds[i], buf, 4096, 0);
