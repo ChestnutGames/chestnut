@@ -112,7 +112,7 @@ function cls:match(args)
 	local entity = index:get_entity(uid)
 
 	local res = {}
-	-- p匹配
+	-- 匹配
 	if entity.room.matching then
 		res.errorcode = 18
 		return res

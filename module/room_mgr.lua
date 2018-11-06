@@ -19,19 +19,17 @@ local assert = assert
 -- room.users ==> user = { uid, agent }
 
 local NORET = {}
-local ROOM_NAME = 'ballroom/room'
+local ROOM_NAME = skynet.getenv 'room_name'
 local users = {}   -- 玩家信息,玩家创建的房间
 local rooms = {}   -- 私人打牌的
 local num = 0      -- 正在打牌的桌子数
+local mrooms = {}  -- 所有匹配的房间
+local q = queue()  -- 排队的队列
 local pool = {}    -- 闲置的桌子
 local startid = 101010 -- 101010
 local id = startid
 local MAX_ROOM_NUM = 10
 
--- 匹配
-local mmrooms = {}  -- 匹配的房间,按模式分类的
-local mrooms = {}   -- 所有匹配的房间
-local q = queue()   -- 排队的队列
 
 -- @breif 生成自创建房间id，
 -- @return 0,成功, 13 超过最大房间数
@@ -73,29 +71,15 @@ function CMD.start(channel_id)
 	assert(MAX_ROOM_NUM > 1)
 	log.info('MAX_ROOM_NUM ==> %d', MAX_ROOM_NUM)
 
-	-- 初始所有自定义桌子
+	-- 初始所有桌子
+	local roommode = ds.query('roommode')
 	for i=1,MAX_ROOM_NUM do
 		local roomid = startid + i - 1
 		local addr = skynet.newservice(ROOM_NAME, roomid)
 		skynet.call(addr, "lua", "start", channel_id)
-		pool[roomid] = { mode=0, id = roomid, addr = addr, joined=0, users={} }
+		pool[roomid] = { mode=1, id = roomid, addr = addr, joined=0, users={} }
 	end
 
-	-- 初始化所有匹配房间
-	local offsetid = startid + MAX_ROOM_NUM
-	local roommode = ds.query('roommode')
-	for _,v in pairs(roommode) do
-		mmrooms[v.id] = {}
-		for i=1,v.num do
-			offsetid = offsetid + i
-			local roomid = offsetid - 1
-			local addr = skynet.newservice(ROOM_NAME, roomid)
-			skynet.call(addr, "lua", "start", channel_id)
-			local room = { mode=v.id, id=roomid, addr=addr, joined=0, users={} }
-			mmrooms[v.id][roomid] = room
-			mrooms[roomid] = room
-		end
-	end
 	return true
 end
 
@@ -172,7 +156,7 @@ function CMD.sayhi()
 	-- 创建匹配房间
 	-- 匹配类房间在sayhi的时候就必须准备好
 	-- 而创建房间需要房主，所以需要等到create的时候才真的创建
-	for _,v in pairs(mrooms) do
+	for _,v in pairs(pool) do
 		assert(v.addr)
 		skynet.call(v.addr, "lua", "sayhi", 2, v.mode, 0, v.users)
 	end
@@ -250,23 +234,31 @@ function CMD.match(uid, agent, mode)
 	local res = {}
 	res.errorcode = 0
 	local roommode = ds.query('roommode')
-	local xmode = assert(roommode[tostring(mode)])
-	local rooms = assert(mmrooms[mode])
-	for _,room in pairs(rooms) do
-		if room.joined < xmode.join then
-			skynet.retpack(res)
-			local args = { roomid=room.id }
-			skynet.send(agent, 'lua', 'pokermatch', args)
-			return NORET
-		end
-	end
+	local xmode = assert(roommode['1'])
+	
 	local user = {
 		uid = uid,
 		agent = agent,
 		mode = mode
 	}
 	q:enqueue(user)
-	return res
+	-- 标记已经开始匹配了
+	skynet.retpack(res)
+
+	-- 匹配成功
+	if #q >= xmode.join then
+		local res = {}
+		local errorcode, roomid = next_id()
+		if errorcode ~= 0 then
+			-- 没有足够的房间了
+			local args = { errorcode=-1, roomid=roomid }
+			skynet.send(agent, 'lua', 'pokermatch', args)	
+		else
+			local args = { errorcode=0, roomid=roomid }
+			skynet.send(agent, 'lua', 'pokermatch', args)
+		end
+	end
+	return NORET
 end
 
 ------------------------------------------
