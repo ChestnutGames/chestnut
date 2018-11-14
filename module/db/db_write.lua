@@ -22,10 +22,11 @@ function _M:write_room_mgr_rooms(db_rooms)
 	-- body
 	for _,db_room in pairs(db_rooms) do
 		local sql = string_format([==[CALL
-		sp_room_mgr_rooms_insert_or_update(%d, %d, '%s', %d, %d);]==],
-		db_room.id, db_room.host, db_room.users, db_room.ju, db_room.mode)
+		sp_room_mgr_rooms_insert_or_update(%d, %d, '%s', %d, %d, %d);]==],
+		db_room.id, db_room.host, db_room.users, db_room.ju, db_room.mode, db_room.type)
 		local res = self.db:query(sql)
 		if res.errno then
+			log.error(sql)
 			log.error('%s', self.dump(res))
 		end
 	end
@@ -50,11 +51,11 @@ end
 function _M:write_room(db_room)
 	-- body
 	local sql = string_format([==[CALL
-	sp_room_insert_or_update(%d, %d, %d, %d, %d, '%s');]==],
-	db_room.id, db_room.type, db_room.mode, db_room.host, db_room.open, db_room.rule)
-	-- log.info(sql)
+	sp_room_insert_or_update(%d, %d, %d, %d, %d, '%s', %d, %d);]==],
+	db_room.id, db_room.type, db_room.mode, db_room.host, db_room.open, db_room.rule, db_room.create_at, db_room.update_at)
 	local res = self.db:query(sql)
 	if res.errno then
+		log.error(sql)
 		log.error('%s', self.dump(res))
 	end
 	return true
@@ -90,12 +91,12 @@ end
 function _M:write_user_room(db_user_room)
 	-- body
 	local sql = string_format([==[CALL
-	sp_user_room_insert_or_update(%d, %d, %d, %d, %d, %d, %d);]==],
+	sp_user_room_insert_or_update(%d, %d, %d, %d, %d, %d, %d, %d);]==],
 	db_user_room.uid, db_user_room.roomid, db_user_room.created, db_user_room.joined,
-	db_user_room.create_at, db_user_room.update_at, db_user_room.mode)
-	-- log.info(sql)
+	db_user_room.create_at, db_user_room.update_at, db_user_room.mode, db_user_room.type)
 	local res = self.db:query(sql)
 	if res.errno then
+		log.error(sql)
 		log.error('%s', self.dump(res))
 	end
 	return true

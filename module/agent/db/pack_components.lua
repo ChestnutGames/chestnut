@@ -73,9 +73,10 @@ function _M.pack_room_component(component, uid)
 	assert(uid)
 	local db_user_room = {}
 	db_user_room.uid = uid
-	db_user_room.created   = component.isCreated and 1 or 0
 	db_user_room.roomid    = component.id
+	db_user_room.created   = component.isCreated and 1 or 0
 	db_user_room.joined    = component.joined and 1 or 0
+	db_user_room.type      = assert(component.type)
 	db_user_room.mode      = assert(component.mode)
 	db_user_room.create_at = assert(component.createAt)
 	db_user_room.update_at = assert(component.updateAt)

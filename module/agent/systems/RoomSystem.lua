@@ -47,6 +47,7 @@ function cls:on_func_open()
 	entity.room.joined = false
 	entity.room.id = 0
 	entity.room.addr = 0
+	entity.room.type = 0                     -- 这个字段没有用
 	entity.room.mode = 0                     -- 这个字段没有用
 	entity.room.createAt = os.time()
 	entity.room.updateAt = os.time()
@@ -58,9 +59,10 @@ function cls:afk()
 	local uid   = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
-	if entity.room.joined then
+	if entity.room.joined and entity.room.online then
 		local ok = skynet.call(entity.room.addr, "lua", "on_afk", uid)
 		assert(ok)
+		entity.room.online = false
 		entity.room.addr = 0
 	end
 end
@@ -227,7 +229,6 @@ function cls:rejoin()
 	end
 end
 
--- called by room
 -- called by client
 function cls:leave()
 	-- body

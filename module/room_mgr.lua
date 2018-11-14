@@ -77,7 +77,7 @@ function CMD.start(channel_id)
 		local roomid = startid + i - 1
 		local addr = skynet.newservice(ROOM_NAME, roomid)
 		skynet.call(addr, "lua", "start", channel_id)
-		pool[roomid] = { mode=1, id = roomid, addr = addr, joined=0, users={} }
+		pool[roomid] = { type=0, mode=1, id = roomid, addr = addr, joined=0, users={} }
 	end
 
 	return true
@@ -91,26 +91,28 @@ function CMD.init_data()
 		for _,db_user in pairs(pack.db_users) do
 			if db_user.roomid ~= 0 then
 				local user = {}
-				user.uid = assert(db_user.uid)
+				user.uid    = assert(db_user.uid)
 				user.roomid = assert(db_user.roomid)
 				users[tonumber(user.uid)] = user
 			end
 		end
+		-- 初始化rooms
 		for _,db_room in pairs(pack.db_rooms) do
 			if db_room.host ~= 0 then
 				local room = {}
-				room.id = assert(db_room.id)
+				room.id   = assert(db_room.id)
+				room.type = assert(db_room.type)
 				room.mode = assert(db_room.mode)
 				room.host = assert(db_room.host)
-				room.ju = assert(db_room.ju)
+				room.ju   = assert(db_room.ju)
 				room.users = {}
 				local xusers = json.decode(db_room.users)
-				for k,v in pairs(xusers) do
+				for _,v in pairs(xusers) do
 					local user = {}
 					user.uid = assert(v.uid)
 					user.idx = assert(v.idx)
 					user.chip = assert(v.chip)
-					room.users[tonumber(k)] = user
+					room.users[tointeger(v.uid)] = user
 				end
 				rooms[tonumber(room.id)] = room
 			end
@@ -148,8 +150,8 @@ end
 function CMD.sayhi()
 	-- body
 	-- 创建类房间sayhi恢复一些操作
-	for k,v in pairs(rooms) do
-		local ok = skynet.call(v.addr, "lua", "sayhi", 1, v.mode, v.host, assert(v.users))
+	for _,v in pairs(rooms) do
+		local ok = skynet.call(v.addr, "lua", "sayhi", v.type, v.mode, v.host)
 		assert(ok)
 	end
 
@@ -158,7 +160,7 @@ function CMD.sayhi()
 	-- 而创建房间需要房主，所以需要等到create的时候才真的创建
 	for _,v in pairs(pool) do
 		assert(v.addr)
-		skynet.call(v.addr, "lua", "sayhi", 2, v.mode, 0, v.users)
+		skynet.call(v.addr, "lua", "sayhi", v.type, v.mode, v.host, v.users)
 	end
 	return true
 end
@@ -190,7 +192,11 @@ function CMD.save_data()
 		local db_room = {}
 		db_room.id = assert(v.id)
 		db_room.host = assert(v.host)
+		db_room.type = assert(v.type)
 		db_room.mode = assert(v.mode)
+		if v.users == nil then
+			log.error(v.id)
+		end
 		local xusers = {}
 		for k,v in pairs(v.users) do
 			local user = {}
@@ -293,6 +299,8 @@ function CMD.create(uid, agent, args)
 
 			-- room
 			pool[roomid] = nil
+			room.type = 1
+			room.mode = 1
 			room.rule = args
 			room.host = uid
 			room.ju = 0

@@ -58,4 +58,5 @@ skynet.start(function ()
 	if not ok then
 		print(err)
 	end
+	skynet.exit()
 end)

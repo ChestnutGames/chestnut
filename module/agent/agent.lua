@@ -84,6 +84,10 @@ skynet.register_protocol {
 
 skynet.start(function()
 	skynet.dispatch("lua", function(_, _, cmd, ...)
+		if CMD[cmd] == nil then
+			log.error('agent cmd = %s not deffined.', cmd)
+			return
+		end
 		local f = assert(CMD[cmd])
 		local ok, err = xpcall(f, traceback, ctx, ...)
 		if ok then

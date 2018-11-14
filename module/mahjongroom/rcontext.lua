@@ -63,6 +63,8 @@ function cls:ctor()
 	self._host = 0
 	self._type = 0
 	self._mode = 0
+	self.create_at = 0
+	self.update_at = 0
 
 	-- mahjong rule
 	self._local = region.Sichuan
@@ -338,12 +340,17 @@ function cls:init_data()
 	local db_room = pack.db_rooms[1]
 	local open = db_room.open
 	if not open then
-		return
+		return true
+	end
+	if db_room.type ~= 1 then
+		return true
 	end
 	self._type = db_room.type
 	self._mode = db_room.mode
 	self._host = db_room.host
 	self._open = db_room.open
+	self.create_at = assert(db_room.create_at)
+	self.update_at = assert(db_room.update_at)
 	local rule = json.decode(db_room.rule)
 	self._local = rule['local']
 	self._overtype = rule.overtype
@@ -357,7 +364,7 @@ function cls:init_data()
 	self._tiandihu = rule.tiandihu
 	self._maxju = rule.maxju
 
-	-- 初始房间玩家数据
+	-- 初始加入此房间玩家数据
 	local db_users = pack.db_users
 	for _,db_user in pairs(db_users) do
 		local player = self._players[db_user.idx]
@@ -374,20 +381,16 @@ end
 function cls:sayhi(type, mode, host, users)
 	-- body
 	assert(type)
-	if self._type == 1 then
-		-- 自建房间
+	if self._open and self._type == 1 then
 		assert(self._type == type)
 		assert(self._mode == mode)
 		assert(self._host == host)
-		if self._host ~= 0 then
-			-- 此房间并没有解散，初始数据
-			skynet.call('.CHATD', 'lua', 'room_create', self._id, skynet.self())
-			-- skynet.call('.CHATD', 'lua', 'room_init_users', self._id, v.users)
-		end
-	elseif self._type == 2 then
-		-- 匹配房间
-		skynet.call('.CHATD', 'lua', 'room_create', self._id, skynet.self())
+	else
+		self._type = type
+		self._mode = mode
+		self._host = host	
 	end
+	skynet.call('.CHATD', 'lua', 'room_create', self._id, skynet.self())
 	return true
 end
 
@@ -401,11 +404,17 @@ function cls:save_data()
 	if self._type == 1 then
 		-- 存储房间数据
 		local db_room = {}
-		db_room.id = assert(self._id)
+		db_room.id   = assert(self._id)
 		db_room.type = self._type
 		db_room.mode = self._mode
 		db_room.host = assert(self._host)
 		db_room.open = assert(self._open) and 1 or 0
+		if not self.create_at then
+			db_room.create_at = os.time()
+		else
+			db_room.create_at = assert(self.create_at)
+		end
+		db_room.update_at = os.time()
 		local rule = {}
 		rule['local'] = self._local
 		rule.overtype = self._overtype
@@ -430,36 +439,37 @@ function cls:save_data()
 				db_user.idx = assert(v._idx)
 				db_user.chip = assert(v._chip)
 				db_user.state = assert(v._state)
-				db_user.last_state   = assert(v._laststate)
-				db_user.que          = assert(v._que)
-				db_user.takecardsidx = assert(v._takecardsidx)
-				db_user.takecardscnt = assert(v._takecardscnt)
-				db_user.takecardslen = assert(v._takecardslen)
-				db_user.takecards = {}
-				for pos,card in pairs(v._takecards) do
-					db_user.takecards[string.format("%d", pos)] = card:get_value()
-				end
-				db_user.cards = {}
-				for pos,card in pairs(v._cards) do
-					db_user.cards[string.format("%d", pos)] = card:get_value()
-				end
-				db_user.leadcards = {}
-				for pos,card in pairs(v._leadcards) do
-					db_user.leadcards[string.format("%d", pos)] = card:get_value()
-				end
-				db_user.putcards = {}
-				for pos,card in pairs(v._putcards) do
-					db_user.putcards[string.format("%d", pos)] = card:get_value()
-				end
-				db_user.putidx = assert(v._putidx)
-				if v._holdcard then
-					db_user.holdcard = assert(v._holdcard:get_value())
-				end
-				db_user.hucards = {}
-				for pos,card in pairs(v._hucards) do
-					db_user.hucards[string.format("%d", pos)] = card:get_value()
-				end
-				db_users[string.format("%d", k)] = db_user
+				-- 下面数据暂时不用
+				-- db_user.last_state   = assert(v._laststate)
+				-- db_user.que          = assert(v._que)
+				-- db_user.takecardsidx = assert(v._takecardsidx)
+				-- db_user.takecardscnt = assert(v._takecardscnt)
+				-- db_user.takecardslen = assert(v._takecardslen)
+				-- db_user.takecards = {}
+				-- for pos,card in pairs(v._takecards) do
+				-- 	db_user.takecards[string.format("%d", pos)] = card:get_value()
+				-- end
+				-- db_user.cards = {}
+				-- for pos,card in pairs(v._cards) do
+				-- 	db_user.cards[string.format("%d", pos)] = card:get_value()
+				-- end
+				-- db_user.leadcards = {}
+				-- for pos,card in pairs(v._leadcards) do
+				-- 	db_user.leadcards[string.format("%d", pos)] = card:get_value()
+				-- end
+				-- db_user.putcards = {}
+				-- for pos,card in pairs(v._putcards) do
+				-- 	db_user.putcards[string.format("%d", pos)] = card:get_value()
+				-- end
+				-- db_user.putidx = assert(v._putidx)
+				-- if v._holdcard then
+				-- 	db_user.holdcard = assert(v._holdcard:get_value())
+				-- end
+				-- db_user.hucards = {}
+				-- for pos,card in pairs(v._hucards) do
+				-- 	db_user.hucards[string.format("%d", pos)] = card:get_value()
+				-- end
+				-- db_users[string.format("%d", k)] = db_user
 			end
 		end
 

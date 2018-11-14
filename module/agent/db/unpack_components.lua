@@ -67,9 +67,10 @@ function _M.unpack_room_component(component, seg)
 	-- body
 	assert(component)
 	assert(seg)
+	component.id        = assert(seg.roomid)
 	component.isCreated = (assert(seg.created) == 1) and true or false
 	component.joined    = (assert(seg.joined) == 1) and true or false
-	component.id        = assert(seg.roomid)
+	component.type      = assert(seg.type)
 	component.mode      = assert(seg.mode)
 	component.createAt  = assert(seg.create_at)
 	component.updateAt  = assert(seg.update_at)

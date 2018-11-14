@@ -1,9 +1,31 @@
+/**************************************
+ * 当我们在设计线性数据结构的时候，还是要按照lua的设计来
+ *
+ **************************************/
+
 #define LUA_LIB
 
 #include <lua.h>
 #include <lauxlib.h>
 #include <stdio.h>
 #include <math.h>
+
+// 此方法现在不支持加入
+static int
+lindex(lua_State *L) {
+	luaL_checktype(L, 1, LUA_TTABLE);
+	lua_Integer idx = luaL_checkinteger(L, 2);
+	if (idx <= 0) {
+		return luaL_error(L, "The index should be positive (%d)", (int)idx);
+	}
+	lua_rawgeti(L, 1, 0);
+	lua_Integer sparselen = luaL_checkinteger(L, -1);
+	if (idx > sparselen) {
+		return luaL_error(L, "The index should be less then (%d)", (int)sparselen);
+	}
+	lua_rawgeti(L, 1, idx);
+	return 1;
+}
 
 static int
 lnewindex(lua_State *L) {
