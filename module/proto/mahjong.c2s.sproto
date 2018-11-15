@@ -128,6 +128,7 @@ join 512 {
         me        3 : player
         rule      4 : rule
         ps        5 : *player
+        state     6 : integer
     }
 }
 
@@ -139,6 +140,7 @@ rejoin 513 {
         me        3 : player
         rule      4 : rule
         ps        5 : *player
+        state     6 : integer
     }
 }
 

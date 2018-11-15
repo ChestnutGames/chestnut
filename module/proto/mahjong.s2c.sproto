@@ -267,5 +267,14 @@ leave 524 {
     }
 }
 
+offline 525 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
 # 麻将模块结束
 ####################################### 

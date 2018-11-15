@@ -15,23 +15,23 @@ logout 2 {
     }
 }
 
-online 3 {
-    request {
-        idx 0 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+#online 3 {
+#    request {
+#        idx 0 : integer
+#    }
+#    response {
+#        errorcode 0 : integer
+#    }
+#}
 
-offline 4 {
-    request {
-        idx 0 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+#offline 4 {
+#    request {
+#        idx 0 : integer
+#    }
+#    response {
+#        errorcode 0 : integer
+#    }
+#}
 
 match 5 {
     request {

@@ -18,6 +18,7 @@
     putidx       15 : integer  # 无用
     hold_card    16 : card
     hucards      17 : *card
+    online       18 : boolean
 }
 
 .huinfo {

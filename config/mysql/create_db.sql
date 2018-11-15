@@ -99,7 +99,7 @@ CREATE TABLE `tb_room_mgr_rooms` (
 DROP TABLE IF EXISTS `tb_room_mgr_users`;
 CREATE TABLE `tb_room_mgr_users` (
   `uid` bigint(18) NOT NULL,
-  `roomid` int(11) DEFAULT NULL,
+  `roomid` int(11) NOT NULL,
   PRIMARY KEY (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -113,7 +113,7 @@ CREATE TABLE `tb_room_users` (
   `state` varchar(255) NOT NULL,
   `idx` int(11) NOT NULL,
   `chip` int(11) NOT NULL,
-  PRIMARY KEY (`uid`)
+  PRIMARY KEY (`uid`, `roomid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -121,15 +121,15 @@ CREATE TABLE `tb_room_users` (
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_sysmail`;
 CREATE TABLE `tb_sysmail` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `to` bigint(20) DEFAULT NULL,
-  `from` bigint(20) DEFAULT NULL,
-  `title` varchar(255) DEFAULT NULL,
-  `content` text,
-  `datetime` int(11) DEFAULT NULL,
-  `addon` varchar(255) DEFAULT NULL,
-  `create_at` int(11) DEFAULT NULL,
-  `update_at` int(11) DEFAULT NULL,
+  `id` bigint(20) NOT NULL,
+  `to` bigint(20) NOT NULL,
+  `from` bigint(20) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `datetime` int(11) NOT NULL,
+  `addon` varchar(255) NOT NULL,
+  `create_at` int(11) NOT NULL,
+  `update_at` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -145,13 +145,13 @@ CREATE TABLE `tb_user` (
   `city` varchar(255) NOT NULL,
   `country` varchar(255) NOT NULL,
   `headimg` longtext NOT NULL,
-  `openid` varchar(255) DEFAULT NULL,
-  `nameid` varchar(255) DEFAULT NULL,
-  `create_at` int(11) DEFAULT NULL,
-  `update_at` int(11) DEFAULT NULL,
-  `login_at` int(11) DEFAULT NULL,
-  `new_user` int(11) DEFAULT NULL,
-  `level` int(11) DEFAULT NULL,
+  `openid` varchar(255) NOT NULL,
+  `nameid` varchar(255) NOT NULL,
+  `create_at` int(11) NOT NULL,
+  `update_at` int(11) NOT NULL,
+  `login_at` int(11) NOT NULL,
+  `new_user` int(11) NOT NULL,
+  `level` int(11) NOT NULL,
   PRIMARY KEY (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -164,8 +164,8 @@ CREATE TABLE `tb_user_achievement` (
   `id` int(10) NOT NULL,
   `reach` int(10) NOT NULL,
   `recv` int(10) NOT NULL,
-  `create_at` int(11) DEFAULT NULL,
-  `update_at` int(11) DEFAULT NULL,
+  `create_at` int(11) NOT NULL,
+  `update_at` int(11) NOT NULL,
   PRIMARY KEY (`id`,`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -174,11 +174,11 @@ CREATE TABLE `tb_user_achievement` (
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_user_checkindaily`;
 CREATE TABLE `tb_user_checkindaily` (
-  `uid` bigint(20) NOT NULL,
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` bigint(20) NOT NULL,
   `month` int(11) NOT NULL,
   `count` int(11) NOT NULL,
-  `day` int(11) DEFAULT NULL,
+  `day` int(11) NOT NULL,
   `create_at` int(11) DEFAULT NULL,
   `update_at` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`,`uid`)
@@ -297,6 +297,16 @@ CREATE TABLE `tb_database_version` (
   `update_date` datetime NOT NULL,
   `last_sql` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Table structure for tb_user_room_mahjong
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_user_room_mahjong`;
+CREATE TABLE `tb_user_room_mahjong` (
+  `uid` bigint(20) NOT NULL,
+  `roomid` int(11) NOT NULL,
+  PRIMARY KEY (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -606,6 +616,34 @@ CREATE PROCEDURE `sp_user_select`(IN `in_uid` bigint)
 BEGIN
 	-- Routine body goes here...
 	SELECT * FROM tb_user WHERE uid=in_uid;
+END
+;;
+DELIMITER ;
+
+-- ----------------------------
+-- Procedure structure for sp_user_room_mahjong_select
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_user_room_mahjong_select`;
+DELIMITER ;;
+CREATE PROCEDURE `sp_user_room_mahjong_select`(IN `in_uid` bigint)
+BEGIN
+	-- Routine body goes here...
+	SELECT * FROM tb_user_room_mahjong WHERE uid=in_uid;
+END
+;;
+DELIMITER ;
+
+-- ----------------------------
+-- Procedure structure for sp_user_room_mahjong_insert_or_update
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_user_room_mahjong_insert_or_update`;
+DELIMITER ;;
+CREATE PROCEDURE `sp_user_room_mahjong_insert_or_update`(IN `in_uid` bigint,IN `in_roomid` int)
+BEGIN
+	# Routine body goes here...
+	INSERT INTO tb_user_room_mahjong(uid, roomid)
+	VALUES (in_uid, in_roomid)
+	ON DUPLICATE KEY UPDATE uid=in_uid, roomid=in_roomid;
 END
 ;;
 DELIMITER ;

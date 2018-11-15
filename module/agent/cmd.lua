@@ -5,6 +5,8 @@ local debug = debug
 
 local CMD = {}
 
+------------------------------------------
+-- 服务协议
 function CMD:start(channel_id, ... )
 	-- body
 	return self:start(channel_id, ... )
@@ -22,11 +24,12 @@ end
 
 function CMD:kill()
 	-- body
-	assert(self)
+	assert(false)
 	skynet.exit()
 	return servicecode.NORET
 end
 
+------------------------------------------
 -- called by gated
 function CMD:login(gate, uid, subid, secret)
 	-- body
@@ -109,23 +112,24 @@ end
 
 ------------------------------------------
 -- 协议代理
--- 下面全是协议代理
--- 一般系统代理
-function CMD:online(args)
+
+------------------------------------------
+-- 麻将协议代理
+function CMD:join(args, ... )
 	-- body
-	self:send_request("online", args)
+	self:send_request("join", args)
+	return servicecode.NORET
+end
+
+function CMD:rejoin(args)
+	-- body
+	self:send_request("rejoin", args)
 	return servicecode.NORET
 end
 
 function CMD:offline(args)
 	-- body
 	self:send_request("offline", args)
-	return servicecode.NORET
-end
-
-function CMD:join(args, ... )
-	-- body
-	self:send_request("join", args)
 	return servicecode.NORET
 end
 
@@ -147,8 +151,6 @@ function CMD:deal(args, ... )
 	return servicecode.NORET
 end
 
-------------------------------------------
--- 麻将协议代理
 function CMD:take_turn(args)
 	-- body
 	self:send_request("take_turn", args)

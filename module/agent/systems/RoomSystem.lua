@@ -104,6 +104,8 @@ function cls:room_info()
 	res.isCreated = entity.room.isCreated
 	res.joined    = entity.room.joined
 	res.roomid    = entity.room.id
+	res.type      = entity.room.type
+	res.mode      = entity.room.mode
 	return res
 end
 
@@ -190,6 +192,7 @@ function cls:join(args)
 			entity.room.joined = true
 			entity.room.online = true
 			entity.room.mode = assert(response.mode)
+			entity.room.type = assert(response.type)
 		else
 			log.info('join room FAIL.')
 		end

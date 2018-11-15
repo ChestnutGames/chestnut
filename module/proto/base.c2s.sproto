@@ -110,6 +110,8 @@ room_info 114 {
         isCreated 1 : boolean
         joined    2 : boolean
         roomid    3 : integer
+        type      4 : integer    # 此房间的类型
+        mode      5 : integer    # 此房间的模式
     }
 }
 

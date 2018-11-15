@@ -469,7 +469,7 @@ function cls:save_data()
 				-- for pos,card in pairs(v._hucards) do
 				-- 	db_user.hucards[string.format("%d", pos)] = card:get_value()
 				-- end
-				-- db_users[string.format("%d", k)] = db_user
+				db_users[string.format("%d", k)] = db_user
 			end
 		end
 
@@ -589,13 +589,16 @@ function cls:join(uid, agent, name, sex)
 		putcards     = me:pack_putcards(),
 		putidx       = me._putidx,
 		hold_card    = me:pack_holdcard(),
-		hucards      = me:pack_hucards()
+		hucards      = me:pack_hucards(),
+		online       = me._online
 	}
 
 	res.errorcode = 0
 	res.roomid = self._id
 	res.room_max = self._max
 	res.mode = self._mode
+	res.type = self._type
+	res.state = self._state
 	res.me = p
 	res.ps = {}
 	for _,v in ipairs(self._players) do
@@ -617,7 +620,8 @@ function cls:join(uid, agent, name, sex)
 				putcards     = v:pack_putcards(),
 				putidx       = v._putidx,
 				hold_card    = v:pack_holdcard(),
-				hucards      = v:pack_hucards()
+				hucards      = v:pack_hucards(),
+				online       = v._online
 			}
 			table.insert(res.ps, p)
 		end
@@ -663,12 +667,14 @@ function cls:rejoin(uid, agent)
 		putcards     = me:pack_putcards(),
 		putidx       = me._putidx,
 		hold_card    = me:pack_holdcard(),
-		hucards      = me:pack_hucards()
+		hucards      = me:pack_hucards(),
+		online       = me._online
 	}
 
 	res.errorcode = 0
 	res.roomid = self._id
 	res.room_max = self._max
+	res.state = self._state
 	res.me = p
 	res.ps = {}
 	for _,v in ipairs(self._players) do
@@ -690,7 +696,8 @@ function cls:rejoin(uid, agent)
 				putcards     = v:pack_putcards(),
 				putidx       = v._putidx,
 				hold_card    = v:pack_holdcard(),
-				hucards      = v:pack_hucards()
+				hucards      = v:pack_hucards(),
+				online       = v._online
 			}
 			table.insert(res.ps, p)
 		end

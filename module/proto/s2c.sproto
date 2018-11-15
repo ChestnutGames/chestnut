@@ -93,6 +93,7 @@
     putidx       15 : integer  # 无用
     hold_card    16 : card
     hucards      17 : *card
+    online       18 : boolean
 }
 
 .huinfo {
@@ -172,23 +173,23 @@ logout 2 {
     }
 }
 
-online 3 {
-    request {
-        idx 0 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+#online 3 {
+#    request {
+#        idx 0 : integer
+#    }
+#    response {
+#        errorcode 0 : integer
+#    }
+#}
 
-offline 4 {
-    request {
-        idx 0 : integer
-    }
-    response {
-        errorcode 0 : integer
-    }
-}
+#offline 4 {
+#    request {
+#        idx 0 : integer
+#    }
+#    response {
+#        errorcode 0 : integer
+#    }
+#}
 
 match 5 {
     request {
@@ -703,6 +704,15 @@ join 523 {
 }
 
 leave 524 {
+    request {
+        idx       0 : integer
+    }
+    response {
+        errorcode 0 : integer
+    }
+}
+
+offline 525 {
     request {
         idx       0 : integer
     }
