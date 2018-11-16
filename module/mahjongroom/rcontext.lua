@@ -27,13 +27,13 @@ state.SHUFFLE    = 5
 state.DICE       = 6
 state.DEAL       = 7
 state.XUANPAO    = 8
-state.TAKE_XUANQUE = 9
+-- state.TAKE_XUANQUE = 9  -- 此状态应该没有用
 state.XUANQUE    = 10
 state.TAKECARD   = 11
 state.TURN       = 12      -- 一定是出牌，但是不一定会拿牌
 state.LEAD       = 13
 
-state.MCALL      = 14     -- 一定会自己拿牌
+state.MCALL      = 14      -- 一定会自己拿牌
 state.OCALL      = 15
 state.PENG       = 16
 state.GANG       = 17
@@ -374,6 +374,11 @@ function cls:init_data()
 		player._state = db_user.state
 		player._laststate = db_user.last_state
 		player._que = db_user.que
+		self._joined = self._joined + 1
+	end
+	assert(self._online == 0)
+	if self._joined >= self._max then
+		self._state = state.JOIN
 	end
 	return true
 end
@@ -631,6 +636,11 @@ function cls:join(uid, agent, name, sex)
 	local args = {}
 	args.p = p
 	self:push_client_except_idx(me:get_idx(), "join", args)
+
+	-- 推动准备
+	if self._online >= self._max then
+		self:take_ready()
+	end
 	return servicecode.NORET
 end
 
@@ -707,6 +717,12 @@ function cls:rejoin(uid, agent)
 	local args = {}
 	args.p = p
 	self:push_client_except_idx(me:get_idx(), "rejoin", args)
+
+	if self._state == state.JOIN then
+		if self._online >= self._max then
+			self:take_ready()
+		end
+	end
 	return servicecode.NORET
 end
 
@@ -883,7 +899,7 @@ function cls:ready(idx, ... )
 		end
 		self:take_shuffle()
 	end
-	res.errorcode = errorcode.SUCCESS
+	res.errorcode = 0
 	res.idx = idx
 	return res
 end
@@ -1613,104 +1629,126 @@ end
 
 ------------------------------------------
 -- turn state
+function cls:take_ready()
+	if self._state == state.JOIN then
+		self._laststate = self._state
+		self._state = state.READY	
+		self:clear_state(player.state.WAIT_READY)
+		self:push_client("take_ready", {})
+	end
+end
+
 function cls:take_shuffle( ... )
 	-- body
-	self._state = state.SHUFFLE
-	self:clear_state(player.state.WAIT_SHUFFLE)
+	if self._state == state.READY then
+		self._state = state.SHUFFLE
+		self:clear_state(player.state.WAIT_SHUFFLE)
 
-	self._ju = self._ju + 1
-	if self._ju == 1 then
-		-- send agent 
-		local p = self:get_player_by_uid(self._host)
-		local addr = p:get_agent()
-		local ok = skynet.call(addr, "lua", "alter_rcard", -1)
-		assert(ok)
-	end
-
-	self._stime = skynet.now()
-	self._record = {}
-	-- record 
-	local args = {}
-	for i=1,self._max do
-		local p = {}
-		p.idx = self._players[i]:get_idx()
-		p.uid = self._players[i]:get_uid()
-		table.insert(args, p)
-	end
-	self:record("players", args)
-
-	if self._ju == 1 then
-		self._firstidx = self:get_player_by_uid(self._host):get_idx()
-	else
-		self._firstidx = self._lastfirsthu
-	end
-	self._curidx = self._firstidx
-
-	for i=1,self._cardssz do
-		self._cards[i]:clear()
-	end
-
-	assert(#self._cards == 108)
-	for i=107,1,-1 do
-		local swp = math.floor(math.random(1, 1000)) % 108 + 1
-		while swp == i do
-			swp = math.floor(math.random(1, 1000)) % 108 + 1
+		self._ju = self._ju + 1
+		if self._ju == 1 then
+			-- send agent 
+			local p = self:get_player_by_uid(self._host)
+			local addr = p:get_agent()
+			local ok = skynet.call(addr, "lua", "alter_rcard", -1)
+			assert(ok)
 		end
-		local tmp = assert(self._cards[i])
-		self._cards[i] = assert(self._cards[swp], swp)
-		self._cards[swp] = tmp
-	end
-	assert(#self._cards == 108)
 
-	local p1 = {}
-	for i=1,28 do
-		local card = assert(self._cards[i])
-		self._players[1]._takecards[i] = card
-		table.insert(p1, card:get_value())
-	end
-	self._players[1]._takecardsidx = 1
-	self._players[1]._takecardslen = 28
-	self._players[1]._takecardscnt = 28
-	assert(#p1 == 28)
-	local p2 = {}
-	for i=1,28 do
-		local card = assert(self._cards[28 + i])
-		self._players[2]._takecards[i] = card
-		table.insert(p2, card:get_value())
-	end
-	self._players[2]._takecardsidx = 1
-	self._players[2]._takecardslen = 28
-	self._players[2]._takecardscnt = 28
-	assert(#p2 == 28)
-	local p3 = {}
-	for i=1,26 do
-		local card = assert(self._cards[28*2 + i])
-		self._players[3]._takecards[i] = card
-		table.insert(p3, card:get_value())
-	end
-	self._players[3]._takecardsidx = 1
-	self._players[3]._takecardslen = 26
-	self._players[3]._takecardscnt = 26
-	assert(#p3 == 26)
-	local p4 = {}
-	for i=1,26 do
-		local card = assert(self._cards[28*2 + 26 + i])
-		self._players[4]._takecards[i] = card
-		table.insert(p4, card:get_value())
-	end
-	self._players[4]._takecardsidx = 1
-	self._players[4]._takecardslen = 26
-	self._players[4]._takecardscnt = 26
-	assert(#p4 == 26)
-	local args = {}
-	args.p1 = p1
-	args.p2 = p2
-	args.p3 = p3
-	args.p4 = p4
-	args.first = self._firstidx
+		self._stime = skynet.now()
+		self._record = {}
+		-- record 
+		local args = {}
+		for i=1,self._max do
+			local p = {}
+			p.idx = self._players[i]:get_idx()
+			p.uid = self._players[i]:get_uid()
+			table.insert(args, p)
+		end
+		self:record("players", args)
 
-	self:record("shuffle", args)
-	self:push_client("shuffle", args)
+		if self._ju == 1 then
+			self._firstidx = self:get_player_by_uid(self._host):get_idx()
+		else
+			self._firstidx = self._lastfirsthu
+		end
+		self._curidx = self._firstidx
+
+		for i=1,self._cardssz do
+			self._cards[i]:clear()
+		end
+
+		assert(#self._cards == 108)
+		for i=107,1,-1 do
+			local swp = math.floor(math.random(1, 1000)) % 108 + 1
+			while swp == i do
+				swp = math.floor(math.random(1, 1000)) % 108 + 1
+			end
+			local tmp = assert(self._cards[i])
+			self._cards[i] = assert(self._cards[swp], swp)
+			self._cards[swp] = tmp
+		end
+		assert(#self._cards == 108)
+
+		local p1 = {}
+		for i=1,28 do
+			local card = assert(self._cards[i])
+			self._players[1]._takecards[i] = card
+			table.insert(p1, card:get_value())
+		end
+		self._players[1]._takecardsidx = 1
+		self._players[1]._takecardslen = 28
+		self._players[1]._takecardscnt = 28
+		assert(#p1 == 28)
+		local p2 = {}
+		for i=1,28 do
+			local card = assert(self._cards[28 + i])
+			self._players[2]._takecards[i] = card
+			table.insert(p2, card:get_value())
+		end
+		self._players[2]._takecardsidx = 1
+		self._players[2]._takecardslen = 28
+		self._players[2]._takecardscnt = 28
+		assert(#p2 == 28)
+		local p3 = {}
+		for i=1,26 do
+			local card = assert(self._cards[28*2 + i])
+			self._players[3]._takecards[i] = card
+			table.insert(p3, card:get_value())
+		end
+		self._players[3]._takecardsidx = 1
+		self._players[3]._takecardslen = 26
+		self._players[3]._takecardscnt = 26
+		assert(#p3 == 26)
+		local p4 = {}
+		for i=1,26 do
+			local card = assert(self._cards[28*2 + 26 + i])
+			self._players[4]._takecards[i] = card
+			table.insert(p4, card:get_value())
+		end
+		self._players[4]._takecardsidx = 1
+		self._players[4]._takecardslen = 26
+		self._players[4]._takecardscnt = 26
+		assert(#p4 == 26)
+		local args = {}
+		args.p1 = p1
+		args.p2 = p2
+		args.p3 = p3
+		args.p4 = p4
+		args.first = self._firstidx
+
+		self:record("shuffle", args)
+		self:push_client("shuffle", args)
+	else
+		log.error('take shuffele state is wrong.')
+	end
+end
+
+-- 选咆阶段在此阶段没有设计
+function cls:take_xuanpao( ... )
+	-- body
+	self._state = state.XUANPAO
+	self:clear_state(player.state.XUANPAO)
+	self:record("take_xuanpao")
+	self:push_client("take_xuanpao")
 end
 
 function cls:take_dice( ... )
@@ -1795,14 +1833,6 @@ function cls:take_deal( ... )
 	self:push_client("deal", args)
 end
 
-function cls:take_xuanpao( ... )
-	-- body
-	self._state = state.XUANPAO
-	self:clear_state(player.state.XUANPAO)
-	self:record("take_xuanpao")
-	self:push_client("take_xuanpao")
-end
-
 function cls:take_xuanque( ... )
 	-- body
 	self._state = state.TAKE_XUANQUE
@@ -1820,6 +1850,7 @@ function cls:take_xuanque( ... )
 	self:push_client("take_xuanque", args)
 end
 
+-- 只是拿牌
 function cls:take_takecard( ... )
 	-- body
 	self._laststate = self._state
@@ -1837,7 +1868,8 @@ function cls:take_takecard( ... )
 	end
 end
 
--- 当前用户需要出牌，可能摸了一个牌，也可能是其他               
+-- 当前用户需要出牌，可能摸了一个牌，也可能是其他
+-- 出牌，可能是拿牌，碰，杠
 function cls:take_turn( ... )
 	-- body
 	self._laststate = self._state

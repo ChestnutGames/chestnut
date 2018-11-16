@@ -721,5 +721,11 @@ offline 525 {
     }
 }
 
+take_ready 526 {
+    response {
+        errorcode 0 : integer
+    }
+}
+
 # 麻将模块结束
 ####################################### 

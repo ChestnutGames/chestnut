@@ -15,6 +15,12 @@ function RESPONSE:join(args)
 	skynet.send(room, "lua", "join", args)
 end
 
+function RESPONSE:rejoin(args)
+end
+
+function RESPONSE:offline(args)
+end
+
 function RESPONSE:leave(args, ... )
 	-- body
 	assert(self)
@@ -22,6 +28,9 @@ end
 
 ------------------------------------------
 -- 麻将响应模块
+function RESPONSE:take_ready(args)
+end
+
 function RESPONSE:take_turn(args)
 	-- body
 	self.systems.room:forward_room_rsp("take_turn", args)
@@ -81,7 +90,6 @@ function RESPONSE:lead(args, ... )
 	M:forward_room_rsp("lead", args, ...)
 end
 
-
 function RESPONSE:over(args, ... )
 	-- body
 	local M = self.modules['room']
@@ -133,7 +141,6 @@ end
 
 ------------------------------------------
 -- 大佬2响应模块
-
 function RESPONSE:big2take_turn(args)
 	-- body
 	self.systems.room:forward_room_rsp("take_turn", args)

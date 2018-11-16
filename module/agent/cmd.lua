@@ -88,8 +88,11 @@ end
 
 function CMD:alter_rcard(args)
 	-- body
-	local M = self.modules['user']
-	return M:alter_rcard(args)
+	if self.systems.package:consume(4, 1) then
+		return true
+	else
+		return false
+	end
 end
 
 function CMD:roomover()
@@ -114,7 +117,7 @@ end
 -- 协议代理
 
 ------------------------------------------
--- 麻将协议代理
+-- 麻将协议代理,广播消息
 function CMD:join(args, ... )
 	-- body
 	self:send_request("join", args)
@@ -136,6 +139,11 @@ end
 function CMD:leave(args, ... )
 	-- body
 	self:send_request("leave", args)
+	return servicecode.NORET
+end
+
+function CMD:take_ready(args)
+	self:send_request("take_ready", args)
 	return servicecode.NORET
 end
 

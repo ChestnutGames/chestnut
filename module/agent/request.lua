@@ -38,23 +38,7 @@ end
 
 ------------------------------------------
 -- 系统模块
-function REQUEST:create(args)
-	-- body
-	local M = self.systems.room
-	return M:create(args)
-end
 
-function REQUEST:join(args)
-	-- body
-	local M = self.systems.room
-	return M:join(args)
-end
-
-function REQUEST:leave(args)
-	-- body
-	local M = self.systems.room
-	return M:leave(args)
-end
 
 function REQUEST:first(args)
 	-- body
@@ -153,17 +137,33 @@ end
 
 ------------------------------------------
 -- 麻将协议
+function REQUEST:match(args)
+	-- body
+	return self.systems.room:match(args)
+end
+
+function REQUEST:create(args)
+	-- body
+	local M = self.systems.room
+	return M:create(args)
+end
+
+function REQUEST:join(args)
+	-- body
+	local M = self.systems.room
+	return M:join(args)
+end
 
 function REQUEST:rejoin()
 	-- body
 	return self.systems.room:rejoin()
 end
 
-function REQUEST:match(args)
+function REQUEST:leave(args)
 	-- body
-	return self.systems.room:match(args)
+	local M = self.systems.room
+	return M:leave(args)
 end
-
 
 function REQUEST:ready(args, ... )
 	-- body
@@ -219,11 +219,6 @@ function REQUEST:xuanque(args, ... )
 	-- body
 	local M = self.systems.room
 	return M:forward_room("xuanque", args, ...)
-end
-
-function REQUEST:ready(args)
-	-- body
-	assert(self)
 end
 
 ------------------------------------------

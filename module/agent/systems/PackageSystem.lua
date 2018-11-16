@@ -1,6 +1,7 @@
--- local log = require "chestnut.skynet.log"
+local log = require "chestnut.skynet.log"
 local UserComponent = require "components.UserComponent"
 local PackageType = require "def.PackageType"
+local ds = require "skynet.datasheet"
 
 local CLS_NAME = "package"
 
@@ -28,11 +29,12 @@ function cls:_increase(pt, id, num)
 	local entity = index:get_entity(uid)
 	local package = assert(entity.package.packages[pt])
 	if not package[id] then
-		package[id] = { id = id, num = 0 }
+		package[id] = { id = id, num = 0, createAt=os.time(), updateAt=os.time() }
 	end
 	package[id].num = package[id].num + num
+	-- 增加道具
 	local item = { id=id, num=num }
-	self:send_request("add_item", { i = item })
+	self.agentContext:send_request("add_item", { i = item })
 	return true
 end
 
@@ -43,13 +45,17 @@ function cls:_decrease(pt, id, num)
 	local entity = index:get_entity(uid)
 	local package = assert(entity.package.packages[pt])
 	if not package[id] then
-		package[id] = { id = id, num = 0 }
+		package[id] = { id = id, num = 0, createAt=os.time(), updateAt=os.time() }
 	end
-	package[id].num = package[id].num - num
-	assert(package[id] >= 0)
-
-	local item = { id=id, num=num }
-	self:send_request("sub_item", { i = item })
+	local item = package[id]
+	if item.num >= num then
+		item.num = item.num - num
+		local item = { id=id, num=num }
+		self.agentContext:send_request("sub_item", { i = item })
+	else
+		log.error('not enought item, num is %d, need %d', item.num, num)
+		return false
+	end
 	return true
 end
 
@@ -75,8 +81,10 @@ function cls:on_func_open()
 	local entity = index:get_entity(uid)
 	entity.package.packages = {}
 	entity.package.packages[PackageType.COMMON] = {}
-	entity.package.packages[PackageType.COMMON][2] = { id=2, num=113, createAt=os.time(), updateAt=os.time() }   -- 筹码
+	entity.package.packages[PackageType.COMMON][1] = { id=1, num=113, createAt=os.time(), updateAt=os.time() }   -- 砖石
+	entity.package.packages[PackageType.COMMON][2] = { id=2, num=113, createAt=os.time(), updateAt=os.time() }   -- 金币
 	entity.package.packages[PackageType.COMMON][3] = { id=3, num=1, createAt=os.time(), updateAt=os.time() }     -- 经验
+	entity.package.packages[PackageType.COMMON][4] = { id=4, num=100, createAt=os.time(), updateAt=os.time() }   -- 门票
 end
 
 function cls:check_consume(id, value)
@@ -84,7 +92,8 @@ function cls:check_consume(id, value)
 	local uid = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
-	local package = entity.package.packages[PackageType.COMMON]
+	local itemConfig = ds.query('item')[string.format("%d", id)]
+	local package = entity.package.packages[itemConfig.type]
 	assert(package)
 	local item = package[id]
 	if item.num < value then
@@ -98,7 +107,8 @@ function cls:consume(id, value)
 	if not self:check_consume(id, value) then
 		return false
 	end
-	return self:_decrease(PackageType.COMMON, id, value)
+	local itemConfig = ds.query('item')[string.format("%d", id)]
+	return self:_decrease(itemConfig.type, id, value)
 end
 
 function cls:rcard_num()
