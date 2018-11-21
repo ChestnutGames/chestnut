@@ -1,0 +1,10 @@
+####################################### 
+# 一般模块 [800, 900)
+opcode 800 {
+    request {
+        opcode 0 : op
+    }
+    response {
+    	errorcode 0 : integer
+    }
+}

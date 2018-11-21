@@ -1,4 +1,4 @@
-project(chestnut)
+﻿project(chestnut)
 
 # include
 include_directories(../../foundation)
@@ -27,7 +27,7 @@ ENDIF()
 add_definitions(-DSKYNET)
 
 # target
-SET(CHESTNUT_H ./snapshot.h)
+SET(CHESTNUT_H ./snapshot.h ./math3d.h)
 aux_source_directory(. CHESTNUT_C)
 add_library(chestnut SHARED ${CHESTNUT_H} ${CHESTNUT_C})
 set_target_properties(chestnut PROPERTIES PREFIX "")
@@ -49,6 +49,6 @@ endif()
 
 #target_link_directories(chestnut PUBLIC ../../..)
 #link_directories(../..)
-target_link_libraries(chestnut libfixedptmath)
+#target_link_libraries(chestnut libfixedptmath)
 
-add_dependencies(chestnut strawberry libfixedptmath)
+add_dependencies(chestnut strawberry)

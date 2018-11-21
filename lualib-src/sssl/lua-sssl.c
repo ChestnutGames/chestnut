@@ -1,4 +1,4 @@
-#define LUA_LIB
+﻿#define LUA_LIB
 
 #include "sssl.h"
 #include <lua.h>
@@ -88,10 +88,11 @@ ssockaux_close_callback(void *ud) {
 	return 0;
 }
 
-static int
-ssockaux_callback(void *ud, const char *cmd, int how) {
+static int 
+(ssockaux_callback)(void *ud, const char * cmd, int how) {
 
 }
+
 /*
 ** @breif alloc aux
 */
@@ -149,8 +150,12 @@ lssockaux_poll(lua_State *L) {
 	luaL_checktype(L, 1, LUA_TUSERDATA);
 	struct ssockaux *aux = lua_touserdata(L, 1);
 	int idx = luaL_checkinteger(L, 2);
+
 	size_t l = 0;
-	const char *buf = luaL_checklstring(L, 3, &l);
+	const char *buf = NULL;
+	if (lua_type(L, 3) == LUA_TSTRING) {
+		buf = luaL_checklstring(L, 3, &l);
+	}
 
 	struct write_buffer *wb = sssl_poll(aux->fd, idx, buf, l);
 	if (wb != NULL) {
@@ -183,12 +188,11 @@ lssockaux_recv(lua_State *L) {
 	int idx = luaL_checkinteger(L, 2);
 	char BUF[SSOCKAUX_BUFFER_SIZE];
 	int r = sssl_recv(aux->fd, idx, BUF, SSOCKAUX_BUFFER_SIZE);
-	lua_pushinteger(L, r);
 	if (r > 0) {
 		lua_pushlstring(L, BUF, r);
-		return 2;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 static int
@@ -228,6 +232,7 @@ luaopen_sssl_core(lua_State *L) {
 		{ "connect", lssockaux_connect },
 		{ "poll", lssockaux_poll },
 		{ "send", lssockaux_send },
+		{ "recv", lssockaux_recv },
 		{ "shutdown", lssockaux_shutdown },
 		{ "close", lssockaux_close },
 		{ NULL, NULL },

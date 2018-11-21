@@ -1,4 +1,4 @@
-#define LUA_LIB
+﻿#define LUA_LIB
 
 #ifdef __cplusplus
 extern "C" {
@@ -6,7 +6,7 @@ extern "C" {
 
 #include <lua.h>
 #include <lauxlib.h>
-#include <ejoy/math3d.h>
+#include "math3d.h"
 
 static void *
 check_userdata(lua_State *L, int idx) {

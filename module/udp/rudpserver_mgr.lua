@@ -3,7 +3,9 @@ require "skynet.manager"
 local queue = require "chestnut.queue"
 
 local gate_max = 10
-local q
+local pool = queue()
+local S = {}
+local SESSION = 0
 
 local CMD = {}
 
@@ -21,6 +23,16 @@ function CMD.start( ... )
 	return true
 end
 
+function CMD.init_data( ... )
+	-- body
+	return true
+end
+
+function CMD.sayhi( ... )
+	-- body
+	return true
+end
+
 function CMD.close( ... )
 	-- body
 	return true
@@ -29,6 +41,24 @@ end
 function CMD.kill( ... )
 	-- body
 	skynet.exit()
+end
+
+function CMD.register(service, key)
+
+	SESSION = (SESSION + 1) & 0xffffffff
+	S[SESSION] = {
+		session = SESSION,
+		key = key,
+		room = snax.bind(service, "room"),
+		address = nil,
+		time = skynet.now(),
+		lastevent = nil,
+	}
+	return SESSION
+end
+
+function CMD.unregister(session)
+	S[session] = nil
 end
 
 function CMD.enter(uid, addr, ... )

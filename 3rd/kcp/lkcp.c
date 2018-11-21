@@ -22,8 +22,6 @@
  *
  */
 
-#define LUA_LIB
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>

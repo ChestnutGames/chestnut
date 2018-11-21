@@ -1,4 +1,4 @@
-set_property(GLOBAL PROPERTY USE_FOLDERS On)
+﻿set_property(GLOBAL PROPERTY USE_FOLDERS On)
 cmake_minimum_required(VERSION 3.0.0)
 project(skynet)
 add_subdirectory(skynet-src)
@@ -18,10 +18,11 @@ add_subdirectory(lualib-src/skiplist)
 add_subdirectory(lualib-src/crab)
 add_subdirectory(lualib-src/aoi)
 add_subdirectory(lualib-src/socket)
+#add_subdirectory(lualib-src/bounce)
 
 add_subdirectory(service-src)
 add_subdirectory(service-src/xlogger)
 
 add_subdirectory(client-src)
 
-add_subdirectory(foundation/fixedptmath)
+
