@@ -1,7 +1,7 @@
-project(rapidjson)
+﻿project(rapidjson)
 
 include_directories(../../3rd/lua)
-include_directories(../../3rd/rapidjson/include)
+include_directories(include)
 
 IF(MSVC)
 	add_definitions(-DLUA_BUILD_AS_DLL)
