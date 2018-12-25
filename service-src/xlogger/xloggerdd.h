@@ -1,10 +1,11 @@
-#ifndef skynet_xlogger_h
+ï»¿#ifndef skynet_xlogger_h
 #define skynet_xlogger_h
 
+#include "xlogger_message.h"
 #include <message/message.h>
-#include <message/xlogger_message.h>
 
-//#define LOG_MAX (4*1024)						// µ¥ÌõLOG×î³¤4K
+
+//#define LOG_MAX (4*1024)						// å•æ¡LOGæœ€é•¿4K
 
 struct xloggerdd;
 struct xloggerdd *

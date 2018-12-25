@@ -22,6 +22,6 @@ add_subdirectory(lualib-src/aoi)
 add_subdirectory(service-src)
 add_subdirectory(service-src/xlogger)
 
-add_subdirectory(client-src)
+#add_subdirectory(client-src)
 
 

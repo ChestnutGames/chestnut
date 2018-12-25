@@ -32,17 +32,17 @@ function CMD.start()
 	skynet.uniqueservice("db/db")
 
 	-- global service
+	local sid_mgr = skynet.uniqueservice("chestnut/sid_mgr")
+	skynet.call(sid_mgr, "lua", "start", channel.channel)
+	table.insert(services, sid_mgr)
+	log.info("sid_mgr start success.")
+
 	local room_mgr = skynet.uniqueservice("room_mgr")
 	skynet.call(room_mgr, "lua", "start", channel.channel)
 	table.insert(services, room_mgr)
 	table.insert(init_data_servers, room_mgr)
 	table.insert(sayhi_servers, room_mgr)
 	log.info("room_mgr start success.")
-
-	local sid_mgr = skynet.uniqueservice("sid_mgr")
-	skynet.call(sid_mgr, "lua", "start", channel.channel)
-	table.insert(services, sid_mgr)
-	log.info("sid_mgr start success.")
 
 	local radiocenter = skynet.uniqueservice("radiocenter")
 	skynet.call(radiocenter, "lua", "start", channel.channel)

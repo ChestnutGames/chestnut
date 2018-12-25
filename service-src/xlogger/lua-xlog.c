@@ -1,4 +1,7 @@
-#define LUA_LIB
+﻿#define LUA_LIB
+
+#include "xlogger_message.h"
+#include "xlog/xlog.h"
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -7,8 +10,6 @@
 #include <skynet_handle.h>
 #include <ejoy/list.h>
 #include <message/message.h>
-#include <message/xlogger_message.h>
-#include <xlog/xlog.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -98,7 +99,7 @@ lfatal(lua_State *L) {
 }
 
 LUAMOD_API int
-luaopen_client_xlog_core(lua_State *L) {
+luaopen_xlog_core(lua_State *L) {
 	luaL_checkversion(L);
 	luaL_Reg l[] =
 	{

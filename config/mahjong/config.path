@@ -2,7 +2,7 @@ root        = "./"
 module_path = "./module/"
 
 cpath       = "./cservice/?.so"
-luaservice  = module_path.."?.lua;./service/chestnut/?.lua;./service/?.lua"
+luaservice  = module_path.."?.lua;./service/?.lua"
 lualoader   = "./lualib/loader.lua"
 preload     = "./module/preload.lua"
 -- preload = "./game-slave1/preload.lua"	-- run preload.lua before every lua service run

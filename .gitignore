@@ -5,8 +5,8 @@
 /cservice
 /luaclib
 /logs
-/build_win64
-/build_linux64
+/build.win64
+/build.linux64
 
 *.dSYM
 .DS_Store

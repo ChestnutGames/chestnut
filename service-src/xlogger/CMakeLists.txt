@@ -1,4 +1,4 @@
-#project(xlogger)
+﻿#project(xlogger)
 
 #set(XLOGGER_H ./shash.h)
 #set(XLOGGER_C ./service_xlogger.c)
@@ -97,3 +97,22 @@ IF(MSVC)
 ENDIF(MSVC)
 
 add_dependencies(xloggerd strawberry)
+
+add_library(xlog SHARED ./lua-xlog.c)
+set_target_properties(xlog PROPERTIES PREFIX "")
+set_target_properties(xlog PROPERTIES SUFFIX ".so")
+set_target_properties(xlog PROPERTIES FOLDER "lualib")
+set_target_properties(xlog PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ../../../luaclib
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY ../../../luaclib
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY ../../../luaclib
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ../../../luaclib
+)
+
+IF(MSVC)
+	target_link_libraries(xlog ws2_32 ../../../strawberry)
+ENDIF()
+
+add_dependencies(xlog strawberry)

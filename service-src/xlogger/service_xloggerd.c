@@ -1,10 +1,10 @@
-#include "xloggerdd.h"
+ï»¿#include "xloggerdd.h"
+#include "xlog/xlogger_buffer.h"
+#include "xlogger_message.h"
 
 #include <skynet.h>
 #include <skynet_env.h>
 #include <message/message.h>
-#include <message/xlogger_message.h>
-#include <xlog/xlogger_buffer.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,13 +55,13 @@ _logger(struct skynet_context * context, void *ud, int type, int session, uint32
 			//flush_response->buffer = flush_request->buffer;
 
 			//skynet_sendname(context, source, ".xlogger", PTYPE_TEXT | PTYPE_TAG_DONTCOPY, session, flush, flush_msg_size);
-			return 0;  // É¾³ýÏûÏ¢
+			return 0;  // åˆ é™¤æ¶ˆæ¯
 		} else if (strcmp(message->cmd, "APPEND") == 0) {
 			struct xlogger_append_request *append_request = CAST_USERTYPE_POINTER(message, struct xlogger_append_request);
 			xloggerdd_push(inst->d, append_request);
 			xloggerdd_flush(inst->d);
 
-			return 1;  // ±£ÁôÏûÏ¢
+			return 1;  // ä¿ç•™æ¶ˆæ¯
 		} else if (strcmp(message->cmd, "CLOSE") == 0) {
 			assert(0);
 			/*size_t closeres_message_size = sizeof(struct message);
