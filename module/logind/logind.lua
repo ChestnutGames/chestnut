@@ -1,4 +1,4 @@
-package.path = "./../../service/logind/?.lua;"..package.path
+package.path = "./module/logind/?.lua;"..package.path
 
 local login = require "snax.loginserver"
 local crypt = require "skynet.crypt"

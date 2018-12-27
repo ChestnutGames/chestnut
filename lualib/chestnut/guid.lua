@@ -3,7 +3,7 @@ local log = require "chestnut.skynet.log"
 
 function guid( ... )
 	-- body
-	local addr = skynet.uniqueservice("guid")
+	local addr = skynet.uniqueservice("chestnut/guid")
 	local id = skynet.call(addr, "lua")
 	return id
 end

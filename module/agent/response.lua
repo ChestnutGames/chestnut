@@ -38,102 +38,102 @@ end
 
 function RESPONSE:deal(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("deal", args, ...)
+	self.systems.room:forward_room_rsp("deal", args)
 end
 
 function RESPONSE:ready(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("ready", args, ...)
+	self.systems.room:forward_room_rsp("ready", args)
 end
 
 function RESPONSE:peng(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("peng", self, args, ...)
+	self.systems.room:forward_room_rsp("peng", args)
 end
 
 function RESPONSE:gang(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("gang", args, ...)
+	self.systems.room:forward_room_rsp("gang", args)
 end
 
 function RESPONSE:hu(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("hu", args, ...)
+	self.systems.room:forward_room_rsp("hu", args)
 end
 
 function RESPONSE:call(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("call", args, ...)
+	self.systems.room:forward_room_rsp("call", args)
 end
 
 function RESPONSE:shuffle(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("shuffle", args, ...)
+	self.systems.room:forward_room_rsp("shuffle", args)
 end
 
 function RESPONSE:dice(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("dice", args, ...)
+	self.systems.room:forward_room_rsp("dice", args)
 end
 
 function RESPONSE:lead(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("lead", args, ...)
+	self.systems.room:forward_room_rsp("lead", args)
 end
 
 function RESPONSE:over(args, ... )
 	-- body
-	local M = self.modules['room']
-	M:forward_room_rsp("over", args)
+	self.systems.room:forward_room_rsp("over", args)
 end
 
 function RESPONSE:restart(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("restart", args)
 end
 
 function RESPONSE:rchat(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("rchat", args)
 end
 
 function RESPONSE:take_restart(args, ... )
-		-- body
+	-- body
+	self.systems.room:forward_room_rsp("take_restart", args)
 end	
 
 function RESPONSE:take_xuanpao(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("take_xuanpao", args)
 end
 
 function RESPONSE:take_xuanque(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("take_xuanque", args)
 end
 
 function RESPONSE:xuanque(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("xuanque", args)
 end
 
 function RESPONSE:xuanpao(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("xuanpao", args)
 end
 
 function RESPONSE:settle(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("settle", args)
 end
 
 function RESPONSE:final_settle(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("final_settle", args)
 end
 
 function RESPONSE:roomover(args, ... )
 	-- body
+	self.systems.room:forward_room_rsp("roomover", args)
 end
 
 -- 麻将响应模块over
