@@ -4,7 +4,6 @@ local cls = class("online")
 
 function cls:ctor(context, ... )
 	-- body
-
 	cls.super.ctor(self, context)
 
 	return self

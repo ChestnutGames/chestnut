@@ -9,18 +9,19 @@ local cls = class("room")
 function cls:ctor(context)
 	-- body
 	self.agentContext = context
-	self.context = nil
+	self.agentSystems = nil
+	self.dbRoom = {}
 	return self
 end
 
-function cls:set_context(context)
+function cls:set_agent_systems(systems, ... )
 	-- body
-	self.context = context
+	self.agentSystems = systems
 end
 
 ------------------------------------------
 -- event
-function cls:on_data_init()
+function cls:on_data_init(dbData)
 	-- body
 	assert(self)
 	local uid = self.agentContext.uid
@@ -36,6 +37,49 @@ function cls:on_data_init()
 		entity.room.createAt = os.time()
 		entity.room.updateAt = os.time()
 	end
+
+	assert(component)
+	assert(seg)
+	self.dbRoom.id        = assert(dbData.db_user_room.roomid)
+	self.dbRoom.isCreated = (assert(dbData.db_user_room.created) == 1) and true or false
+	self.dbRoom.joined    = (assert(dbData.db_user_room.joined) == 1) and true or false
+	self.dbRoom.type      = assert(dbData.db_user_room.type)
+	self.dbRoom.mode      = assert(dbData.db_user_room.mode)
+	self.dbRoom.createAt  = assert(dbData.db_user_room.create_at)
+	self.dbRoom.updateAt  = assert(dbData.db_user_room.update_at)
+end
+
+function cls:on_data_save(dbData, ... )
+	-- body
+	assert(dbData ~= nil)
+	dbData.db_user = {}
+	dbData.db_user.uid      = self.dbAccount.uid
+	-- seg.age      = component.age
+	dbData.db_user.sex      = self.dbAccount.sex
+	dbData.db_user.nickname = self.dbAccount.nickname
+	dbData.db_user.province = self.dbAccount.province
+	dbData.db_user.city     = self.dbAccount.city
+	dbData.db_user.country  = self.dbAccount.country
+	dbData.db_user.headimg  = self.dbAccount.headimg
+	dbData.db_.create_time  = self.dbAccount.create_time
+	seg.login_times         = self.dbAccount.login_times
+
+	-- save user
+	dbData.db_user = {}
+	dbData.db_user.uid            = self.dbUser.uid
+	dbData.db_user.sex            = self.dbUser.sex
+	dbData.db_user.nickname       = self.dbUser.nickname
+	dbData.db_user.province       = self.dbUser.province
+	dbData.db_user.city           = self.dbUser.city
+	dbData.db_user.country        = self.dbUser.country
+	dbData.db_user.headimg        = self.dbUser.headimg
+	dbData.db_user.openid         = self.dbUser.openid
+	dbData.db_user.nameid         = self.dbUser.nameid
+	dbData.db_user.create_at      = self.dbUser.createAt
+	dbData.db_user.update_at 	  = component.updateAt
+	dbData.db_user.login_at       = component.loginAt
+	dbData.db_user.new_user       = component.newUser
+	dbData.db_user.level          = component.level
 end
 
 function cls:on_func_open()

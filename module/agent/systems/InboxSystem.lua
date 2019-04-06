@@ -13,6 +13,8 @@ local cls = class(CLS_NAME)
 function cls:ctor(context, ... )
 	-- body
 	cls.super.ctor(self, context)
+	self.agentContext = context
+	self.agentSystems = nil
 
 	self._tname = "tb_user_inbox"
 	self._mk = {}
@@ -21,9 +23,9 @@ function cls:ctor(context, ... )
 	return self
 end
 
-function cls:login( ... )
+function cls:set_agent_systems(systems)
 	-- body
-
+	self.agentSystems = systems
 end
 
 function cls:load_cache_to_data( ... )

@@ -11,15 +11,7 @@ function cls:ctor(context)
 	-- body
 	self.agentContext = context
 	self.agentSystems = nil
-	self.context = nil
-end
-
-function cls:_get_my_entity()
-	-- body
-	local uid = self.agentContext.uid
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
-	return entity
+	self.dbPackages = {}
 end
 
 function cls:_increase(pt, id, num)
@@ -59,19 +51,39 @@ function cls:_decrease(pt, id, num)
 	return true
 end
 
-function cls:set_context(context)
-	-- body
-	self.context = context
-end
-
 function cls:set_agent_systems(systems)
 	-- body
 	self.agentSystems = systems
 end
 
-function cls:on_data_init()
+function cls:on_data_init(dbData)
 	-- body
-	assert(self)
+	local package = {}
+	for _,db_item in pairs(seg) do
+		local item = {}
+		item.id = assert(db_item.id)
+		item.num = assert(db_item.num)
+		item.createAt = assert(db_item.create_at)
+		item.updateAt = assert(db_item.update_at)
+		package[tonumber(item.id)] = item
+	end
+	self.dbPackages[PackageType.COMMON] = package
+end
+
+function cls:on_data_save(dbData, ... )
+	-- body
+	assert(dbData ~= nil)
+	local seg = self.dbPackages[PackageType.COMMON]
+	local package = {}
+	for _,db_item in pairs(seg) do
+		local item = {}
+		item.id = assert(db_item.id)
+		item.num = assert(db_item.num)
+		item.createAt = assert(db_item.create_at)
+		item.updateAt = assert(db_item.update_at)
+		package[tonumber(item.id)] = item
+	end
+	dbData.db_user_package = package
 end
 
 function cls:on_func_open()

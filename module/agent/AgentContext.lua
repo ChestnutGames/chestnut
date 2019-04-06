@@ -1,4 +1,4 @@
--- local skynet = require "skynet"
+local skynet = require "skynet"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local context = require "chestnut.context"
@@ -25,13 +25,8 @@ local cls = class("AgentContext", context)
 function cls:ctor( ... )
 	-- body
 	cls.super.ctor(self, ...)
-	self.context = EntitasContext.new()
 	self.systems = AgentSystems.new(self)
-	self.systems:set_context(self.context)
 	self.systems:set_agent_systems(self.systems)
-	local userGroup = self.context:get_group(Matcher({ UserComponent }))
-	local uid_primary_index = PrimaryEntityIndex.new(UserComponent, userGroup, 'uid')
-	self.context:add_entity_index(uid_primary_index)
 	self.reload = false
 	self.channel = nil
 	self.channelSubscribed = false
@@ -69,43 +64,37 @@ end
 
 function cls:init_data(uid)
 	-- body
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
-	if not entity then
-		-- 加入所有的组件
-		entity = self.context:create_entity()
-		entity:add(AccountComponent, uid)
-		entity:add(UserComponent, uid)
-		entity:add(DbComponent)
-		entity:add(FuncOpenComponent, {})
-		entity:add(InboxComponent)
-		entity:add(OutboxComponent)
-		entity:add(PackageComponent, {})
-		entity:add(RoomComponent, 0, 0, false, false, false)
-	end
-
-	-- 重新加载数据
-	local ok, err = xpcall(self.systems.db.load_cache_to_data, traceback, self.systems.db)
+	local uid = self.uid
+	log.info("uid(%d) load_cache_to_data", uid)
+	local res = skynet.call(".DB", "lua", "read_user", uid)
+	-- init user
+	local ok, err = xpacll(self.systems.user.on_data_init, traceback, self.systems.user, res)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR
 	end
-	-- 初始化所有数据
-	ok, err = xpcall(self.systems.on_data_init, traceback, self.systems)
-	if not ok then
-		log.error(err)
-		return servicecode.LOGIN_AGENT_LOAD_ERR
-	end
+	-- init funcopens
+	self.systems.funcopen.on_data_init(res)
+	-- init pakcage
+	self.systems.package.on_data_init(res)
+	-- init rooms
+	self.systems.room.on_data_init(res)
+	return servicecode.SUCCESS
 end
 
 function cls:save_data()
 	-- body
-	if self.logined then
-		local ok, err = pcall(self.systems.db.save_data_to_cache, self.systems.db)
-		if not ok then
-			log.error(err)
-		end
-	end
+	local data = {}
+	data.db_user          = pack_components.pack_user_component(entity.user)
+	data.db_user_package  = pack_components.pack_package_component(entity.package, uid)
+	data.db_user_funcopens = pack_components.pack_funcopen_component(entity.funcopen, uid)
+	data.db_user_room     = pack_components.pack_room_component(entity.room, uid)
+	
+	self.systems.user.on_data_save(data)
+	self.systems.funcopen.on_data_save(data)
+	self.systems.package.on_data_save(data)
+	self.systems.room.on_data_save(data)
+	skynet.call(".DB", "lua", "write_user", data)
 	return servicecode.NORET
 end
 

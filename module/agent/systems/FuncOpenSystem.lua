@@ -1,7 +1,5 @@
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
-local UserComponent = require "components.UserComponent"
-
 
 local CLS_NAME = "func_open"
 
@@ -11,20 +9,7 @@ function cls:ctor(context)
 	-- body
 	self.agentContext = context
 	self.agentSystems = nil
-	self.context = nil
-end
-
-function cls:_get_my_entity()
-	-- body
-	local uid = self.agentContext.uid
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
-	return entity
-end
-
-function cls:set_context(context)
-	-- body
-	self.context = context
+	self.dbFuncopen = {}
 end
 
 function cls:set_agent_systems(systems)
@@ -32,8 +17,21 @@ function cls:set_agent_systems(systems)
 	self.agentSystems = systems
 end
 
-function cls:on_data_init()
+function cls:on_data_init(dbData)
 	-- body
+	assert(dbData ~= nil)
+	assert(dbData.db_user_funcopens ~= nil and #dbData.db_user_funcopens > 0)
+	assert(component and seg)
+	local funcs = {}
+	for _,db_item in pairs(seg) do
+		local item = {}
+		item.id = assert(db_item.id)
+		item.open = assert(db_item.open)
+		item.createAt = assert(db_item.create_at)
+		item.updateAt = assert(db_item.update_at)
+		funcs[tonumber(item.id)] = item
+	end
+
 	local uid = self.agentContext.uid
 	local index = self.context:get_entity_index(UserComponent)
 	local entity = index:get_entity(uid)
@@ -51,6 +49,25 @@ function cls:on_data_init()
 
 	-- 检查应该开启而没有开启的
 	self:on_level_open()
+end
+
+function cls:on_data_save(dbData, ... )
+	-- body
+	assert(dbData ~= nil)
+
+	-- save user
+	dbData.db_user_funcopens = {}
+	for _,item in pairs(self.dbFuncopen) do
+		-- print(k, item)
+		local db_item = {}
+		db_item.uid = assert(self.agentContext.uid)
+		db_item.id  = assert(item.id)
+		db_item.open = assert(item.open)
+		db_item.create_at = assert(item.createAt)
+		db_item.update_at = os.time()
+		table.insert(dbData.db_user_funcopens, db_item)
+	end
+	return true
 end
 
 function cls:on_level_open()

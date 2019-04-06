@@ -1,5 +1,4 @@
 local AhievementSystem = require "systems.AhievementSystem"
-local DbSystem = require "systems.DbSystem"
 local FuncOpenSystem = require "systems.FuncOpenSystem"
 local LevelSystem = require "systems.LevelSystem"
 local PackageSystem = require "systems.PackageSystem"
@@ -25,14 +24,12 @@ function Processors:ctor(agentContext)
     self.agentContext = agentContext
     self.user = UserSystem.new(agentContext)
     self.room = RoomSystem.new(agentContext)
-    self.db = DbSystem.new(agentContext)
     self.package = PackageSystem.new(agentContext)
     self.funcopen = FuncOpenSystem.new(agentContext)
 
 
     self:add(self.user)
     self:add(self.room)
-    self:add(self.db)
     self:add(self.package)
     self:add(self.funcopen)
 end
@@ -152,7 +149,7 @@ function Processors:afk( ... )
     end
 end
 
-function Processors:on_data_init()
+function Processors:on_data_init(dbData)
     for _, processor in pairs(self._data_init_processors) do
         processor:on_data_init()
     end

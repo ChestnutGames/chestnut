@@ -11,12 +11,13 @@ local cls = class(CLS_NAME)
 function cls:ctor(context, ... )
 	-- body
 	cls.super.ctor(self, context)
-	self._tname = "tb_user_record"
-	self._mk = {}
+	self.agentContext = context
+	self.agentSystems = nil
+	self.dbRecord = nil
 	return self
 end
 
-function cls:load_cache_to_data( ... )
+function cls:on_data_init( ... )
  	-- body
  	local uid = self.context.uid
  	local db = self.context.modules.db.db
@@ -33,6 +34,10 @@ function cls:load_cache_to_data( ... )
 			self._mk[math.tointeger(val.id)] = val
  		end
  	end
+end
+
+function cls:on_data_save()
+	
 end
 
 function cls:inituser( ... )
