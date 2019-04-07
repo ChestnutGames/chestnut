@@ -8,14 +8,6 @@ local EntitasContext = require "entitas.Context"
 local Matcher = require "entitas.Matcher"
 local PrimaryEntityIndex = require "entitas.PrimaryEntityIndex"
 
-local UserComponent = require "components.UserComponent"
-local AccountComponent = require "components.AccountComponent"
-local DbComponent = require "components.DbComponent"
-local FuncOpenComponent = require "components.FuncOpenComponent"
-local InboxComponent = require "components.InboxComponent"
-local OutboxComponent = require "components.OutboxComponent"
-local PackageComponent = require "components.PackageComponent"
-local RoomComponent = require "components.RoomComponent"
 local CMD = require "cmd"
 local assert = assert
 local traceback = debug.traceback
@@ -68,33 +60,28 @@ function cls:init_data(uid)
 	log.info("uid(%d) load_cache_to_data", uid)
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	-- init user
-	local ok, err = xpacll(self.systems.user.on_data_init, traceback, self.systems.user, res)
+	local ok, err = xpcall(self.systems.on_data_init, traceback, self.systems, res)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR
 	end
-	-- init funcopens
-	self.systems.funcopen.on_data_init(res)
-	-- init pakcage
-	self.systems.package.on_data_init(res)
-	-- init rooms
-	self.systems.room.on_data_init(res)
+	local ok, err = xpcall(self.systems.initialize, traceback, self.systems, res)
+	if not ok then
+		log.error(err)
+		return servicecode.LOGIN_AGENT_LOAD_ERR
+	end
 	return servicecode.SUCCESS
 end
 
 function cls:save_data()
 	-- body
 	local data = {}
-	data.db_user          = pack_components.pack_user_component(entity.user)
-	data.db_user_package  = pack_components.pack_package_component(entity.package, uid)
-	data.db_user_funcopens = pack_components.pack_funcopen_component(entity.funcopen, uid)
-	data.db_user_room     = pack_components.pack_room_component(entity.room, uid)
-	
-	self.systems.user.on_data_save(data)
-	self.systems.funcopen.on_data_save(data)
-	self.systems.package.on_data_save(data)
-	self.systems.room.on_data_save(data)
-	skynet.call(".DB", "lua", "write_user", data)
+	local ok, err = xpcall(self.systems.on_data_save, traceback, self.systems, data)
+	if not ok then
+		log.error(err)
+	else
+		skynet.call(".DB", "lua", "write_user", data)
+	end
 	return servicecode.NORET
 end
 

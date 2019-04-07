@@ -4,8 +4,9 @@ local LevelSystem = require "systems.LevelSystem"
 local PackageSystem = require "systems.PackageSystem"
 local RoomSystem = require "systems.RoomSystem"
 local UserSystem = require "systems.UserSystem"
+local log = require "chestnut.skynet.log"
 
-
+local traceback = debug.traceback
 local table_insert = table.insert
 
 local Processors = class("Processors")
@@ -20,6 +21,7 @@ function Processors:ctor(agentContext)
     self._tear_down_processors = {}
     self._afk_processors = {}
     self._data_init_processors = {}
+    self._data_save_processors = {}
 
     self.agentContext = agentContext
     self.user = UserSystem.new(agentContext)
@@ -66,6 +68,10 @@ function Processors:add(processor)
     if processor.on_data_init then
         table_insert(self._data_init_processors, processor)
     end
+
+    if processor.on_data_save then
+        table_insert(self._data_save_processors, processor)
+    end
 end
 
 function Processors:set_context(context, ... )
@@ -79,6 +85,25 @@ function Processors:set_agent_systems(systems, ... )
     -- body
     for _, processor in pairs(self._set_systems_processors) do
         processor:set_agent_systems(systems)
+    end
+end
+
+function Processors:on_data_init(dbData)
+    for _, processor in pairs(self._data_init_processors) do
+        local ok, err = xpcall(processor.on_data_init, traceback, processor, dbData)
+        if not ok then
+            log.error(err)
+        end
+    end
+end
+
+function Processors:on_data_save(dbData)
+    -- body
+    for _, processor in pairs(self._data_save_processors) do
+        local ok, err = xpcall(processor.on_data_save, traceback, processor, dbData)
+        if not ok then
+            log.error(err)
+        end
     end
 end
 
@@ -149,10 +174,6 @@ function Processors:afk( ... )
     end
 end
 
-function Processors:on_data_init(dbData)
-    for _, processor in pairs(self._data_init_processors) do
-        processor:on_data_init()
-    end
-end
+
 
 return Processors

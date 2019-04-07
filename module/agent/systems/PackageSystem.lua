@@ -1,5 +1,4 @@
 local log = require "chestnut.skynet.log"
-local UserComponent = require "components.UserComponent"
 local PackageType = require "def.PackageType"
 local ds = require "skynet.datasheet"
 
@@ -58,8 +57,12 @@ end
 
 function cls:on_data_init(dbData)
 	-- body
+	assert(dbData ~= nil)
+	assert(dbData.db_user_packages ~= nil and #dbData.db_user_packages >= 0)
+	-- common package
+	local set = dbData.db_user_packages
 	local package = {}
-	for _,db_item in pairs(seg) do
+	for _,db_item in pairs(set) do
 		local item = {}
 		item.id = assert(db_item.id)
 		item.num = assert(db_item.num)
@@ -73,14 +76,15 @@ end
 function cls:on_data_save(dbData, ... )
 	-- body
 	assert(dbData ~= nil)
-	local seg = self.dbPackages[PackageType.COMMON]
+	local set = self.dbPackages[PackageType.COMMON]
 	local package = {}
-	for _,db_item in pairs(seg) do
+	for _,db_item in pairs(set) do
 		local item = {}
+		item.uid = self.agentContext.uid
 		item.id = assert(db_item.id)
 		item.num = assert(db_item.num)
-		item.createAt = assert(db_item.create_at)
-		item.updateAt = assert(db_item.update_at)
+		item.create_at = assert(db_item.createAt)
+		item.update_at = assert(db_item.updateAt)
 		package[tonumber(item.id)] = item
 	end
 	dbData.db_user_package = package

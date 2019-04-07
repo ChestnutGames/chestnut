@@ -4,6 +4,7 @@ local cls = class("AppConfig")
 function cls:ctor()
 	-- body
 	self.config = {}
+	self.dataset = {}
 end
 
 function cls:LoadFile()

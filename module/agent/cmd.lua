@@ -1,7 +1,7 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
-local debug = debug
+local traceback = debug.traceback
 
 local CMD = {}
 
@@ -33,8 +33,9 @@ end
 -- called by gated
 function CMD:login(gate, uid, subid, secret)
 	-- body
-	local ok, err = xpcall(self.login, debug.msgh, self, gate, uid, subid, secret)
+	local ok, err = xpcall(self.login, traceback, self, gate, uid, subid, secret)
 	if not ok then
+		log.error(err)
 		skynet.call(".AGENT_MGR", "lua", "exit_at_once", uid)
 		return servicecode.LOGIN_AGENT_ERR
 	end

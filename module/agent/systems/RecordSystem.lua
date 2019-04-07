@@ -17,27 +17,11 @@ function cls:ctor(context, ... )
 	return self
 end
 
-function cls:on_data_init( ... )
+function cls:on_data_init(dbData)
  	-- body
- 	local uid = self.context.uid
- 	local db = self.context.modules.db.db
- 	local keys = db:zrange(string.format("%s:%d", self._tname, uid), 0, -1)
- 	if not keys then
- 		dbmonitor.cache_select(string.format("%s:%d", self._tname, uid))
- 		keys = db:zrange(string.format("%s:%d", self._tname, uid), 0, -1)
- 	end
- 	
- 	if keys then
- 		for _,id in pairs(keys) do
- 			local key = string.format("%s:%d:%d", self._tname, uid, id)
-			local val = self._env._db:hgetall(key)
-			self._mk[math.tointeger(val.id)] = val
- 		end
- 	end
 end
 
-function cls:on_data_save()
-	
+function cls:on_data_save(dbData)
 end
 
 function cls:inituser( ... )

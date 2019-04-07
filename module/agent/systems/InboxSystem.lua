@@ -15,11 +15,7 @@ function cls:ctor(context, ... )
 	cls.super.ctor(self, context)
 	self.agentContext = context
 	self.agentSystems = nil
-
-	self._tname = "tb_user_inbox"
-	self._mk = {}
-	self._mkzs = zset.new()
-	self._vals = {}
+	self.dbInbox = {}
 	return self
 end
 
@@ -28,18 +24,11 @@ function cls:set_agent_systems(systems)
 	self.agentSystems = systems
 end
 
-function cls:load_cache_to_data( ... )
-	local db = self.context.modules.db.db
-	local uid = self.context.uid
+function cls:on_data_init(dbData, ... )
+end
 
-	local keys = db:zrange(string.format('tb_user_inbox:%d', uid), 0, -1)
-	if keys then
-		for _,id in pairs(keys) do
-			local key = string.format("%s:%d:%d", self._tname, uid, id)
-			local val = db:hgetall(key)
-			self._mk[math.tointeger(val.id)] = val
-		end
-	end
+function cls:on_data_save(dbData, ... )
+	-- body
 end
 
 function cls:inituser( ... )

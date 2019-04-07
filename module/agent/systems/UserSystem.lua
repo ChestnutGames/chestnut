@@ -1,5 +1,4 @@
 local log = require "chestnut.skynet.log"
-local UserComponent = require "components.UserComponent"
 
 local CLS_NAME = "user"
 
@@ -26,7 +25,6 @@ function cls:on_data_init(dbData)
 
 	-- user
 	local seg = dbData.db_users[1]
-	self.dbUser.uid        = seg.uid
 	self.dbUser.sex        = assert(seg.sex)
 	self.dbUser.nickname   = assert(seg.nickname)
 	self.dbUser.province   = assert(seg.province)
@@ -40,6 +38,7 @@ function cls:on_data_init(dbData)
 	self.dbUser.loginAt    = assert(seg.login_at)
 	self.dbUser.newUser    = assert(seg.new_user)
 	self.dbUser.level      = assert(seg.level)
+	self.dbUser.exp = 0
 	return true
 end
 
@@ -49,7 +48,7 @@ function cls:on_data_save(dbData, ... )
 
 	-- save user
 	dbData.db_user = {}
-	dbData.db_user.uid            = self.dbUser.uid
+	dbData.db_user.uid            = self.agentContext.uid
 	dbData.db_user.sex            = self.dbUser.sex
 	dbData.db_user.nickname       = self.dbUser.nickname
 	dbData.db_user.province       = self.dbUser.province
@@ -68,13 +67,10 @@ end
 
 function cls:first()
 	-- body
-	local uid = self.agentContext.uid
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
 
 	local res = {}
 	res.errorcode = 0
-	res.nickname  = assert(entity.user.nickname)
+	res.nickname  = assert(self.dbUser.nickname)
 	return res
 end
 
