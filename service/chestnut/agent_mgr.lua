@@ -4,90 +4,98 @@ local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local skynet_queue = require "skynet.queue"
 local queue = require "chestnut.queue"
-local util = require "chestnut.time"
+local util = require "chestnut.time_utils"
+local traceback = debug.traceback
+local assert = assert
 
 local NORET = {}
 local cs = skynet_queue()
-local leisure_agent = queue()
-local users = {}
-local channel
+local leisure_agent = queue()     -- 未用的agent
+local users = {}                  -- 已经用了的agent
+local offusers = {}               -- 离线的agent
 
-local function new_agent( ... )
-	-- body
-	local addr = skynet.newservice("agent/agent")
-	return addr
-end
-
-local function enqueue(agent, ... )
+local function enqueue(agent)
 	-- body
 	leisure_agent:enqueue(agent)
 end
 
-local function dequeue( ... )
+local function dequeue()
 	-- body
 	if #leisure_agent > 0 then
 		return leisure_agent:dequeue()
-	else
-		return new_agent()
 	end
 end
 
 local CMD = {}
 
-function CMD.start(channel_id, init_agent_num, ... )
+function CMD.start(channel_id, init_agent_num)
 	-- body
 	assert(init_agent_num > 1)
 	for _=1,init_agent_num do
-		local agent = new_agent()
+		local agent = {}
+		local addr = skynet.newservice("agent/agent")
+		agent.addr = addr
 		enqueue(agent)
 	end
-	channel = assert(channel_id)
+	for _,v in pairs(leisure_agent) do
+		local ok = skynet.call(v.addr, "lua", "start", channel_id)
+		assert(ok)
+	end
 	return true
 end
 
 function CMD.init_data()
 	-- body
+	return true
+end
+
+function CMD.sayhi()
+	-- body
 end
 
 function CMD.save_data()
 	-- body
-	for _,v in pairs(users) do
-		local ok = skynet.call(v.agent, "lua", "save_data")
-		if not ok then
-			log.error("call save_data failed.")
-		end
-	end
-	return NORET
 end
 
-function CMD.close( ... )
+function CMD.close()
 	-- body
+	-- 存在线数据
+	for _,v in pairs(users) do
+		skynet.call(v.addr, 'lua', 'close')
+	end
 	return true
 end
 
-function CMD.kill( ... )
+function CMD.kill()
 	-- body
 	skynet.exit()
 end
 
+------------------------------------------
+-- 游戏设计
 function CMD.enter(uid)
 	-- body
 	assert(uid)
 	local u = users[uid]
 	assert(not u)
 	if u and u.addr then
+		assert(false)
 		if u.cancel then
 			u.cancel()
 		end
-		local ok = skynet.call(u.addr, "lua", "start", false )
-		assert(ok)
-		return u.addr
+		skynet.call(u.addr, "lua", "sayhi", false)
+		return 0
 	else
-		local addr = cs(dequeue)
-		local ok = skynet.call(addr, "lua", "start", true, channel)
-		assert(ok)
-		users[uid] = { uid = uid, addr = addr, cancel = nil }
-		return addr
+		if #leisure_agent <= 0 then
+			return -1
+		else
+			local agent = cs(dequeue)
+			agent.uid = uid
+			agent.cancel = nil
+			users[uid] = agent
+			skynet.call(agent.addr, "lua", "sayhi", true)
+			return agent.addr
+		end
 	end
 end
 
@@ -97,10 +105,10 @@ function CMD.exit(uid)
 	assert(uid)
 	local u = users[uid]
 	if u then
-		local cancel = util.set_timeout(100 * 60 * 60, function ( ... )
+		local cancel = util.set_timeout(100 * 60 * 60, function ()
 			-- body
 			cs(enqueue, u.addr)
-			users[uid] = nil		
+			users[uid] = nil
 		end)
 		u.cancel = cancel
 		return true
@@ -108,11 +116,11 @@ function CMD.exit(uid)
 	return false
 end
 
-function CMD.exit_at_once(uid, ... )
+function CMD.exit_at_once(uid)
 	-- body
-	local u = users[uid]
-	assert(u)
-	cs(enqueue, u.addr)
+	local u = assert(users[uid])
+	u.uid = nil
+	cs(enqueue, u)
 	users[uid] = nil
 	return true
 end
@@ -120,10 +128,14 @@ end
 skynet.start(function ()
 	-- body
 	skynet.dispatch("lua", function(_,_, cmd, ...)
-		local f = CMD[cmd]
-		local r = f( ... )
-		if r ~= NORET then
-			skynet.ret(skynet.pack(r))
+		local f = assert(CMD[cmd])
+		local ok, err = xpcall(f, traceback, ... )
+		if ok then
+			if err ~= NORET then
+				skynet.ret(skynet.pack(err))
+			end
+		else
+			log.error(err)
 		end
 	end)
 	skynet.register ".AGENT_MGR"
