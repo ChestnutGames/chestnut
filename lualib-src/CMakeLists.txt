@@ -1,4 +1,4 @@
-project(skynet)
+﻿project(skynet)
 
 include_directories(../3rd/lua)
 include_directories(../skynet-src)
@@ -21,7 +21,7 @@ ENDIF()
 
 file(GLOB SKYNET_H *.h)
 aux_source_directory(. SKYNET_C)
-list(REMOVE_ITEM SKYNET_C ./lua-clientsocket.c ./lua-bson.c)
+list(REMOVE_ITEM SKYNET_C ./lua-clientsocket.c ./lua-bson.c ./ltls.c)
 
 add_library(skynet SHARED ${SKYNET_H} ${SKYNET_C})
 IF (MSVC)

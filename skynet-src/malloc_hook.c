@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -254,6 +254,18 @@ mallctl_int64(const char* name, size_t* newval) {
 int
 mallctl_opt(const char* name, int* newval) {
 	skynet_error(NULL, "No jemalloc : mallctl_opt %s.", name);
+	return 0;
+}
+
+bool   
+mallctl_bool(const char* name, bool* newval) {
+	skynet_error(NULL, "No jemalloc : mallctl_bool %s.", name);
+	return 0;
+}
+
+int    
+mallctl_cmd(const char* name) {
+	skynet_error(NULL, "No jemalloc : mallctl_cmd %s.", name);
 	return 0;
 }
 

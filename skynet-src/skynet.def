@@ -5,6 +5,8 @@ EXPORTS
 	memory_info_dump
 	mallctl_int64
 	mallctl_opt
+	mallctl_bool
+	mallctl_cmd
 	dump_c_mem
 	dump_mem_lua
 
