@@ -11,6 +11,10 @@ function cmd.start( ... )
 	return true
 end
 
+function cmd.init_data()
+	return true
+end
+
 function cmd.close( ... )
 	-- body
 	return true

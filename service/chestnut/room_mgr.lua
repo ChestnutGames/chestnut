@@ -1,11 +1,10 @@
-package.path = "./module/lualib/?.lua;"..package.path
 local skynet = require "skynet"
-require "skynet.manager"
 local mc = require "skynet.multicast"
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local queue = require "chestnut.queue"
 local json = require "rapidjson"
+local service = require "service"
 local traceback = debug.traceback
 local assert = assert
 
@@ -18,7 +17,6 @@ local assert = assert
 -- room.users       房间已经加入的人员
 -- room.users ==> user = { uid, agent }
 
-local NORET = {}
 local ROOM_NAME = skynet.getenv 'room_name'
 local users = {}   -- 玩家信息,玩家创建的房间
 local rooms = {}   -- 私人打牌的
@@ -455,21 +453,7 @@ function CMD.room_is_1stju(roomid)
 	return false
 end
 
-skynet.start(function ()
-	-- body
-	skynet.dispatch("lua", function ( _, _, cmd, ... )
-		-- body
-		local f = assert(CMD[cmd])
-		local ok, err = xpcall(f, traceback, ...)
-		if ok then
-			if err ~= NORET then
-				if err ~= nil then
-					skynet.retpack(err)
-				else
-					log.error("ROOM_MGR cmd = %s not return", cmd)
-				end
-			end
-		end
-	end)
-	skynet.register ".ROOM_MGR"
-end)
+service.init {
+	name = '.ROOM_MGR',
+	command = CMD
+}

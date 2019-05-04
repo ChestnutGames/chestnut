@@ -1,5 +1,5 @@
-local gangmultiple = require "gangmultiple"
-local humultiple = require "humultiple"
+local gangmultiple = require "chestnut.mahjongroom.gangmultiple"
+local humultiple = require "chestnut.mahjongroom.humultiple"
 local _M = {}
 
 function _M.look_hu(jiao, hu, ... )

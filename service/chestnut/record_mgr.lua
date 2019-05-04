@@ -1,11 +1,11 @@
-package.path = "./../../module/mahjong/lualib/?.lua;./../../module/mahjong/record/?.lua;"..package.path
 local skynet = require "skynet"
-require "skynet.manager"
 local sd = require "skynet.sharedata"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 -- local json = require "rapidjson"
 local servicecode = require "chestnut.servicecode"
+local service = require "service"
+local savedata = require "savedata"
 local traceback = debug.traceback
 local assert = assert
 
@@ -14,19 +14,16 @@ local records = {}
 
 local CMD = {}
 
+local SUB = {}
+function SUB.save_data()
+end
+
 function CMD.start(channel_id)
 	-- body
-	assert(channel_id)
-	local channel = mc.new {
-		channel = channel_id,
-		dispatch = function (_, _, cmd, ...)
-			-- body
-			local f = assert(CMD[cmd])
-			local r = f( ... )
-			assert(r == nil)
-		end
+	savedata.init {
+		channel_id = channel_id,
+		command = SUB
 	}
-	channel:subscribe()
 	return true
 end
 
@@ -44,20 +41,6 @@ end
 
 function CMD.sayhi()
 	-- body
-end
-
-function CMD.save_data()
-	-- body
-	-- local db_records = {}
-	-- for k,v in pairs(records) do
-	-- 	local db_record = {}
-	-- 	xrecords[string.format("%d", k)] = v
-	-- end
-	-- local data = {}
-	-- data.records = xrecords
-	-- local pack = json.encode(data)
-	-- redis:set("tb_record", pack)
-	return NORET
 end
 
 function CMD.close()
@@ -109,23 +92,7 @@ function CMD.save_record(players, start_time, close_time, content, ... )
 	-- body
 end
 
-skynet.start(function ()
-	-- body
-	skynet.dispatch("lua", function (_, _, cmd, ...)
-		-- body
-		local f = assert(CMD[cmd])
-		local ok, err = xpcall(f, traceback, ...)
-		if ok then
-			if err ~= servicecode.NORET then
-				if err ~= nil then
-					skynet.retpack(err)
-				else
-					log.error("cmd = %s not return", cmd)
-				end
-			end
-		else
-			log.error(err)
-		end
-	end)
-	skynet.register ".RECORD_MGR"
-end)
+service.init {
+	name = '.RECORD_MGR',
+	command = CMD
+}

@@ -1,6 +1,6 @@
 local skynet = require "skynet"
-require "skynet.manager"
 local log = require "chestnut.skynet.log"
+local service = require("service")
 
 local users = {}
 local board = "weixinhao:nihao"
@@ -10,6 +10,15 @@ local NORET = {}
 local CMD = {}
 
 function CMD.start( ... )
+	-- body
+	return true
+end
+
+function CMD.init_data()
+	return true
+end
+
+function CMD.sayhi( ... )
 	-- body
 	return true
 end
@@ -71,19 +80,7 @@ function CMD.radio(type, text, ... )
 	end
 end
 
-skynet.start(function ( ... )
-	-- body
-	skynet.register ".RADIOCENTER"
-	skynet.dispatch("lua", function (_, source, cmd, ... )
-		-- body
-		local f = assert(CMD[cmd])
-		local r = f( ... )
-		if r ~= NORET then
-			if r ~= nil then
-				skynet.retpack(r)
-			else
-				log.error("cmd = %d return nil", cmd)
-			end
-		end
-	end)
-end)
+service.init {
+	name = '.RADIOCENTER',
+	command = CMD
+}

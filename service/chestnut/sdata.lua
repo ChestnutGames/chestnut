@@ -1,10 +1,8 @@
-package.path = "./module/dezhou/lualib/?.lua;"..package.path
 local skynet = require "skynet"
-require "skynet.manager"
 local builder = require "skynet.datasheet.builder"
 local log = require "chestnut.skynet.log"
 local AppConfig = require "chestnut.sdata.AppConfig"
-local NORET = {}
+local service = require("service")
 
 local CMD = {}
 
@@ -21,6 +19,10 @@ function CMD.start( ... )
 	return false
 end
 
+function CMD.init_data()
+	return true
+end
+
 function CMD.close( ... )
 	-- body
 	return true
@@ -31,13 +33,6 @@ function CMD.kill( ... )
 	skynet.exit()
 end
 
-skynet.start(function()
-	skynet.dispatch("lua", function(_,_, cmd, ...)
-		local f = assert(CMD[cmd])
-		local r = f(...)
-		if r ~= NORET then
-			skynet.retpack(r)
-		end
-	end)
-	skynet.register "sdata"
-end)
+service.init {
+	command = CMD
+}

@@ -1,5 +1,5 @@
 local log = require "chestnut.skynet.log"
-local card = require "card"
+local card = require "chestnut.mahjongroom.card"
 local assert = assert
 
 local kind = {}

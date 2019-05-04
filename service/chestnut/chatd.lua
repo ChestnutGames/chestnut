@@ -17,9 +17,11 @@ function CMD.start()
 end
 
 function CMD.init_data()
+	return true
 end
 
 function CMD.sayhi() 
+	return true
 end
 
 function CMD.close()

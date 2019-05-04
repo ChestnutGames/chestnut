@@ -171,6 +171,7 @@ function server.register_handler(name)
 	servername = name
 	local gated = skynet.getenv "gated"
 	skynet.call(loginservice, "lua", "register_gate", servername, skynet.self(), gated)
+	skynet.error('gatea')
 end
 
 msgserver.start(server)

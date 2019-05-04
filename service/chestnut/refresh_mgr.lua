@@ -1,10 +1,10 @@
-package.path = "./module/mahjong/lualib/?.lua;"..package.path
 local skynet = require "skynet"
-require "skynet.manager"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local redis = require "chestnut.redis"
 local json = require "rapidjson"
+local service = require "service"
+local savedata = require "savedata"
 local traceback = debug.traceback
 local assert = assert
 
@@ -13,25 +13,17 @@ local refreshs = {}
 local config
 
 local CMD = {}
+local SUB = {}
+
+function SUB.save_data()
+end
 
 function CMD.start(channel_id)
 	-- body
-	local channel = mc.new {
-		channel = channel_id,
-		dispatch = function (_, _, cmd, ...)
-			-- body
-			local f = assert(CMD[cmd])
-			local r = f( ... )
-			if r ~= NORET then
-				if r ~= nil then
-					skynet.retpack(r)
-				else
-					log.error("subscribe cmd = %s not return", cmd)
-				end
-			end
-		end
+	savedata.init {
+		channel_id = channel_id,
+		command = SUB
 	}
-	channel:subscribe()
 	return true
 end
 
@@ -93,23 +85,7 @@ function CMD.afk(uid, ... )
 	users[uid] = nil
 end
 
-skynet.start(function ()
-	-- body
-	skynet.dispatch("lua", function ( _, _, cmd, ... )
-		-- body
-		local f = assert(CMD[cmd])
-		local ok, err = xpcall(f, traceback, ... )
-		if ok then
-			if err ~= NORET then
-				if err ~= nil then
-					skynet.retpack(err)
-				else
-					log.error("REFRESH_MGR cmd = %d  not return", cmd)
-				end
-			end
-		else
-			log.error(err)
-		end
-	end)
-	skynet.register ".REFRESH_MGR"
-end)
+service.init {
+	name = '.REFRESH_MGR',
+	command = CMD
+}

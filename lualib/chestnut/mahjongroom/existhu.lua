@@ -1,5 +1,5 @@
-local hutype = require "hutype"
-local region = require "region"
+local hutype = require "chestnut.mahjongroom.hutype"
+local region = require "chestnut.mahjongroom.region"
 
 local function exist(lo, ... )
 	-- body

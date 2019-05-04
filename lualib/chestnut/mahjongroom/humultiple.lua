@@ -1,6 +1,6 @@
-local region = require "region"
-local hutype = require "hutype"
-local jiaotype = require "jiaotype"
+local region = require "chestnut.mahjongroom.region"
+local hutype = require "chestnut.mahjongroom.hutype"
+local jiaotype = require "chestnut.mahjongroom.jiaotype"
 
 local m = {}
 

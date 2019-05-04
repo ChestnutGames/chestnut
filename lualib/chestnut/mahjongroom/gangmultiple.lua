@@ -1,5 +1,5 @@
-local opcode = require "opcode"
-local gangtype = require "gangtype"
+local opcode = require "chestnut.mahjongroom.opcode"
+local gangtype = require "chestnut.mahjongroom.gangtype"
 
 local _M = {}
 

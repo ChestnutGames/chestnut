@@ -1,5 +1,5 @@
 -- local log = require "log"
-local hutype = require "hutype"
+local hutype = require "chestnut.mahjongroom.hutype"
 
 local function check_qidui(cards, ... )
 	-- body

@@ -3,13 +3,14 @@ require("skynet.manager")
 -- local log = require "log"
 local log = require "chestnut.skynet.log"
 local traceback = debug.traceback
+local assert = assert
 
 local service = {}
 
 service.NORET = {}
 
 function service.init(mod)
-	local funcs = mod.command
+	local funcs = assert(mod.command)
 	if mod.info then
 		skynet.info_func(function()
 			return mod.info

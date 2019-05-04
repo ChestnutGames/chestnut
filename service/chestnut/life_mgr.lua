@@ -50,7 +50,7 @@ function CMD.start()
 	table.insert(services, radiocenter)
 	log.info("radiocenter start success.")
 
-	local chat = skynet.uniqueservice("chatd")
+	local chat = skynet.uniqueservice("chestnut/chatd")
 	skynet.call(chat, "lua", "start", channel.channel)
 	table.insert(services, chat)
 	log.info("chat start success.")
@@ -115,13 +115,15 @@ function CMD.start()
 		log.info("wsgated start success.")
 	end
 
-	skynet.error(login_type)
+	-- skynet.error(loginType)
 	return true
 end
 
 function CMD.init_data()
 	-- body
+	skynet.error('init_data')
 	for _,v in pairs(init_data_servers) do
+		skynet.error(skynet.address(v))
 		skynet.call(v, "lua", "init_data")
 		log.info("init data success.")
 	end

@@ -3,6 +3,11 @@ local log = require "chestnut.skynet.log"
 local mc = require "skynet.multicast"
 local traceback = debug.traceback
 
+local host = {}
+
+function host.start()
+end
+
 local service = {}
 
 function service.init(mod)
@@ -23,5 +28,7 @@ function service.init(mod)
 	}
 	channel:subscribe()
 end
+
+service.host = host
 
 return service

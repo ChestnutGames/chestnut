@@ -78,6 +78,8 @@ function CMD.register_gate(server, address, gated)
 		gated = gated,
 	}
 	server_list[server] = s
+	skynet.error('hhh')
+	return true
 end
 
 function CMD.logout(uid, subid)

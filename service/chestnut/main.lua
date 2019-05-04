@@ -22,7 +22,7 @@ skynet.start(function()
 	})
 	cluster.open 'game1'
 
-	local codweb = skynet.uniqueservice("life_mgr")
+	local codweb = skynet.uniqueservice("chestnut/life_mgr")
 	local ok = skynet.call(codweb, "lua", "start")
 	if not ok then
 		log.error("start codweb faile, kill server.")
