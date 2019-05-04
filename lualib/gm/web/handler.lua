@@ -1,7 +1,7 @@
 local skynet = require "skynet"
-local log = require "skynet.log"
-local mime = require "web.mime"
-local urls = require "web.urls"
+local log = require "chestnut.skynet.log"
+local mime = require "gm.web.mime"
+local urls = require "gm.web.urls"
 local static_cache = {}
 local cache = true
 local root = skynet.getenv "http_root"

@@ -297,4 +297,8 @@ function cls:inituser()
 	return true
 end
 
+function cls.init( ... )
+	-- body
+end
+
 return cls

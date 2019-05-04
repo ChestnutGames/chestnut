@@ -1,13 +1,13 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
 local crypt = require "skynet.crypt"
-local log = require "skynet.log"
+local log = require "chestnut.skynet.log"
 local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
 
-local route = require "web.route"
-local errorcode = require "errorcode"
+local route = require "gm.web.route"
+local errorcode = require "gm.web.errorcode"
 
 local pcall = skynet.pcall
 local assert = assert

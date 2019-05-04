@@ -1,9 +1,9 @@
 local skynet = require "skynet"
 -- local cluster = require "cluster"
-local csvreader = require "csvReader"
-local query = require "query"
-local errorcode = require "errorcode"
-local json = require "cjson"
+local csvreader = require "common.csvReader"
+-- local query = require "query"
+local errorcode = require "gm.web.errorcode"
+local json = require "rapidjson"
 local pcall = skynet.pcall
 local template = {}
 local string_split = string.split

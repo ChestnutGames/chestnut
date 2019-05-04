@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local list = require "chestnut.list"
+local list = require "common.list"
 local assert = assert
 local k = 0
 local lasttick = 0

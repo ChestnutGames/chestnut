@@ -1,5 +1,4 @@
-package.path = "./module/gated/?.lua;" .. package.path
-local msgserver = require "msgserver"
+local msgserver = require "chestnut.gated.msgserver"
 local crypt = require "skynet.crypt"
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"

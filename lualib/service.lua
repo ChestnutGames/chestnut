@@ -1,6 +1,8 @@
 local skynet = require "skynet"
+require("skynet.manager")
 -- local log = require "log"
 local log = require "chestnut.skynet.log"
+local traceback = debug.traceback
 
 local service = {}
 

@@ -1,23 +1,28 @@
 local skynet = require "skynet"
 local mc = require "skynet.multicast"
+local savedata = require("savedata")
 
 local CMD = {}
 
 function CMD:start( ... )
 	-- body
-	local channel = mc.new {
-		channel = channel_id,
-		dispatch = function (_, _, cmd, ...)
-			-- body
-			local f = assert(CMD[cmd])
-			local ok, result = pcall(f, self, ... )
-			if not ok then
-				log.error(result)
-			end
-		end
+	savedata.init {
+
 	}
-	channel:subscribe()
-	return self:start()
+	return true
+	-- local channel = mc.new {
+	-- 	channel = channel_id,
+	-- 	dispatch = function (_, _, cmd, ...)
+	-- 		-- body
+	-- 		local f = assert(CMD[cmd])
+	-- 		local ok, result = pcall(f, self, ... )
+	-- 		if not ok then
+	-- 			log.error(result)
+	-- 		end
+	-- 	end
+	-- }
+	-- channel:subscribe()
+	-- return self:start()
 end
 
 function CMD:init_data()

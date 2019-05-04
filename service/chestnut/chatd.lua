@@ -1,6 +1,8 @@
 local skynet = require "skynet"
 require "skynet.manager"
 local log = require "chestnut.skynet.log"
+local service = require "service"
+local client = require "client"
 local traceback = debug.traceback
 local assert = assert
 
@@ -124,17 +126,7 @@ function CMD.say(from, to, word)
 	end
 end
 
-skynet.start(function ()
-	skynet.dispatch( "lua" , function( _, _, cmd, ... )
-		local f = assert(CMD[cmd])
-		local ok, err = xpcall(f, traceback, ...)
-		if ok then
-			if err ~= NORET then
-				skynet.retpack(err)
-			end
-		else
-			log.error(err)
-		end
-	end)
-	skynet.register ".CHATD"
-end)
+service.init {
+	name = '.CHATD',
+	command = CMD
+}

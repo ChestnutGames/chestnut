@@ -9,19 +9,19 @@ end
 
 function cls:LoadFile()
 	-- body
-	local card = require "configs.cardConfig"
-	local consts = require "configs.constsConfig"
-	local desk = require "configs.deskConfig"
-	local errorcode = require "configs.errorcodeConfig"
-	local funcopen = require "configs.funcopenConfig"
-	local hand = require "configs.handConfig"
-	local hutype = require "configs.hutypeConfig"
-	local item = require "configs.itemConfig"
-	local language = require "configs.languageConfig"
-	local notice = require "configs.noticeConfig"
-	local play = require "configs.playConfig"
+	local card = require "chestnut.sdata.configs.cardConfig"
+	local consts = require "chestnut.sdata.configs.constsConfig"
+	local desk = require "chestnut.sdata.configs.deskConfig"
+	local errorcode = require "chestnut.sdata.configs.errorcodeConfig"
+	local funcopen = require "chestnut.sdata.configs.funcopenConfig"
+	local hand = require "chestnut.sdata.configs.handConfig"
+	local hutype = require "chestnut.sdata.configs.hutypeConfig"
+	local item = require "chestnut.sdata.configs.itemConfig"
+	local language = require "chestnut.sdata.configs.languageConfig"
+	local notice = require "chestnut.sdata.configs.noticeConfig"
+	local play = require "chestnut.sdata.configs.playConfig"
 	-- local refresh = require "configs.refresh"
-	local roommode = require "configs.roommodeConfig"
+	local roommode = require "chestnut.sdata.configs.roommodeConfig"
 
 	self.config['card'] = card
 	self.config['consts'] = consts

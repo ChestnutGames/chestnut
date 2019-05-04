@@ -1,11 +1,10 @@
-package.path = "./module/ballroom/?.lua;"..package.path
 local skynet = require "skynet"
 require "skynet.manager"
 local crypt = require "skynet.crypt"
 local log = require "chestnut.skynet.log"
 
-local context = require "ballroom.context"
-local CMD = require "ballroom.cmd"
+local context = require "chestnut.ballroom.context"
+local CMD = require "chestnut.ballroom.cmd"
 
 
 local client = require("client")

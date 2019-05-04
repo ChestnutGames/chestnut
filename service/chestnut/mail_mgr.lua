@@ -3,7 +3,7 @@ require "skynet.manager"
 local mc = require "skynet.multicast"
 -- local sd = require "skynet.sharedata"
 local log = require "chestnut.skynet.log"
-local zset = require "chestnut.zset"
+local zset = require "zset"
 local redis = require "chestnut.redis"
 local json = require "rapidjson"
 local savedata = require("savedata")
@@ -44,10 +44,11 @@ end
 
 function CMD.start(channel_id)
 	-- body
-	save_data.init {
+	savedata.init {
 		channel_id = channel_id,
 		command = subscribe
 	}
+	return true
 end
 
 function CMD.init_data()

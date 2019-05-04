@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local time_utils = require "chestnut.time_utils"
+local time_utils = require "common.time_utils"
 local pcall = pcall
 local assert = assert
 

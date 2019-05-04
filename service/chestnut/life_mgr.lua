@@ -20,7 +20,7 @@ function CMD.start()
 	log.info("xloggerd start ... ")
 
 	-- db
-	skynet.uniqueservice("db/db")
+	skynet.uniqueservice("db")
 
 	-- config
 	local sdata = skynet.uniqueservice("chestnut/sdata")
@@ -79,11 +79,18 @@ function CMD.start()
 
 	local loginType = skynet.getenv 'login_type'
 	if loginType == 'so' then
+		local verify = skynet.uniqueservice("logind/logindverify")
+		skynet.call(verify, "lua", "start")
+
+		local logind = skynet.getenv("logind") or "0.0.0.0:3002"
+		local addr = skynet.newservice("logind/logind", logind)
+		skynet.name(".LOGIND", addr)
+
 		local gated = skynet.getenv("gated") or "0.0.0.0:3301"
 		local address, port = string.match(gated, "([%d.]+)%:(%d+)")
 		local gated_name = skynet.getenv("gated_name") or "sample"
 		local max_client = skynet.getenv("maxclient") or 1024
-		local gate = skynet.uniqueservice("gated/gated")
+		local gate = skynet.uniqueservice("chestnut/gated")
 		skynet.call(gate, "lua", "open", {
 			address = address or "0.0.0.0",
 			port = port,
@@ -97,10 +104,12 @@ function CMD.start()
 			-- local address, port = string.match(udpgated, "([%d.]+)%:(%d+)")
 			-- local gated_name = skynet.getenv("gated_name") or "sample"
 			-- local max_client = skynet.getenv("maxclient") or 1024
-			local udpgate = skynet.uniqueservice("rudpserver_mgr")
-			skynet.call(udpgate, "lua", "start")
+			-- local udpgate = skynet.uniqueservice("rudpserver_mgr")
+			-- skynet.call(udpgate, "lua", "start")
 		end
-	else 
+	else
+		skynet.uniqueservice("wslogind")
+
 		local wsgated = skynet.uniqueservice('wsgated')
 		skynet.call(wsgated, "lua", "start")
 		log.info("wsgated start success.")
@@ -148,6 +157,9 @@ function CMD.kill()
 end
 
 service.init {
+	init = function ()
+		channel = mc.new()
+	end,
 	name = ".CODWEB",
 	command = CMD
 }

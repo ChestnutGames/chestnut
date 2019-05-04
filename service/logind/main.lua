@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 require "skynet.manager"
 local log = require "chestnut.skynet.log"
+local cluster = require "skynet.cluster"
 
 skynet.start(function()
 
@@ -25,6 +26,16 @@ skynet.start(function()
 		skynet.call(wsgated, "lua", "start")
 		log.info("wsgated start success.")
 	end
+
+	local gm = skynet.getenv 'gm'
+	local logind = skynet.getenv 'logind'
+	local game1 = skynet.getenv 'game1'
+	cluster.reload({
+		gm = gm,
+		logind = logind,
+		game1 = game1
+	})
+	cluster.open 'logind'
 
 	skynet.exit()
 end)

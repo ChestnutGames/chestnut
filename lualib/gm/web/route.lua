@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local httpd = require "http.httpd"
 local urllib = require "http.url"
 local sockethelper = require "http.sockethelper"
-local handler = require "web.handler"
+local handler = require "gm.web.handler"
 
 local function response(id, ...)
 	local ok, err = httpd.write_response(sockethelper.writefunc(id), ...)

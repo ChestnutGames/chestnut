@@ -4,7 +4,7 @@ local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local skynet_queue = require "skynet.queue"
 local queue = require "chestnut.queue"
-local util = require "chestnut.time_utils"
+local util = require "common.time_utils"
 local traceback = debug.traceback
 local assert = assert
 
@@ -33,7 +33,7 @@ function CMD.start(channel_id, init_agent_num)
 	assert(init_agent_num > 1)
 	for _=1,init_agent_num do
 		local agent = {}
-		local addr = skynet.newservice("agent/agent")
+		local addr = skynet.newservice("chestnut/agent")
 		agent.addr = addr
 		enqueue(agent)
 	end

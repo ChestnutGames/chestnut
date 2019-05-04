@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 require "skynet.manager"
 local queue = require "chestnut.queue"
+local service = require "service"
 
 local gate_max = 10
 local pool = queue()
@@ -71,14 +72,7 @@ function CMD.enter(uid, addr, ... )
 	return res
 end
 
-skynet.start(function ( ... )
-	-- body
-	skynet.dispatch("lua", function(_,_, cmd, subcmd, ...)
-		local f = CMD[cmd]
-		local r = f(subcmd, ... )
-		if r ~= nil then
-			skynet.ret(skynet.pack(r))
-		end
-	end)
-	skynet.register ".UDPSERVER_MGR"
-end)
+service.init {
+	name = '.UDPSERVER_MGR',
+	command = CMD
+}

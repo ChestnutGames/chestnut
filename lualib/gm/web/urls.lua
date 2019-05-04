@@ -1,4 +1,4 @@
-local view = require "web.view"
+local view = require "gm.web.view"
 local _M = {}
 
 _M['^/$']             = assert(view["index"])

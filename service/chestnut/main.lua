@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 require "skynet.manager"
 local log = require "chestnut.skynet.log"
+local cluster = require "skynet.cluster"
 
 skynet.start(function()
 
@@ -11,6 +12,16 @@ skynet.start(function()
 
 	skynet.uniqueservice("protoloader")
 
+	local gm = skynet.getenv 'gm'
+	local logind = skynet.getenv 'logind'
+	local game1 = skynet.getenv 'game1'
+	cluster.reload({
+		gm = gm,
+		logind = logind,
+		game1 = game1
+	})
+	cluster.open 'game1'
+
 	local codweb = skynet.uniqueservice("life_mgr")
 	local ok = skynet.call(codweb, "lua", "start")
 	if not ok then
@@ -19,8 +30,10 @@ skynet.start(function()
 		log.error("start codweb faile, kill main.")
 		skynet.abort()
 	else
+
 		skynet.call(codweb, "lua", "init_data")
 		skynet.call(codweb, "lua", "sayhi")
+
 		log.info("host successful --------------------------------------------")
 
 		-- MOCK

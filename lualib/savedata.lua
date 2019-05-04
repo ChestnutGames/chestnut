@@ -14,7 +14,7 @@ function service.init(mod)
 		channel = channel_id,
 		dispatch = function (_, _, cmd, ...)
             -- body
-            local f = assert(CMD[cmd])
+            local f = assert(funcs[cmd])
             local ok, err = xpcall(f, traceback, ...)
             if not ok then
                 log.error("agent cmd [%s] error = [%s]", cmd, err)

@@ -9,7 +9,8 @@ local CMD = {}
 -- 服务协议
 function CMD:start(channel_id, ... )
 	-- body
-	return self:start(channel_id, ... )
+	-- return self:start(channel_id, ... )
+	return true
 end
 
 function CMD:sayhi(reload)

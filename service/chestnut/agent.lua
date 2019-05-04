@@ -1,10 +1,10 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
 local servicecode = require "chestnut.servicecode"
-local context = require "AgentContext"
-local REQUEST = require "request"
-local RESPONSE = require "response"
-local CMD = require "cmd"
+-- local context = require "chestnut.user.AgentContext"
+local REQUEST = require "chestnut.agent.request"
+local RESPONSE = require "chestnut.agent.response"
+local CMD = require "chestnut.agent.cmd"
 local traceback = debug.traceback
 local assert = assert
 local login_type = skynet.getenv 'login_type'

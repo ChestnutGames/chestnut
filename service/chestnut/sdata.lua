@@ -3,7 +3,7 @@ local skynet = require "skynet"
 require "skynet.manager"
 local builder = require "skynet.datasheet.builder"
 local log = require "chestnut.skynet.log"
-local AppConfig = require "AppConfig"
+local AppConfig = require "chestnut.sdata.AppConfig"
 local NORET = {}
 
 local CMD = {}
