@@ -3,19 +3,7 @@ local log = require "chestnut.skynet.log"
 
 local CLS_NAME = "func_open"
 
-local cls = class(CLS_NAME)
-
-function cls:ctor(context)
-	-- body
-	self.agentContext = context
-	self.agentSystems = nil
-	self.dbFuncopen = {}
-end
-
-function cls:set_agent_systems(systems)
-	-- body
-	self.agentSystems = systems
-end
+local cls = {}
 
 function cls:on_data_init(dbData)
 	-- body
@@ -53,11 +41,15 @@ function cls:on_data_save(dbData, ... )
 	return true
 end
 
-function cls:initialize( ... )
+function cls:enter( ... )
 	-- body
-	-- 检查应该开启而没有开启的
-	self:on_level_open()
+	cls.on_level_open(self)
 end
+
+function cls:afk( ... )
+	-- body
+end
+
 
 function cls:on_level_open()
 	-- body

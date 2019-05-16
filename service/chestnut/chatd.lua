@@ -6,7 +6,6 @@ local client = require "client"
 local traceback = debug.traceback
 local assert = assert
 
-local NORET = {}
 local users = {}          -- 全服聊天
 local rooms = {}          -- 房间聊天
 local CMD = {}

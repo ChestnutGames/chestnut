@@ -8,7 +8,6 @@ local savedata = require "savedata"
 local traceback = debug.traceback
 local assert = assert
 
-local NORET = {}
 local refreshs = {}
 local config
 

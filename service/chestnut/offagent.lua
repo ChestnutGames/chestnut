@@ -23,6 +23,7 @@ end
 function CMD.sayhi()
 	-- body
 	-- 初始化各种全服信息
+	return true
 end
 
 -- channel msg, not return

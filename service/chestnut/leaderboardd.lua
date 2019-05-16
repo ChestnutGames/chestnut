@@ -1,9 +1,6 @@
-package.path = "./../../lualib/?.lua;" .. package.path
 local skynet = require "skynet"
-require "skynet.manager"
 local log = require "log"
-local query = require "query"
-local leaderboard = require "leaderboard"
+local service = require "service"
 local assert = assert
 
 local users = {}
@@ -27,6 +24,50 @@ end
 
 local CMD = {}
 
+function CMD.start(channel_id, init_agent_num)
+	-- body
+	assert(init_agent_num > 1)
+	for _=1,init_agent_num do
+		local agent = {}
+		local addr = skynet.newservice("chestnut/agent")
+		agent.addr = addr
+		enqueue(agent)
+	end
+	for _,v in pairs(leisure_agent) do
+		local ok = skynet.call(v.addr, "lua", "start", channel_id)
+		assert(ok)
+	end
+	return true
+end
+
+function CMD.init_data()
+	-- body
+	return true
+end
+
+function CMD.sayhi()
+	-- body
+end
+
+function CMD.save_data()
+	-- body
+end
+
+function CMD.close()
+	-- body
+	-- 存在线数据
+	for _,v in pairs(users) do
+		skynet.call(v.addr, 'lua', 'close')
+	end
+	return true
+end
+
+function CMD.kill()
+	-- body
+	skynet.exit()
+end
+
+-- 访问数据
 function CMD.login(uid, agent, key, ... )
 	-- body
 	local u = users[uid]
@@ -72,19 +113,7 @@ function CMD.nearby(rank)
 	return ld:nearby(rank)
 end
 
-skynet.start(function ()
-	-- body
-	skynet.dispatch("lua", function(_,_, cmd, subcmd, ...)
-		local f = CMD[cmd]
-		if f then
-			local r = f(subcmd, ... )
-			if r then
-				skynet.ret(skynet.pack(r))
-			end
-		else
-			log.error(string.format("command %s is wrong", cmd))
-		end
-	end)
-	ld = leaderboard.new(100, comp_u)
-	skynet.register ".LEADERBOARD"
-end)
+service.init {
+	name = '.LEADERBOARD',
+	command = CMD
+}

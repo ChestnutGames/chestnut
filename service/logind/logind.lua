@@ -2,7 +2,7 @@ local login = require "snax.loginserver"
 local crypt = require "skynet.crypt"
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local servicecode = require "chestnut.servicecode"
+local servicecode = require "enum.servicecode"
 
 local address, port = string.match(skynet.getenv("logind"), "([%d.]+)%:(%d+)")
 local logind_name = skynet.getenv "logind_name"
@@ -78,7 +78,6 @@ function CMD.register_gate(server, address, gated)
 		gated = gated,
 	}
 	server_list[server] = s
-	skynet.error('hhh')
 	return true
 end
 
@@ -86,8 +85,11 @@ function CMD.logout(uid, subid)
 	local u = user_online[uid]
 	if u then
 		log.info(string.format("%s@%s is logout", uid, u.server))
-		user_online[uid] = nil
-		return servicecode.SUCCESS
+		local err = skynet.call(u.address, 'lua', 'kick', uid, subid)
+		if err == servicecode.SUCCESS then
+			user_online[uid] = nil
+		end
+		return err
 	else
 		log.error("logined service logout failture, uid: %d, subid: %d", uid, subid)
 		return servicecode.FAIL

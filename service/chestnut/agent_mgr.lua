@@ -1,14 +1,13 @@
 local skynet = require "skynet"
-require "skynet.manager"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 local skynet_queue = require "skynet.queue"
 local queue = require "chestnut.queue"
-local util = require "common.time_utils"
+local util = require "common.utils"
+local service = require "service"
 local traceback = debug.traceback
 local assert = assert
 
-local NORET = {}
 local cs = skynet_queue()
 local leisure_agent = queue()     -- 未用的agent
 local users = {}                  -- 已经用了的agent
@@ -51,6 +50,7 @@ end
 
 function CMD.sayhi()
 	-- body
+	return true
 end
 
 function CMD.save_data()
@@ -125,18 +125,8 @@ function CMD.exit_at_once(uid)
 	return true
 end
 
-skynet.start(function ()
-	-- body
-	skynet.dispatch("lua", function(_,_, cmd, ...)
-		local f = assert(CMD[cmd])
-		local ok, err = xpcall(f, traceback, ... )
-		if ok then
-			if err ~= NORET then
-				skynet.ret(skynet.pack(err))
-			end
-		else
-			log.error(err)
-		end
-	end)
-	skynet.register ".AGENT_MGR"
-end)
+service.init {
+	name = '.AGENT_MGR',
+	command = CMD
+}
+

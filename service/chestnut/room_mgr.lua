@@ -3,8 +3,10 @@ local mc = require "skynet.multicast"
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local queue = require "chestnut.queue"
+local luaTableDump = require "common.luaTableDump"
 local json = require "rapidjson"
 local service = require "service"
+local savedata = require "savedata"
 local traceback = debug.traceback
 local assert = assert
 
@@ -47,21 +49,19 @@ local function next_id()
 end
 
 local CMD = {}
+local SUB = {}
+
+function SUB.save_data( ... )
+	-- body
+	CMD.save_data()
+end
 
 function CMD.start(channel_id)
 	-- body
-	local channel = mc.new {
-		channel = channel_id,
-		dispatch = function (_, _, cmd, ...)
-			-- body
-			local f = assert(CMD[cmd])
-			local ok, err = pcall(f, ... )
-			if not ok then
-				log.error(err)
-			end
-		end
+	savedata.init {
+		channel_id = channel_id,
+		command = SUB
 	}
-	channel:subscribe()
 
 	-- 初始一些配置
 	startid = 101010 -- 101010
@@ -85,6 +85,7 @@ function CMD.init_data()
 	-- body
 	-- 初始自定义房间数据
 	local pack = skynet.call('.DB', "lua", "read_room_mgr")
+	skynet.error(luaTableDump(pack))
 	if pack then
 		for _,db_user in pairs(pack.db_users) do
 			if db_user.roomid ~= 0 then

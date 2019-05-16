@@ -12,9 +12,9 @@ skynet.start(function()
 
 	skynet.uniqueservice("protoloader")
 
-	local gm = skynet.getenv 'gm'
-	local logind = skynet.getenv 'logind'
-	local game1 = skynet.getenv 'game1'
+	local gm = skynet.getenv 'cluster_gm'
+	local logind = skynet.getenv 'cluster_logind'
+	local game1 = skynet.getenv 'cluster_game1'
 	cluster.reload({
 		gm = gm,
 		logind = logind,

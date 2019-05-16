@@ -1,3 +1,4 @@
+local skynet = require 'skynet'
 
 local _M = {}
 

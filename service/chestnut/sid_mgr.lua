@@ -15,6 +15,10 @@ function cmd.init_data()
 	return true
 end
 
+function cmd.sayhi()
+	return true
+end
+
 function cmd.close( ... )
 	-- body
 	return true

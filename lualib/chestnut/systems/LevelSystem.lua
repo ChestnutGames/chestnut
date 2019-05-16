@@ -1,18 +1,7 @@
 -- local log = require "chestnut.skynet.log"
 local ds = require "skynet.datasheet"
 
-local cls = class('level')
-
-function cls:ctor(context)
-	-- body
-	self.agentContext = context
-	self.agentSystems = nil
-end
-
-function cls:set_agent_systems(systems)
-	-- body
-	self.agentSystems = systems
-end
+local cls = {}
 
 function cls:on_data_init(dbData)
 	-- body

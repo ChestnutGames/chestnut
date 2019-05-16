@@ -1,5 +1,5 @@
 local log = require "chestnut.skynet.log"
-local PackageType = require "def.PackageType"
+local PackageType = require "enum.PackageType"
 local ds = require "skynet.datasheet"
 
 local CLS_NAME = "package"

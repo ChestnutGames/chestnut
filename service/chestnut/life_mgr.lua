@@ -122,7 +122,7 @@ end
 function CMD.init_data()
 	-- body
 	skynet.error('init_data')
-	for _,v in pairs(init_data_servers) do
+	for _,v in pairs(services) do
 		skynet.error(skynet.address(v))
 		skynet.call(v, "lua", "init_data")
 		log.info("init data success.")
@@ -133,7 +133,7 @@ end
 
 function CMD.sayhi()
 	-- body
-	for _,v in pairs(sayhi_servers) do
+	for _,v in pairs(services) do
 		skynet.call(v, "lua", "sayhi")
 	end
 	log.info("sayhi over.")
@@ -142,7 +142,7 @@ function CMD.sayhi()
 		-- body
 		while true do
 			channel:publish("save_data")
-			skynet.sleep(100)
+			skynet.sleep(100 * 60)
 		end
 	end)
 	return true

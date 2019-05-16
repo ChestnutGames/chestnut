@@ -1,26 +1,21 @@
 local skynet = require "skynet"
-require "skynet.manager"
 local mc = require "skynet.multicast"
 -- local sd = require "skynet.sharedata"
 local log = require "chestnut.skynet.log"
 local zset = require "zset"
 local redis = require "chestnut.redis"
 local json = require "rapidjson"
-local savedata = require("savedata")
+local savedata = require "savedata"
 local service = require "service"
 local traceback = debug.traceback
 local assert = assert
-
-local NORET = {}
 local users = {}
 local rooms = {}
 local zs = zset.new()
-
-
 local CMD = {}
 local subscribe = {}
 
-function subscribe.save_data()
+local function save_data()
 	if zs:count() > 0 then
 		local db_mails = {}
 		local t = zs:range(1, zs:count())
@@ -40,6 +35,10 @@ function subscribe.save_data()
 		local pack = json.encode(data)
 		redis:set("tb_sysmail", pack)
 	end
+end
+
+function subscribe.save_data()
+	save_data()
 end
 
 function CMD.start(channel_id)
@@ -75,17 +74,12 @@ end
 function CMD.sayhi()
 	-- body
 	-- 初始化各种全服信息
-end
-
--- channel msg, not return
-function CMD.save_data()
-	-- body
-	return NORET
+	return true
 end
 
 function CMD.close( ... )
 	-- body
-	CMD.save_data()
+	save_data()
 	return true
 end
 
@@ -163,5 +157,5 @@ function CMD.new_mail(title, content, appendix, to, ... )
 end
 
 service.init {
-	command = CMD 
+	command = CMD
 }

@@ -1,9 +1,10 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local servicecode = require "chestnut.servicecode"
+local servicecode = require "enum.servicecode"
 local traceback = debug.traceback
 
 local CMD = {}
+local SUB = {}
 
 ------------------------------------------
 -- 服务协议

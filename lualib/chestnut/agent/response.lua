@@ -1,6 +1,7 @@
 local skynet = require "skynet"
+local client = require "client"
 
-local RESPONSE = {}
+local RESPONSE = client.response()
 
 function RESPONSE:handshake(args)
 	-- body

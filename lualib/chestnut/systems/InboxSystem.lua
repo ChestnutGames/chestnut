@@ -5,24 +5,30 @@ local log = require "chestnut.skynet.log"
 local zset = require "chestnut.zset"
 local query = require "chestnut.query"
 local sysmaild = require "sysmaild"
+local client = require "client"
 
-local CLS_NAME = "inbox"
 
-local cls = class(CLS_NAME)
-
-function cls:ctor(context, ... )
+local function send_inbox_list(obj, ... )
 	-- body
-	cls.super.ctor(self, context)
-	self.agentContext = context
-	self.agentSystems = nil
-	self.dbInbox = {}
-	return self
+	local l = {}
+	for _,v in pairs(self._mk) do
+		if v.viewed.value == 0 then
+			local mail = {}
+			mail.id       = v.mailid
+			mail.viewed   = v.viewed
+			mail.title    = t.title
+			mail.content  = t.content
+			mail.datetime = t.datetime
+			table.insert(l, mail)
+		end
+	end
+
+	local args = {}
+	args.l = l
+	client.push(obj, "inbox", args)
 end
 
-function cls:set_agent_systems(systems)
-	-- body
-	self.agentSystems = systems
-end
+local cls = {}
 
 function cls:on_data_init(dbData, ... )
 end
@@ -31,9 +37,13 @@ function cls:on_data_save(dbData, ... )
 	-- body
 end
 
-function cls:inituser( ... )
+function cls:on_enter( ... )
 	-- body
-	self:send_inbox_list()
+	send_inbox_list(self)
+end
+
+function cls:on_exit( ... )
+	-- body
 end
 
 function cls:add(mail, ... )
@@ -70,26 +80,6 @@ function cls:poll( ... )
 	end)
 end
 
-function cls:send_inbox_list( ... )
-	-- body
-	local l = {}
-	for _,v in pairs(self._mk) do
-		if v.viewed.value == 0 then
-			local mail = {}
-			mail.id       = v.mailid
-			mail.viewed   = v.viewed
-			mail.title    = t.title
-			mail.content  = t.content
-			mail.datetime = t.datetime
-			table.insert(l, mail)
-		end
-	end
-
-	local args = {}
-	args.l = l
-	self.context:send_request("inbox", args)
-end
-
 function cls:send_inbox(id, ... )
 	-- body
 	local v = assert(self._mk[id])
@@ -106,7 +96,9 @@ function cls:send_inbox(id, ... )
 	self.context:send_request("inbox", args)
 end
 
-function cls:fetch(args, ... )
+local CH = client.request()
+
+function CH:fetch(args, ... )
 	-- body
 	log.info("sysinbox fetch")
 	local res = {}
@@ -127,7 +119,7 @@ function cls:fetch(args, ... )
 	return res
 end
 
-function cls:sync(args, ... )
+function CH:sync(args, ... )
 	-- body
 	log.info("sysinbox sync")
 	local res = {}
@@ -148,13 +140,17 @@ function cls:sync(args, ... )
 	return res
 end
 
-function cls:viewed(args, ... )
+function CH:viewed(args, ... )
 	-- body
 	local mail = self._mk[args.mailid]
 	mail:set_viewed(1)
 	local res = {}
 	res.errorcode = errorcode.SUCCESS
 	return res
+end
+
+function CMD.aa( ... )
+	-- body
 end
 
 return cls

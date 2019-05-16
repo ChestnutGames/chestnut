@@ -128,3 +128,13 @@ rchat 109 {
         errorcode 0 : integer
     }
 }
+
+room_info 110 {
+    request {
+        isCreated 0 : boolean
+        joined    1 : boolean
+        roomid    2 : integer
+        type      3 : integer    # 此房间的类型
+        mode      4 : integer    # 此房间的模式
+    }
+}

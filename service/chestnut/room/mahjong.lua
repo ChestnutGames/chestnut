@@ -1,8 +1,9 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local servicecode = require "chestnut.servicecode"
+local servicecode = require "enum.servicecode"
 local context = require "chestnut.mahjongroom.rcontext"
 local CMD = require "chestnut.mahjongroom.cmd"
+local service = require "service"
 local debug = debug
 
 local id = tonumber(...)

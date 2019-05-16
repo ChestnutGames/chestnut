@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local list = require "common.list"
+local objmgr = require "objmgr"
 local assert = assert
 local k = 0
 local lasttick = 0
@@ -38,14 +39,6 @@ function cls:ctor(id, ... )
 	return self
 end
 
-function cls:push_client(name, args, ... )
-	-- body
-	for _,v in pairs(self._playeres) do
-		local agent = v:get_agent()
-		skynet.send(agent, "lua", name, args)
-	end
-end
-
 ------------------------------------------
 -- 服务协议
 function cls:start(mode, ... )
@@ -74,24 +67,20 @@ end
 
 ------------------------------------------
 -- 房间协议
-function cls:create() 
+function cls:create()
+
 end
 
-function cls:join(uid, agent, name, sex, secret, ... )
+function cls:join(uid, agent, name, sex, secret, fd, ... )
 	-- body
-	local res = nil
-	local gate = ctx:get_gate()
-	local p = ctx:getup(uid)
-	if p then
-	else
-		res = skynet.call(gate, "lua", "register", skynet.self(), secret)
-		p = player.new(uid, res.session)
-		p:set_secret(secret)
-		p:set_agent(agent)
-	end
-	ctx:addsp(p:get_session(), p)
-	ctx:addup(p:get_uid(), p)
-	return res
+	local obj = objmgr.new_obj()
+	obj.uid = uid
+	obj.agent = agent
+	obj.name = name
+	obj.sex = sex
+	obj.secret = secret
+	obj.fd = fd
+	objmgr.add(uid, obj)
 end
 
 function cls:rejoin(uid)

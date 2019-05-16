@@ -4,7 +4,7 @@ local savedata = require("savedata")
 
 local CMD = {}
 
-function CMD:start( ... )
+function CMD:start(channel_id, ... )
 	-- body
 	savedata.init {
 
@@ -58,12 +58,6 @@ function CMD:on_join(agent, ... )
 	return self:join(agent.uid, agent.agent, agent.name, agent.sex, agent.secret)
 end
 
-function CMD:join(args, ... )
-	-- body
-	assert(args.errorcode == 0)
-	return servicecode.NORET
-end
-
 function CMD:on_rejoin(args)
 	-- body
 	return self:rejoin(args.uid, args.agent)
@@ -79,10 +73,6 @@ function CMD:on_leave(uid)
 	return self:leave(uid)
 end
 
-function CMD:leave(args, ... )
-	-- body
-	assert(args.servicecode == servicecode.SUCCESS)
-end
 
 ------------------------------------------
 -- gameplay 协议

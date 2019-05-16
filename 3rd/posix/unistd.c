@@ -82,14 +82,15 @@ socket_keepalive(int fd) {
 	assert(ret != SOCKET_ERROR);
 }
 
-int pipe(int fd[2]) {
+int 
+pipe(int fd[2]) {
 	int listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	struct sockaddr_in sin;
 	sin.sin_family = AF_INET;
 	sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
 
-	srand(time(NULL));
 	// use random port(range from 60000 to 60999) to simulate pipe()
+	srand(time(NULL));
 	for(;;) {
 		int port = 60000 + rand() % 1000;
 		sin.sin_port = htons(port);

@@ -1,4 +1,5 @@
 local log = require "chestnut.skynet.log"
+local table_dump = require "common.luaTableDump"
 local string_format = string.format
 
 local _M = {}
@@ -16,8 +17,8 @@ function _M:read_room_mgr_users()
 		log.error('%s', self.dump(res))
 		return res
 	end
-	if res.mulitresultset then
-		return res[1];
+	if res.multiresultset then
+		return res[1]
 	end
 	return res
 end
@@ -29,8 +30,8 @@ function _M:read_room_mgr_rooms()
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
-		return res[1];
+	if res.multiresultset then
+		return res[1]
 	end
 	return res
 end
@@ -42,7 +43,7 @@ function _M:read_account_by_username(username, password)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	end
 	return {}
@@ -55,7 +56,7 @@ function _M:read_room(id)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	end
 	return {}
@@ -68,7 +69,7 @@ function _M:read_room_users(id)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	else
 		return {}
@@ -85,7 +86,7 @@ function _M:read_users_by_uid(uid)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	end
 	return res
@@ -98,7 +99,7 @@ function _M:read_user_rooms(uid)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	end
 	return res
@@ -111,7 +112,7 @@ function _M:read_user_packages(uid)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	end
 	return res
@@ -124,7 +125,7 @@ function _M:read_user_funcopens(uid)
 		log.error('%s', self.dump(res))
 		return {}
 	end
-	if res.mulitresultset then
+	if res.multiresultset then
 		return res[1]
 	end
 	return res

@@ -1,24 +1,9 @@
 local skynet = require "skynet"
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
+local client = require "client"
 
-local cls = class("room")
-
-function cls:ctor(context)
-	-- body
-	self.agentContext = context
-	self.agentSystems = nil
-	self.dbRoom = {}
-	self.addr = 0             -- 临时地址
-	self.matching = false     -- 匹配中
-	self.online   = false     -- 是否在线
-	return self
-end
-
-function cls:set_agent_systems(systems, ... )
-	-- body
-	self.agentSystems = systems
-end
+local cls = {}
 
 ------------------------------------------
 -- event
@@ -60,6 +45,43 @@ function cls:on_data_save(dbData, ... )
 	dbData.db_user_room.update_at = os.time()
 end
 
+function cls:on_enter( ... )
+	-- body
+	local D = self.room
+	if D.db.joined then
+		local res = skynet.call(".ROOM_MGR", "lua", "apply", D.db.id)
+		if res.errorcode ~= 0 then
+			log.error('room mgr')
+		else
+			D.addr = res.addr
+			local ok = skynet.call(D.addr, "lua", "auth", self.uid)
+			if not ok then
+				log.error("auth not ")
+			end
+		end
+	end
+
+	local res = {}
+	res.errorcode = 0
+	res.isCreated = D.db.isCreated
+	res.joined    = D.db.joined
+	res.roomid    = D.db.id
+	res.type      = D.db.type
+	res.mode      = D.db.mode
+	client.push(self, 'room_info', res)
+end
+
+function cls:on_exit( ... )
+	-- body
+	local D = self.room
+	if D.joined and D.online then
+		local ok = skynet.call(D.addr, "lua", "on_afk", obj.uid)
+		assert(ok)
+		D.online = false
+		D.addr = 0
+	end
+end
+
 function cls:on_func_open()
 	-- body
 	local uid = self.agentContext.uid
@@ -75,63 +97,10 @@ function cls:on_func_open()
 	entity.room.updateAt = os.time()
 end
 
-function cls:afk()
-	-- body
-	log.info("RoomSystem call afk")
-	local uid   = self.agentContext.uid
-	local index = self.context:get_entity_index(UserComponent)
-	local entity = index:get_entity(uid)
-	if entity.room.joined and entity.room.online then
-		local ok = skynet.call(entity.room.addr, "lua", "on_afk", uid)
-		assert(ok)
-		entity.room.online = false
-		entity.room.addr = 0
-	end
-end
-
-function cls:initialize()
-	-- body
-	assert(self)
-	if false then
-		local uid  = self.agentContext.uid
-		local index = self.context:get_entity_index(UserComponent)
-		local entity = index:get_entity(uid)
-		if entity.room.joined then
-			local res = skynet.call(".ROOM_MGR", "lua", "apply", entity.room.id)
-			if res.errorcode ~= 0 then
-				return res
-			else
-				entity.room.addr = res.addr
-				local ok = skynet.call(entity.room.addr, "lua", "auth", uid)
-				if not ok then
-					log.error("auth not ")
-				end
-			end
-		end
-	end
-	return true
-end
 -- event
 ------------------------------------------
 
-function cls:room_info()
-	-- body
-	-- errorcode 0 : integer
-	-- isCreated 1 : boolean
-	-- joined    2 : boolean
-	-- roomid    3 : integer
-	-- type      4 : integer    # 此房间的类型
-	-- mode      5 : integer    # 此房间的模式
 
-	local res = {}
-	res.errorcode = 0
-	res.isCreated = self.dbRoom.isCreated
-	res.joined    = self.dbRoom.joined
-	res.roomid    = self.dbRoom.id
-	res.type      = self.dbRoom.type
-	res.mode      = self.dbRoom.mode
-	return res
-end
 
 function cls:match(args)
 	-- body

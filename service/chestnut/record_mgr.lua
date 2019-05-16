@@ -3,19 +3,20 @@ local sd = require "skynet.sharedata"
 local mc = require "skynet.multicast"
 local log = require "chestnut.skynet.log"
 -- local json = require "rapidjson"
-local servicecode = require "chestnut.servicecode"
+local servicecode = require "enum.servicecode"
 local service = require "service"
 local savedata = require "savedata"
 local traceback = debug.traceback
 local assert = assert
-
-
 local records = {}
-
 local CMD = {}
-
 local SUB = {}
+
+local function save_data()
+end
+
 function SUB.save_data()
+	save_data()
 end
 
 function CMD.start(channel_id)
@@ -41,10 +42,12 @@ end
 
 function CMD.sayhi()
 	-- body
+	return true
 end
 
 function CMD.close()
 	-- body
+	save_data()
 	return true
 end
 

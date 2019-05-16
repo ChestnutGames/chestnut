@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local util = require "common.time_utils"
+local util = require "common.utils"
 local card = require "chestnut.mahjongroom.card"
 local group = require "chestnut.mahjongroom.group"
 local region = require "chestnut.mahjongroom.region"

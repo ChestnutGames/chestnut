@@ -1,10 +1,13 @@
 local skynet = require "skynet"
 local log = require "chestnut.skynet.log"
-local time_utils = require "common.time_utils"
+local time_utils = require "common.utils"
+local logout = require "chestnut.agent.logout"
+local servicecode = require "enum.servicecode"
+local client = require "client"
 local pcall = pcall
 local assert = assert
 
-local REQUEST = {}
+local REQUEST = client.request()
 
 function REQUEST:handshake()
 	-- body
@@ -19,22 +22,21 @@ function REQUEST:handshake()
 	return res
 end
 
+function REQUEST:enter()
+	-- body
+	return self:inituser()
+end
+
 function REQUEST:logout()
 	-- body
 	local res = {}
-	if self:logout() then
+	if logout.logout(self) == servicecode.SUCCESS then
 		res.errorcode = 0
 	else
 		res.errorcode = 1
 	end
 	return res
 end
-
-function REQUEST:inituser()
-	-- body
-	return self:inituser()
-end
-
 
 ------------------------------------------
 -- 系统模块
