@@ -6,20 +6,8 @@ local context = require "chestnut.mahjongroom.rcontext"
 
 local CMD = {}
 
-function CMD:start(channel_id)
+function CMD:start()
 	-- body
-	local channel = mc.new {
-		channel = channel_id,
-		dispatch = function (_, _, cmd, ...)
-			-- body
-			local f = assert(CMD[cmd])
-			local ok, result = pcall(f, self, ... )
-			if not ok then
-				log.error(result)
-			end
-		end
-	}
-	channel:subscribe()
 	return self:start()
 end
 

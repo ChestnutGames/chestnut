@@ -5,7 +5,7 @@ include_directories(include)
 
 IF(MSVC)
 	add_definitions(-DLUA_BUILD_AS_DLL)
-	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
+	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC)
 ELSE(MSVC)
 	SET(CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared")
 	SET(CMAKE_C_FLAGS_DEBUG "-g -O0")

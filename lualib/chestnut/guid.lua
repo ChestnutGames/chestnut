@@ -1,11 +1,10 @@
 local skynet = require "skynet"
-local log = require "chestnut.skynet.log"
+local snowflake = require "chestnut.snowflake"
+
 
 function guid( ... )
 	-- body
-	local addr = skynet.uniqueservice("chestnut/guid")
-	local id = skynet.call(addr, "lua")
-	return id
+	return snowflake.next_id()
 end
 
 return guid

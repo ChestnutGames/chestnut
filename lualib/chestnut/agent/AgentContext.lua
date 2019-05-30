@@ -12,18 +12,13 @@ local assert = assert
 local traceback = debug.traceback
 local reload = false
 
-local function init_data(uid)
+local function init_data(obj)
 	-- body
-	local uid = self.uid
+	local uid = obj.uid
 	log.info("uid(%d) load_cache_to_data", uid)
 	local res = skynet.call(".DB", "lua", "read_user", uid)
 	-- init user
-	local ok, err = xpcall(self.systems.on_data_init, traceback, self.systems, res)
-	if not ok then
-		log.error(err)
-		return servicecode.LOGIN_AGENT_LOAD_ERR
-	end
-	local ok, err = xpcall(self.systems.initialize, traceback, self.systems, res)
+	local ok, err = xpcall(AgentSystems.on_data_init, traceback, obj, res)
 	if not ok then
 		log.error(err)
 		return servicecode.LOGIN_AGENT_LOAD_ERR
@@ -33,6 +28,10 @@ end
 
 local function save_data(uid)
 	-- body
+	objmgr.foreach(function (obj, ... )
+		-- body
+		
+	end)
 	-- local data = {}
 	-- local ok, err = xpcall(self.systems.on_data_save, traceback, self.systems, data)
 	-- if not ok then
@@ -48,13 +47,12 @@ local SUB = {}
 
 function SUB.save_data( ... )
 	-- body
-	-- save_data()
+	save_data()
 end
 
 function cls.start(channel_id, ... )
 	-- body
 	savedata.init({
-		channel_id=channel_id,
 		command=SUB
 	})
 	return true
@@ -87,7 +85,7 @@ function cls.login(gate, uid, subid, secret)
 		if not obj.loaded then
 			-- 加载数据
 			-- TODO:
-			cls.init_data(obj)	
+			init_data(obj)
 			obj.loaded = true
 		end
 	else
@@ -100,7 +98,9 @@ function cls.login(gate, uid, subid, secret)
 		obj.authed = false
 		objmgr.add(uid, obj)
 		-- TODO:
-		cls.init_data(obj)
+		init_data(obj)
+		obj.logined = true
+		savedata.subscribe()
 	end
 	return servicecode.SUCCESS
 end

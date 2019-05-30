@@ -1,4 +1,4 @@
-project(lpeg)
+﻿project(lpeg)
 
 file(GLOB LPEG_H *.h)
 file(GLOB LPEG_C *.c)
@@ -12,7 +12,7 @@ endif (MSVC)
 
 if (MSVC)
 	add_definitions(-DLUA_BUILD_AS_DLL)
-	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
+	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC)
 else (MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -Wno-unused-function -Wno-unused-varibale")
     set (CMAKE_C_FLAGS_DEBUG "-g -O0")

@@ -2,6 +2,7 @@
 #*.a
 #*.so
 
+.vscode
 /cservice
 /luaclib
 /logs

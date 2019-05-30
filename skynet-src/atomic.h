@@ -1,8 +1,8 @@
 #ifndef SKYNET_ATOMIC_H
 #define SKYNET_ATOMIC_H
 
-#ifdef _MSC_VER
-#include "atomicwin.h"
+#if defined(_MSC_VER)
+#include "simplethread/atomic.h"
 #else
 #define ATOM_CAS(ptr, oval, nval) __sync_bool_compare_and_swap(ptr, oval, nval)
 #define ATOM_CAS_POINTER(ptr, oval, nval) __sync_bool_compare_and_swap(ptr, oval, nval)

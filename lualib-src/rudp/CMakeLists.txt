@@ -1,13 +1,13 @@
-project(rudp)
+﻿project(rudp)
 
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 
 IF(MSVC)
 	include_directories(../../3rd/pthread-win32)
-	include_directories(../../3rd/posix)
+	include_directories(../../skynet-src/posix)
 	ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
-	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
+	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -D_CRT_SECURE_NO_WARNINGS)
 ELSE(MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared -Werror")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")

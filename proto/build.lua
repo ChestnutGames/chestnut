@@ -7,6 +7,10 @@ local pokers2cfd = io.open('poker.s2c.sproto', 'r')
 local mahjongfd = io.open('mahjong.sproto', 'r')
 local mahjongc2sfd = io.open('mahjong.c2s.sproto', 'r')
 local mahjongs2cfd = io.open('mahjong.s2c.sproto', 'r')
+local ballfd = io.open('ball.sproto', 'r')
+local ballc2sfd = io.open('ball.c2s.sproto', 'r')
+local balls2cfd = io.open('ball.s2c.sproto', 'r')
+
 
 local base = basefd:read('a')
 local basec2s = basec2sfd:read('a')
@@ -20,6 +24,10 @@ local mahjong = mahjongfd:read('a')
 local mahjongc2s = mahjongc2sfd:read('a')
 local mahjongs2c = mahjongs2cfd:read('a')
 
+local ball = ballfd:read('a')
+local ballc2s = ballc2sfd:read('a')
+local balls2c = balls2cfd:read('a')
+
 basefd:close()
 basec2sfd:close()
 bases2cfd:close()
@@ -32,8 +40,12 @@ mahjongfd:close()
 mahjongc2sfd:close()
 mahjongs2cfd:close()
 
-local c2s = base .. poker .. mahjong .. basec2s .. pokerc2s .. mahjongc2s
-local s2c = base .. poker .. mahjong .. bases2c .. pokers2c .. mahjongs2c
+ballfd:close()
+ballc2sfd:close()
+balls2cfd:close()
+
+local c2s = base .. ball .. basec2s .. ballc2s
+local s2c = base .. ball .. bases2c .. balls2c
 
 local c2sfd = io.open('c2s.sproto', 'w+')
 local s2cfd = io.open('s2c.sproto', 'w+')

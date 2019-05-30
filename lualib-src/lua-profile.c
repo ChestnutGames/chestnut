@@ -1,4 +1,4 @@
-#define LUA_LIB
+﻿#define LUA_LIB
 
 #include <stdio.h>
 #include <lua.h>
@@ -13,7 +13,7 @@
 
 #if defined(_MSC_VER)
 #include <unistd.h>
-#include <timeutils.h>
+#include <win/timeutils.h>
 #endif
 
 #define NANOSEC 1000000000

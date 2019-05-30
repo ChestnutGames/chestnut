@@ -44,7 +44,6 @@ function server.login_handler(source, uid, secret, ...)
 		log.info("gated call login err = %d", err)
 		users[uid] = u
 		username_map[username] = u
-
 		msgserver.login(username, secret)
 
 		-- you should return unique subid
@@ -65,8 +64,6 @@ end
 function server.logout_handler(source, uid, subid)
 	local u = users[uid]
 	if u then
-		local username = msgserver.username(uid, subid, servername)
-		assert(u.username == username)
 		log.info("call loginservice logout")
 		local err = skynet.call(loginservice, "lua", "logout", uid, subid)
 		if err ~= servicecode.SUCCESS then
@@ -74,10 +71,6 @@ function server.logout_handler(source, uid, subid)
 		else
 			log.info("logind service logout ok.")
 		end
-
-		msgserver.logout(u.username)
-		users[uid] = nil
-		username_map[u.username] = nil
 		return err
 	else
 		log.error("gated service not contains uid(%d)", uid)
@@ -90,7 +83,7 @@ function server.kick_handler(source, uid, subid)
 	local u = users[uid]
 	if u then
 		if not u.online then
-			log.info("uid = %d offline.", uid)
+			log.info("uid(%d) not authed.", uid)
 		end
 		local username = msgserver.username(uid, subid, servername)
 		assert(u.username == username)
@@ -98,7 +91,11 @@ function server.kick_handler(source, uid, subid)
 		-- pcall(skynet.call, u.agent.handle, "lua", "logout")
 		log.info("uid(%d) kick agent, call agent logout", uid)
 		local err = skynet.call(u.agent, "lua", "logout", uid)
-		if err ~= servicecode.SUCCESS then
+		if err == servicecode.SUCCESS then
+			msgserver.logout(u.username)
+			users[uid] = nil
+			username_map[u.username] = nil
+		else
 			log.error("gated pcall agent kick error.")
 		end
 		return err
@@ -127,17 +124,15 @@ function server.start_handler(username, fd, ... )
 	local u = username_map[username]
 	if u then
 		if u.online == nil or u.online == false then
-			local agent = u.agent
-			if agent then
-				local conf = {
-					uid = u.uid,
-					client = fd,
-				}
-				log.info("start_handler")
-				skynet.call(agent, "lua", "auth", conf)
-				u.online = true
-				u.fd = fd
-			end
+			local agent = assert(u.agent)
+			local conf = {
+				uid = u.uid,
+				client = fd,
+			}
+			log.info("start_handler")
+			skynet.call(agent, "lua", "auth", conf)
+			u.online = true
+			u.fd = fd
 		else
 			log.error('online is true, start auth ...')
 		end
@@ -150,12 +145,9 @@ function server.msg_handler(username, msg, sz,... )
 	local u = username_map[username]
 	if u then
 		if u.online then
-			local agent = u.agent
-			if agent then
-				skynet.redirect(agent, skynet.self(), "client", u.fd, msg, sz)
-			else
-				log.error("not find agent")
-			end
+			log.info('TEST MSG')
+			local agent = assert(u.agent)
+			skynet.redirect(agent, skynet.self(), "client", u.fd, msg, sz)
 		end
 	end
 end

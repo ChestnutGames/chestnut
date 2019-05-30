@@ -12,40 +12,31 @@ local table_insert = table.insert
 local Processors = {}
 
 function Processors:on_data_init(dbData)
-    for _, processor in pairs(self._data_init_processors) do
-        local ok, err = xpcall(processor.on_data_init, traceback, processor, dbData)
-        if not ok then
-            log.error(err)
-        end
-    end
+    AhievementSystem.on_data_init(self, dbData)
+    FuncOpenSystem.on_data_init(self, dbData)
+    PackageSystem.on_data_init(self, dbData)
+    RoomSystem.on_data_init(self, dbData)
+    UserSystem.on_data_init(self, dbData) 
 end
 
 function Processors:on_data_save(dbData)
     -- body
-    for _, processor in pairs(self._data_save_processors) do
-        local ok, err = xpcall(processor.on_data_save, traceback, processor, dbData)
-        if not ok then
-            log.error(err)
-        end
-    end
+    AhievementSystem.on_data_save(self, dbData)
+    FuncOpenSystem.on_data_save(self, dbData)
+    PackageSystem.on_data_save(self, dbData)
+    RoomSystem.on_data_save(self, dbData)
+    UserSystem.on_data_save(self, dbData) 
 end
 
 function Processors:on_enter()
-    for _, processor in pairs(self._initialize_processors) do
-        processor:initialize()
-    end
+    RoomSystem.on_enter(self)
 end
 
 function Processors:on_exit()
-    for _, processor in pairs(self._execute_processors) do
-        processor:execute()
-    end
+    
 end
 
 function Processors:on_new_day()
-    for _, processor in pairs(self._cleanup_processors) do
-        processor:cleanup()
-    end
 end
 
 return Processors

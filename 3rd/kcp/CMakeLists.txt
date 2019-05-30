@@ -1,17 +1,17 @@
-project(kcp)
+﻿project(kcp)
 
 # include
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
 if (MSVC)
-include_directories(../../3rd/pthread-win32/include)
-include_directories(../../3rd/posix)
+	include_directories(../../3rd/pthread-win32/include)
+	include_directories(../../skynet-src/posix)
 endif (MSVC)
 
 # definitions
 if (MSVC)
 	add_definitions(-DLUA_BUILD_AS_DLL)
-	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
+	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -D_CRT_SECURE_NO_WARNINGS)
 else (MSVC)
     set (CMAKE_C_FLAGS "-std=gnu99 -Wall -Wno-unused-function -Wno-unused-varibale")
     set (CMAKE_C_FLAGS_DEBUG "-g -O0")

@@ -2,16 +2,7 @@ local log = require "chestnut.skynet.log"
 local PackageType = require "enum.PackageType"
 local ds = require "skynet.datasheet"
 
-local CLS_NAME = "package"
-
-local cls = class(CLS_NAME)
-
-function cls:ctor(context)
-	-- body
-	self.agentContext = context
-	self.agentSystems = nil
-	self.dbPackages = {}
-end
+local cls = {}
 
 function cls:_increase(pt, id, num)
 	-- body
@@ -70,6 +61,7 @@ function cls:on_data_init(dbData)
 		item.updateAt = assert(db_item.update_at)
 		package[tonumber(item.id)] = item
 	end
+	self.dbPackages = {}
 	self.dbPackages[PackageType.COMMON] = package
 end
 

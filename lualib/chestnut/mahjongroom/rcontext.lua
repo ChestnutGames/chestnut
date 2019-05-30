@@ -395,7 +395,7 @@ function cls:sayhi(type, mode, host, users)
 		self._mode = mode
 		self._host = host	
 	end
-	skynet.call('.CHATD', 'lua', 'room_create', self._id, skynet.self())
+	skynet.call('.CHAT_MGR', 'lua', 'room_create', self._id, skynet.self())
 	return true
 end
 

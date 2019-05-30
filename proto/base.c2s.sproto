@@ -22,34 +22,18 @@ enter 3 {
 ####################################### 
 # 系统模块 [100, 500)
 # 第一条消息，主要是一个写个人信息
-first 104 {
-    response {
-        errorcode 0 : integer
-        nickname  1 : string
+modify_name 100 {
+    request {
+        nickname  0 : string
     }
-}
-
-checkindaily 105 {
     response {
         errorcode 0 : integer
     }
 }
 
-board 106 {
-    response {
-        errorcode 0 : integer
-        text      1 : string
-    }
-}
-
-adver 107 {
-    response {
-        errorcode 0 : integer
-        text      1 : string
-    }
-}
-
-fetchinbox 108 {
+####################################### 
+# 邮件模块 [300, 350)
+fetchinbox 300 {
     request {
         fromdate  0 : integer
     }
@@ -59,7 +43,7 @@ fetchinbox 108 {
     }
 }
 
-syncsysmail 109 {
+syncsysmail 301 {
     request {
         all       0 : *integer
     }
@@ -69,7 +53,7 @@ syncsysmail 109 {
     }
 }
 
-viewedmail 110 {
+viewedmail 302 {
     request {
         mailid    0 : integer
     }
@@ -78,46 +62,22 @@ viewedmail 110 {
     }
 }
 
-records 111 {
+####################################### 
+# 签到模块 [350, 400)
+checkindaily 350 {
     response {
         errorcode 0 : integer
-        records   1 : *record
     }
 }
 
-record 112 {
+####################################### 
+# 记录模块 [400, 450)
+record 400 {
     request {
         id 0 : integer
     }
     response {
         errorcode 0 : integer
         r         1 : string
-    }
-}
-
-avatar 113 {
-    response {
-        errorcode 0 : integer
-        nickname 1 : string
-        nameid 2 : string
-        rcard 3 : integer
-    }
-}
-
-room_info 114 {
-    response {
-        errorcode 0 : integer
-        isCreated 1 : boolean
-        joined    2 : boolean
-        roomid    3 : integer
-        type      4 : integer    # 此房间的类型
-        mode      5 : integer    # 此房间的模式
-    }
-}
-
-package_info 115 {
-    response {
-        errorcode 0 : integer
-        all       1 : *item
     }
 }

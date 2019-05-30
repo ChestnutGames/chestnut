@@ -1,4 +1,4 @@
-project(crab)
+﻿project(crab)
 
 include_directories(../../3rd/lua)
 include_directories(../../skynet-src)
@@ -9,7 +9,7 @@ ENDIF(MSVC)
 
 IF(MSVC)
 	ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
-	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
+	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -D_CRT_SECURE_NO_WARNINGS)
 ELSE(MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")

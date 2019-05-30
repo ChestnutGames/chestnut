@@ -19,7 +19,7 @@ function cls:on_data_save(dbData, ... )
 	return true
 end
 
-function cls:enter()
+function cls:on_enter()
 end
 
 function cls:afk()
@@ -31,10 +31,10 @@ end
 
 local REQUEST = client.request()
 
-function REQUEST.mm(obj, msg)
+function REQUEST:mm(msg)
 end
 
-function CMD.aa(uid, msg)
+function CMD:aa(msg)
 	local obj = objmgr.get(uid)
 end
 

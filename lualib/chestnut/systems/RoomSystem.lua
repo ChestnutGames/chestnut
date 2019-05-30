@@ -11,6 +11,7 @@ function cls:on_data_init(dbData)
 	-- body
 	assert(dbData)
 	assert(dbData.db_user_rooms ~= nil and #dbData.db_user_rooms >= 0)
+	self.dbRoom = {}
 	if #dbData.db_user_rooms == 1 then
 		local seg = dbData.db_user_rooms[1]
 		self.dbRoom.id        = assert(seg.roomid)
@@ -47,8 +48,8 @@ end
 
 function cls:on_enter( ... )
 	-- body
-	local D = self.room
-	if D.db.joined then
+	local D = self.dbRoom
+	if D.joined then
 		local res = skynet.call(".ROOM_MGR", "lua", "apply", D.db.id)
 		if res.errorcode ~= 0 then
 			log.error('room mgr')

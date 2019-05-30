@@ -13,18 +13,19 @@ local CMD = {}
 local SUB = {}
 
 local function save_data()
+	log.info('record_mgr save data.')
 end
 
 function SUB.save_data()
 	save_data()
 end
 
-function CMD.start(channel_id)
+function CMD.start()
 	-- body
 	savedata.init {
-		channel_id = channel_id,
 		command = SUB
 	}
+	savedata.subscribe()
 	return true
 end
 

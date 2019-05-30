@@ -9,61 +9,41 @@ local traceback = debug.traceback
 local assert = assert
 
 local refreshs = {}
-local config
+local channel
 
-local CMD = {}
-local SUB = {}
 
-function SUB.save_data()
+local function save_data()
 end
 
-function CMD.start(channel_id)
+local function save_data_loop()
+	while true do
+		skynet.sleep(100 * 10)
+		channel:publish('save_data')
+	end
+end
+
+local CMD = {}
+
+function CMD.start()
 	-- body
-	savedata.init {
-		channel_id = channel_id,
-		command = SUB
-	}
+	channel = mc.new()
 	return true
 end
 
 function CMD.init_data()
 	-- body
-	local pack = redis:get("tb_refresh")
-	if pack then
-		local data = json.decode(pack)
-		for k,v in pairs(data.refreshs) do
-			users[tonumber(k)] = v
-		end
-	end
 	return true
 end
 
 function CMD.sayhi()
 	-- body
-	return true
-end
-
-function CMD.save_data()
-	-- body
-	-- local xusers = {}
-	-- local xrooms = {}
-	-- for k,v in pairs(users) do
-	-- 	xusers[string.format("%d", k)] = v
-	-- end
-	-- for k,v in pairs(rooms) do
-	-- 	xrooms[string.format("%d", k)] = v
-	-- end
-	-- local data = {}
-	-- data.users = xusers
-	-- data.rooms = xrooms
-	-- local pack = json.encode(data)
-	-- redis:set("tb_room", pack)
+	skynet.fork(save_data_loop)
 	return true
 end
 
 function CMD.close()
 	-- body
-	CMD.save_data()
+	save_data()
 	return true
 end
 
@@ -82,6 +62,11 @@ function CMD.afk(uid, ... )
 	-- body
 	assert(users[uid])
 	users[uid] = nil
+end
+
+function CMD.get_channel_id( ... )
+	-- body
+	return channel.channel
 end
 
 service.init {

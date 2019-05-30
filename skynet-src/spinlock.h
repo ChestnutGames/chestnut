@@ -7,7 +7,9 @@
 #define SPIN_DESTROY(q) spinlock_destroy(&(q)->lock);
 
 #ifndef USE_PTHREAD_LOCK
-
+#if defined(_MSC_VER)
+#include "simplethread/spinlock.h"
+#else
 struct spinlock {
 	int lock;
 };
@@ -36,6 +38,7 @@ static inline void
 spinlock_destroy(struct spinlock *lock) {
 	(void) lock;
 }
+#endif
 
 #else
 

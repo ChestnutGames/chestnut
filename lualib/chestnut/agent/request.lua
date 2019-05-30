@@ -4,6 +4,7 @@ local time_utils = require "common.utils"
 local logout = require "chestnut.agent.logout"
 local servicecode = require "enum.servicecode"
 local client = require "client"
+local AgentSystems = require "chestnut.agent.AgentSystems"
 local pcall = pcall
 local assert = assert
 
@@ -24,7 +25,9 @@ end
 
 function REQUEST:enter()
 	-- body
-	return self:inituser()
+	log.info('test enter')
+	AgentSystems.on_enter(self)
+	return { errorcode = 1 }
 end
 
 function REQUEST:logout()

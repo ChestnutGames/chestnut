@@ -27,9 +27,9 @@ end
 
 local CMD = {}
 
-function CMD.start(channel_id, init_agent_num)
+function CMD.start()
 	-- body
-	assert(init_agent_num > 1)
+	local init_agent_num = 10
 	for _=1,init_agent_num do
 		local agent = {}
 		local addr = skynet.newservice("chestnut/agent")
@@ -37,7 +37,7 @@ function CMD.start(channel_id, init_agent_num)
 		enqueue(agent)
 	end
 	for _,v in pairs(leisure_agent) do
-		local ok = skynet.call(v.addr, "lua", "start", channel_id)
+		local ok = skynet.call(v.addr, "lua", "start")
 		assert(ok)
 	end
 	return true
@@ -51,10 +51,6 @@ end
 function CMD.sayhi()
 	-- body
 	return true
-end
-
-function CMD.save_data()
-	-- body
 end
 
 function CMD.close()

@@ -84,66 +84,68 @@ end
 function CMD.init_data()
 	-- body
 	-- 初始自定义房间数据
-	local pack = skynet.call('.DB', "lua", "read_room_mgr")
-	skynet.error(luaTableDump(pack))
-	if pack then
-		for _,db_user in pairs(pack.db_users) do
-			if db_user.roomid ~= 0 then
-				local user = {}
-				user.uid    = assert(db_user.uid)
-				user.roomid = assert(db_user.roomid)
-				users[tonumber(user.uid)] = user
-			end
-		end
-		-- 初始化rooms
-		for _,db_room in pairs(pack.db_rooms) do
-			if db_room.host ~= 0 then
-				local room = {}
-				room.id   = assert(db_room.id)
-				room.type = assert(db_room.type)
-				room.mode = assert(db_room.mode)
-				room.host = assert(db_room.host)
-				room.ju   = assert(db_room.ju)
-				room.users = {}
-				local xusers = json.decode(db_room.users)
-				for _,v in pairs(xusers) do
-					local user = {}
-					user.uid = assert(v.uid)
-					user.idx = assert(v.idx)
-					user.chip = assert(v.chip)
-					room.users[tointeger(v.uid)] = user
-				end
-				rooms[tonumber(room.id)] = room
-			end
-		end
-	end
+	-- local pack = skynet.call('.DB', "lua", "read_room_mgr")
+	-- skynet.error(luaTableDump(pack))
+	-- if pack then
+	-- 	for _,db_user in pairs(pack.db_users) do
+	-- 		if db_user.roomid ~= 0 then
+	-- 			local user = {}
+	-- 			user.uid    = assert(db_user.uid)
+	-- 			user.roomid = assert(db_user.roomid)
+	-- 			users[tonumber(user.uid)] = user
+	-- 		end
+	-- 	end
+	-- 	-- 初始化rooms
+	-- 	for _,db_room in pairs(pack.db_rooms) do
+	-- 		if db_room.host ~= 0 then
+	-- 			local room = {}
+	-- 			room.id   = assert(db_room.id)
+	-- 			room.type = assert(db_room.type)
+	-- 			room.mode = assert(db_room.mode)
+	-- 			room.host = assert(db_room.host)
+	-- 			room.ju   = assert(db_room.ju)
+	-- 			room.users = {}
+	-- 			local xusers = json.decode(db_room.users)
+	-- 			for _,v in pairs(xusers) do
+	-- 				local user = {}
+	-- 				user.uid = assert(v.uid)
+	-- 				user.idx = assert(v.idx)
+	-- 				user.chip = assert(v.chip)
+	-- 				room.users[tointeger(v.uid)] = user
+	-- 			end
+	-- 			rooms[tonumber(room.id)] = room
+	-- 		end
+	-- 	end
+	-- end
 
-	-- 验证每个房间是否还有存在的可能你
-	for k,v in pairs(rooms) do
-		if v.ju < 1 then
-			local room = assert(pool[k])
-			v.addr = room.addr
-			pool[k] = nil
-			num = num + 1
-			if k > id then
-				id = k
-			end
-		else
-			-- 此房间应该解散，修改离线用户数据
-			users[v.host] = nil
-			for i,uid in ipairs(v.users) do
-				skynet.call('.OFFAGENT', "lua", "write_offuser_room", uid)
-			end
-			rooms[k] = nil
-		end
-	end
-
-	-- 初始所有自创建房间数据
-	for _,v in pairs(rooms) do
-		local ok = skynet.call(v.addr, "lua", "init_data")
-		assert(ok)
-	end
 	return true
+
+	-- -- 验证每个房间是否还有存在的可能你
+	-- for k,v in pairs(rooms) do
+	-- 	if v.ju < 1 then
+	-- 		local room = assert(pool[k])
+	-- 		v.addr = room.addr
+	-- 		pool[k] = nil
+	-- 		num = num + 1
+	-- 		if k > id then
+	-- 			id = k
+	-- 		end
+	-- 	else
+	-- 		-- 此房间应该解散，修改离线用户数据
+	-- 		users[v.host] = nil
+	-- 		for i,uid in ipairs(v.users) do
+	-- 			skynet.call('.OFFAGENT_MGR', "lua", "write_offuser_room", uid)
+	-- 		end
+	-- 		rooms[k] = nil
+	-- 	end
+	-- end
+
+	-- -- 初始所有自创建房间数据
+	-- for _,v in pairs(rooms) do
+	-- 	local ok = skynet.call(v.addr, "lua", "init_data")
+	-- 	assert(ok)
+	-- end
+	-- return true
 end
 
 function CMD.sayhi()

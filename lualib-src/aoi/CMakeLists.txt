@@ -1,4 +1,4 @@
-project(aoi)
+﻿project(aoi)
 
 set (AOI_H ./aoi.h)
 set (AOI_C ./aoi.c ./lua-aoi.c)
@@ -12,7 +12,7 @@ endif (MSVC)
 
 if (MSVC)
 	add_definitions(-DLUA_BUILD_AS_DLL)
-	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK -D_CRT_SECURE_NO_WARNINGS)
+	add_definitions(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -D_CRT_SECURE_NO_WARNINGS)
 else (MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")

@@ -1,4 +1,4 @@
-#define LUA_LIB
+﻿#define LUA_LIB
 
 #include "skynet.h"
 #include "lua-seri.h"
@@ -20,7 +20,7 @@
 #endif
 
 #if defined(_MSC_VER)
-#include <timeutils.h>
+#include <win/timeutils.h>
 #endif
 
 #include "skynet.h"

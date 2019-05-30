@@ -42,14 +42,15 @@ function server.login_handler(server, uid, secret)
 	-- only one can login, because disallow multilogin
 	local last = user_online[uid]
 	if last then
-		log.info("uid(%d) logined again, will kick last address(%d), begin ---------- ", uid, last.address)
-		local ok = skynet.call(last.address, "lua", "kick", uid, last.subid)
-		if not ok then
-			log.error("kick uid(%d) failture, so you can not login.", uid)
-			error(string.format("kick uid(%d) failture", uid))
-		else
-			log.info("uid(%d) logined again, last address has logout, end ---------- ", uid)
-		end
+		-- log.info("uid(%d) logined again, will kick last address(%d), begin ---------- ", uid, last.address)
+		-- local ok = skynet.call(last.address, "lua", "kick", uid, last.subid)
+		-- if not ok then
+		-- 	log.error("kick uid(%d) failture, so you can not login.", uid)
+		-- 	error(string.format("kick uid(%d) failture", uid))
+		-- else
+		-- 	log.info("uid(%d) logined again, last address has logout, end ---------- ", uid)
+		-- end
+		error(string.format("uid(%d) already online", uid))
 	end
 	if user_online[uid] then
 		error(string.format("user %s is already online", uid))

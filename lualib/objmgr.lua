@@ -44,4 +44,11 @@ function _M.get_by_fd(fd)
     return fds[fd]
 end
 
+function _M.foreach(cb, ... )
+    -- body
+    for _,v in pairs(users) do
+        cb(v)
+    end
+end
+
 return _M

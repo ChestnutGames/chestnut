@@ -1,4 +1,4 @@
-#include "skynet.h"
+﻿#include "skynet.h"
 
 #include "skynet_timer.h"
 #include "skynet_mq.h"
@@ -13,7 +13,10 @@
 #include <stdint.h>
 
 #if defined(_MSC_VER)
-#include "timeutils.h"
+#include <win/timeutils.h>
+#ifdef near
+#undef near
+#endif // near
 #endif
 
 #if defined(__APPLE__)

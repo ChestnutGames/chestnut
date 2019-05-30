@@ -1,13 +1,13 @@
-project(sssl)
+﻿project(sssl)
 
+include_directories(../../3rd)
 include_directories(../../3rd/lua)
 include_directories(../../3rd/openssl/include)
 include_directories(../../skynet-src)
-include_directories(../../foundation)
 
 IF(MSVC)
 	include_directories(../../3rd/pthread-win32/include)
-	include_directories(../../3rd/posix)
+	include_directories(../../skynet-src/posix)
 ELSE(MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -Wextra -Werror")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")

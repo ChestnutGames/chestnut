@@ -1,13 +1,13 @@
-project(sproto)
+﻿project(sproto)
 
 file(GLOB SPROTO_H *.h)
 file(GLOB SPROTO_C *.c)
 
-include_directories(.)
+#include_directories(.)
 include_directories(../../3rd/lua)
 IF(MSVC)
 	ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
-	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC -DUSE_PTHREAD_LOCK)
+	ADD_DEFINITIONS(-DNOUSE_JEMALLOC -DHAVE_STRUCT_TIMESPEC)
 ELSE(MSVC)
 	set (CMAKE_C_FLAGS "-std=gnu99 -Wall -fPIC --shared -Werror")
 	set (CMAKE_C_FLAGS_DEBUG "-g -O0")

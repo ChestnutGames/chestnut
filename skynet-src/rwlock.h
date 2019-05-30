@@ -1,8 +1,11 @@
-#ifndef SKYNET_RWLOCK_H
+﻿#ifndef SKYNET_RWLOCK_H
 #define SKYNET_RWLOCK_H
 
 #ifndef USE_PTHREAD_LOCK
 
+#if defined(_MSC_VER)
+#include "simplethread/simplelock.h"
+#else
 struct rwlock {
 	int write;
 	int read;
@@ -46,7 +49,7 @@ static inline void
 rwlock_runlock(struct rwlock *lock) {
 	__sync_sub_and_fetch(&lock->read,1);
 }
-
+#endif
 #else
 
 #include <pthread.h>

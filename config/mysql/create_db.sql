@@ -640,7 +640,6 @@ DROP PROCEDURE IF EXISTS `sp_user_room_mahjong_insert_or_update`;
 DELIMITER ;;
 CREATE PROCEDURE `sp_user_room_mahjong_insert_or_update`(IN `in_uid` bigint,IN `in_roomid` int)
 BEGIN
-	# Routine body goes here...
 	INSERT INTO tb_user_room_mahjong(uid, roomid)
 	VALUES (in_uid, in_roomid)
 	ON DUPLICATE KEY UPDATE uid=in_uid, roomid=in_roomid;
