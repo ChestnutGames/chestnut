@@ -28,8 +28,10 @@ endif()
 # target
 set (POSIX_H 
 	posix/win/cpoll/cpoll.h
+	posix/win/socket_cpoll.h
 	posix/dlfcn.h
 	posix/unistd.h
+	simplethread/atomic.h
 )
 set (POSIX_C
 	posix/win/cpoll/cpoll.cpp
