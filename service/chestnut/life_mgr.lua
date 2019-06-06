@@ -10,20 +10,12 @@ local CMD = {}
 function CMD.start()
 	-- body
 	local ok = false
-
-	-- logger
-	skynet.launch("xloggerd")
-	log.info("xloggerd start ... ")
-
+	log.info('start server ...')
 	-- db
 	skynet.uniqueservice("db")
 	
 	-- guidd
-	local guidd = skynet.uniqueservice("guidd")
-	skynet.call(guidd, "lua", "start")
-	table.insert(services, guidd)
-	log.info("guid start success.")
-
+	
 	-- config
 	local sdata = skynet.uniqueservice("chestnut/sdata_mgr")
 	ok = skynet.call(sdata, "lua", "start")
@@ -31,12 +23,6 @@ function CMD.start()
 		log.error("call sdata failture.")
 		skynet.exit()
 	end
-
-	-- refresh
-	local refresh_mgr = skynet.uniqueservice("chestnut/refresh_mgr")
-	skynet.call(refresh_mgr, "lua", "start")
-	table.insert(services, refresh_mgr)
-	log.info("refresh_mgr start success.")
 
 	-- global service
 	local sid_mgr = skynet.uniqueservice("chestnut/sid_mgr")

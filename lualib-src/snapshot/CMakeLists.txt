@@ -28,8 +28,9 @@ ENDIF()
 add_definitions(-DSKYNET)
 
 # target
+SET(CHESTNUT_H ./snapshot.h ./math3d.h)
 aux_source_directory(. CHESTNUT_C)
-add_library(chestnut SHARED ${CHESTNUT_C})
+add_library(chestnut SHARED ${CHESTNUT_H} ${CHESTNUT_C})
 set_target_properties(chestnut PROPERTIES PREFIX "")
 set_target_properties(chestnut PROPERTIES SUFFIX ".so")
 set_target_properties(chestnut PROPERTIES FOLDER "lualib")

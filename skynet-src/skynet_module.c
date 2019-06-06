@@ -1,9 +1,8 @@
-#include "skynet.h"
+﻿#include "skynet.h"
 
 #include "skynet_module.h"
 #include "spinlock.h"
-
-#include <ejoy/array.h>
+#include "array.h"
 
 #include <assert.h>
 #include <string.h>

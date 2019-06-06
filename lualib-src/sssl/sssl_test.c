@@ -1,4 +1,4 @@
-#include "sssl_test.h"
+ï»¿#include "sssl_test.h"
 #include "stringx.h"
 #include "urlparser.h"
 #include "sssl.h"
@@ -23,7 +23,7 @@
 #include <netinet/in.h>
 #endif
 
-#include <uthash/uthash.h>
+#include "uthash.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -135,10 +135,10 @@ ssock_connect(struct ssock *self, const char *addr, int port) {
 	int idx = 0;
 	int fd = 0;
 	if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-		printf("´´½¨socket Ê§°Ü.");
+		printf("åˆ›å»ºsocket å¤±è´¥.");
 		exit(0);
 	}
-	printf("´´½¨Ì×½Ó×Ö³É¹¦\r\n"); 
+	printf("åˆ›å»ºå¥—æ¥å­—æˆåŠŸ\r\n"); 
 	self->fds[idx] = fd;
 	self->state[idx] = SSOCK_CLOSE;
 
@@ -158,7 +158,7 @@ ssock_connect(struct ssock *self, const char *addr, int port) {
 #endif // _WIN32
 		return -1;
 	}
-	printf("socket Á´½Ó³É¹¦\r\n");
+	printf("socket é“¾æ¥æˆåŠŸ\r\n");
 	self->ssslidx[idx] = sssl_connect(self->sssl, addr, port);
 	return idx;
 }
@@ -176,9 +176,9 @@ ssock_update(struct ssock *self) {
 			struct write_buffer *wb = sssl_poll(self->sssl, 0, buf, nread);
 			send(self->fds[i], wb->ptr, wb->len, 0);
 		} else if (nread == 0) {
-			// ¶ÏÁª
+			// æ–­è”
 		} else if (nread < 0) {
-			// ³ö´í
+			// å‡ºé”™
 			if (nread == WSAEWOULDBLOCK) {
 				struct write_buffer *wb = sssl_poll(self->sssl, 0, buf, 0);
 				send(self->fds[i], wb->ptr, wb->len, 0);

@@ -2,12 +2,14 @@
 #*.a
 #*.so
 
+# flolder
 .vscode
-/cservice
-/luaclib
-/logs
-/build.win64
-/build.linux64
+cservice
+luaclib
+logs
+build.win64
+build.linux64
+run
 
 *.dSYM
 .DS_Store

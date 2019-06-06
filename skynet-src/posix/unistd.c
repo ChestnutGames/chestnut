@@ -67,6 +67,7 @@ int daemon(int a, int b) {
 int flock(int fd, int flag) {
 	// Not implemented
 	//__asm int 3;
+	return 0;
 }
 
 static int sendfd = -1;

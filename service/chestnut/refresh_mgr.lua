@@ -24,46 +24,6 @@ end
 
 local CMD = {}
 
-function CMD.start()
-	-- body
-	channel = mc.new()
-	return true
-end
-
-function CMD.init_data()
-	-- body
-	return true
-end
-
-function CMD.sayhi()
-	-- body
-	skynet.fork(save_data_loop)
-	return true
-end
-
-function CMD.close()
-	-- body
-	save_data()
-	return true
-end
-
-function CMD.kill()
-	-- body
-	skynet.exit()
-end
-
-------------------------------------------
--- 游戏设计
-function CMD.checkin(uid, agent)
-	-- body
-end
-
-function CMD.afk(uid, ... )
-	-- body
-	assert(users[uid])
-	users[uid] = nil
-end
-
 function CMD.get_channel_id( ... )
 	-- body
 	return channel.channel
@@ -71,5 +31,9 @@ end
 
 service.init {
 	name = '.REFRESH_MGR',
+	init = function ()
+		channel = mc.new()
+		skynet.fork(save_data_loop)
+	end,
 	command = CMD
 }

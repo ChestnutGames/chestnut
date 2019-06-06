@@ -1,4 +1,4 @@
-#include "skynet.h"
+﻿#include "skynet.h"
 
 #include "skynet_server.h"
 #include "skynet_module.h"
@@ -13,8 +13,8 @@
 #include "skynet_timer.h"
 #include "spinlock.h"
 #include "atomic.h"
+#include "array.h"
 
-#include <ejoy/array.h>
 #include <pthread.h>
 
 #include <string.h>

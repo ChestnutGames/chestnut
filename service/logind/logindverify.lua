@@ -3,7 +3,7 @@ require "skynet.manager"
 local crypt = require "skynet.crypt"
 local httpsc = require "https.httpc"
 local log = require "chestnut.skynet.log"
-local guid = require "chestnut.guid"
+local guid = require "guid"
 
 local NORET = {}
 local server_win = { ["sample1"] = true }

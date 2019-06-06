@@ -18,10 +18,7 @@ add_subdirectory(lualib-src/skiplist)
 add_subdirectory(lualib-src/crab)
 add_subdirectory(lualib-src/aoi)
 #add_subdirectory(lualib-src/bounce)
-add_subdirectory(lualib-src/xlogger)
+add_subdirectory(lualib-src/xlog)
+add_subdirectory(lualib-src/math3d)
 
 add_subdirectory(service-src)
-
-#add_subdirectory(client-src)
-
-

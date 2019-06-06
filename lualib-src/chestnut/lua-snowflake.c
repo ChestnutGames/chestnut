@@ -1,7 +1,5 @@
 ﻿#define LUA_LIB
 
-#include "snapshot.h"
-
 #include <spinlock.h>
 
 #include <lua.h>
