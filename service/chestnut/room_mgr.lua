@@ -3,7 +3,7 @@ local mc = require "skynet.multicast"
 local ds = require "skynet.datasheet"
 local log = require "chestnut.skynet.log"
 local queue = require "chestnut.queue"
-local luaTableDump = require "common.luaTableDump"
+local luaTableDump = require "luaTableDump"
 local json = require "rapidjson"
 local service = require "service"
 local savedata = require "savedata"
@@ -29,7 +29,15 @@ local pool = {}    -- 闲置的桌子
 local startid = 101010 -- 101010
 local id = startid
 local MAX_ROOM_NUM = 10
+local constscfg
+local roommodecfg
 
+
+skynet.init(function ( ... )
+	-- body
+	constscfg = ds.query('constsConfig')
+	roommodecfg = ds.query('roommodeConfig')
+end)
 
 -- @breif 生成自创建房间id，
 -- @return 0,成功, 13 超过最大房间数
@@ -65,12 +73,11 @@ function CMD.start(channel_id)
 
 	-- 初始一些配置
 	startid = 101010 -- 101010
-	MAX_ROOM_NUM = tonumber(ds.query('consts')['2']['Value'])
+	MAX_ROOM_NUM = tonumber(constscfg['2']['Value'])
 	assert(MAX_ROOM_NUM > 1)
 	log.info('MAX_ROOM_NUM ==> %d', MAX_ROOM_NUM)
 
 	-- 初始所有桌子
-	local roommode = ds.query('roommode')
 	for i=1,MAX_ROOM_NUM do
 		local roomid = startid + i - 1
 		local addr = skynet.newservice(ROOM_NAME, roomid)

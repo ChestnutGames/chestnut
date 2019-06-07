@@ -5,7 +5,6 @@ local redis = require "chestnut.redis"
 local json = require "rapidjson"
 local service = require "service"
 local savedata = require "savedata"
-local traceback = debug.traceback
 local assert = assert
 
 local refreshs = {}

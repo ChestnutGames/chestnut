@@ -6,8 +6,7 @@ local cls = {}
 function cls:on_data_init(dbData)
 	-- body
 	assert(dbData ~= nil)
-	assert(dbData.db_users ~= nil)
-	assert(#dbData.db_users == 1)
+	assert(dbData.db_user_achievements ~= nil)
 
 	return true
 end
@@ -20,14 +19,9 @@ function cls:on_data_save(dbData, ... )
 end
 
 function cls:on_enter()
+	client.push(self, '')
 end
 
-function cls:afk()
-end
-
-function cls:hello( ... )
-	-- body
-end
 
 local REQUEST = client.request()
 

@@ -17,12 +17,7 @@ function CMD.start()
 	-- guidd
 	
 	-- config
-	local sdata = skynet.uniqueservice("chestnut/sdata_mgr")
-	ok = skynet.call(sdata, "lua", "start")
-	if not ok then
-		log.error("call sdata failture.")
-		skynet.exit()
-	end
+	skynet.uniqueservice("chestnut/sdata_mgr")
 
 	-- global service
 	local sid_mgr = skynet.uniqueservice("chestnut/sid_mgr")

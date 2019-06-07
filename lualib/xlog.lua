@@ -28,7 +28,7 @@ local function log(level, file, line, fields, msg)
 	local level = level
 	local time  = os.date()
 	local server = SERVICE_NAME
-	local date = {
+	local data = {
 		logger = 'default',
 		time   =  os.date(),
 		level  = level,
@@ -39,7 +39,7 @@ local function log(level, file, line, fields, msg)
 		msg    = msg
 	}
 	local logger = get_logger()
-	skynet.send(logger, 'lua', 'append', data)
+	skynet.send(logger, 'lua', 'log', data)
 end
 
 function _M.fields(fields)

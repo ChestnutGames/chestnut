@@ -9,15 +9,35 @@ local cfg = {...}
 local logger
 local CMD = {}
 
-local function loop()
-	while true do
-		logger:flush()
-		skynet.sleep(100 * 2)
+local function tolevelid(level) 
+	if level == 'debug' then
+		return 0
+	elseif level == 'info' then
+		return 1
+	elseif level == "warning" then
+		return 2
+	elseif level == 'error' then
+		return 3
+	elseif level == "fatal" then
+		return 4
+	else
+		return -1
 	end
 end
 
-function CMD.append(data)
+local function loop()
+	while true do
+		logger:flush()
+		skynet.sleep(100 * 20)
+	end
+end
+
+function CMD.log(data)
 	-- body
+	if not data then
+		return service.NORET
+	end
+	-- print(tableDump(data))
 	local time   =  assert(data.time)
 	local level  =  assert(data.level)
 	local server =  assert(data.server)
@@ -30,8 +50,13 @@ function CMD.append(data)
 		end
 	end
 	local msg    = assert(data.msg)
-	local fs = string.format("[time = %s][level = %s][server = %s][file = %s][line = %s]%s[msg = %s]", time, level, server, file, line, tmp, msg)
-	logger:append(fs)
+	local fs = string.format("[time = %s][level = %s][server = %s][file = %s][line = %s]%s[msg = %s]\n", time, level, server, file, line, tmp, msg)
+
+	logger:log(tolevelid(level), fs)
+	return service.NORET
+end
+
+function CMD.append(data)
 end
 
 service.init {

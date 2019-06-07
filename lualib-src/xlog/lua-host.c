@@ -50,18 +50,22 @@ lfree(lua_State *L) {
 static int
 lappend(lua_State *L) {
 	struct xloggerd *inst = lua_touserdata(L, 1);
+	if (!lua_isuserdata(L, 2)) {
+		luaL_error(L, "2rd is't udata.");
+	}
 	struct xlogger_append_request *append_request = lua_touserdata(L, 2);
 	xloggerdd_push(inst->d, append_request);
-
 	return 0;
 }
 
 static int
 llog(lua_State *L) {
 	struct xloggerd *inst = lua_touserdata(L, 1);
+	int top = lua_gettop(L);
+	int level = luaL_checkinteger(L, 2);
 	size_t sz;
-	const char *buf = lua_tolstring(L, 2, &sz);
-	xloggerdd_log(inst->d, LOG_INFO, buf, sz);
+	const char *buf = luaL_checklstring(L, 3, &sz);
+	xloggerdd_log(inst->d, level, buf, sz);
 	return 0;
 }
 

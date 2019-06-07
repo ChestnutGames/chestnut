@@ -17,21 +17,22 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#define XLOG_MAXPATHLEN      MAX_PATH
 #else
 #include <unistd.h>
 #include <dirent.h>
+#define XLOG_MAXPATHLEN      MAXPATHLEN
 #endif // DEBUG
 
 #define ONE_MB	          (1024*1024)
 #define DEFAULT_ROLL_SIZE (128*ONE_MB)		// ��־�ļ��ﵽ512M������һ�����ļ�
 #define DEFAULT_PATH      ("logs")
 #define DEFAULT_INTERVAL  (5)			    // ��־ͬ�������̼��ʱ��
-#define MAX_PATH_LEN      (128)
 #define MALLOC malloc
 #define FREE   free
 
 struct xloggerdd {
-	char path[MAX_PATH_LEN];
+	char path[XLOG_MAXPATHLEN];
 	logger_level loglevel;  // 在這之上才落地
 	size_t rollsize;        // �ļ����ʱ�����
 	size_t allocsize;
@@ -143,11 +144,11 @@ get_filename(char *datepath, int count, logger_level level, char *filename, size
 
 static int
 check_file(const char *datepath, logger_level loglevel) {
-	char fullpath[MAX_PATH_LEN] = { 0 };
+	char fullpath[XLOG_MAXPATHLEN] = { 0 };
 	for (size_t i = loglevel; i < LOG_MAX; i++) {
 		// create
-		memset(fullpath, 0, MAX_PATH_LEN);
-		size_t len = get_filename(datepath, strlen(datepath), i, fullpath, MAX_PATH_LEN);
+		memset(fullpath, 0, XLOG_MAXPATHLEN);
+		size_t len = get_filename(datepath, strlen(datepath), i, fullpath, XLOG_MAXPATHLEN);
 		assert(len > 0);
 
 		FILE *f = fopen(fullpath, "w+");
@@ -233,11 +234,11 @@ check_dir(const char *path, char *basepath, int *sz) {
 
 static int
 xloggerdd_init_(struct xloggerdd *self, const char *datepath) {
-	char fullpath[MAX_PATH_LEN] = { 0 };
+	char fullpath[XLOG_MAXPATHLEN] = { 0 };
 	for (size_t i = self->loglevel; i < LOG_MAX; i++) {
 		// create
-		memset(fullpath, 0, MAX_PATH_LEN);
-		size_t len = get_filename(datepath, strlen(datepath), i, fullpath, MAX_PATH_LEN);
+		memset(fullpath, 0, XLOG_MAXPATHLEN);
+		size_t len = get_filename(datepath, strlen(datepath), i, fullpath, XLOG_MAXPATHLEN);
 		assert(len > 0);
 
 		if (self->handle[i] == NULL) {
@@ -270,14 +271,14 @@ struct xloggerdd *
 xloggerdd_create(const char *path, logger_level loglevel, size_t rollsize) {
 	// check path
 	int sz = 0;
-	char basepath[MAX_PATH_LEN] = { 0 };
+	char basepath[XLOG_MAXPATHLEN] = { 0 };
 	if (check_dir(path, basepath, &sz)) {
 		fprintf(stderr, "path is wrong\n");
 		return NULL;
 	}
-	char datepath[MAX_PATH_LEN] = { 0 };
+	char datepath[XLOG_MAXPATHLEN] = { 0 };
 	int datepathsz = 0;
-	int err = check_and_create_date_dir(basepath, sz, datepath, MAX_PATH_LEN, &datepathsz);
+	int err = check_and_create_date_dir(basepath, sz, datepath, XLOG_MAXPATHLEN, &datepathsz);
 	if (err > XLOG_ERR_EXISTS_DIR) {
 		fprintf(stderr, "datepath is wrong\n");
 		return NULL;
@@ -290,8 +291,8 @@ xloggerdd_create(const char *path, logger_level loglevel, size_t rollsize) {
 		fprintf(stderr, "logleve is %d\n", loglevel);
 		return NULL;
 	}
-	if (path != NULL && strlen(path) >= MAX_PATH_LEN) {
-		fprintf(stderr, "path len more than %d\n", MAX_PATH_LEN);
+	if (path != NULL && strlen(path) >= XLOG_MAXPATHLEN) {
+		fprintf(stderr, "path len more than %d\n", XLOG_MAXPATHLEN);
 		return NULL;
 	}
 	struct xloggerdd *inst = (struct xloggerdd *)MALLOC(sizeof(*inst));
@@ -396,9 +397,9 @@ xloggerdd_flush(struct xloggerdd *self) {
 int
 xloggerdd_check_roll(struct xloggerdd *self) {
 	// 日期到了
-    char datepath[MAX_PATH_LEN] = { 0 };
+    char datepath[XLOG_MAXPATHLEN] = { 0 };
 	int sz = 0;
-	if (!check_and_create_date_dir(self->path, strlen(self->path), datepath, MAX_PATH_LEN, &sz)) {
+	if (!check_and_create_date_dir(self->path, strlen(self->path), datepath, XLOG_MAXPATHLEN, &sz)) {
 		// 没有并且创建了,初始新文件
 		xloggerdd_init_(self, datepath);
 	}

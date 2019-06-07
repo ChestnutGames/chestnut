@@ -7,6 +7,7 @@ add_subdirectory(skynet-src)
 add_subdirectory(3rd/lpeg)
 add_subdirectory(3rd/lua-md5)
 add_subdirectory(3rd/kcp)
+add_subdirectory(3rd/luafilesystem)
 
 add_subdirectory(lualib-src)
 add_subdirectory(lualib-src/sproto)

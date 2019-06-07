@@ -2,7 +2,8 @@ local skynet = require "skynet"
 require("skynet.manager")
 -- local log = require "log"
 local log = require "chestnut.skynet.log"
-local traceback = debug.traceback
+local StackTracePlus = require "StackTracePlus"
+local traceback = StackTracePlus.stacktrace
 local assert = assert
 
 local service = {}
@@ -44,7 +45,7 @@ function service.init(mod)
 					skynet.retpack(err)
 				end
 			else
-				log.error("agent cmd [%s] error = [%s]", cmd, err)
+				log.fatal("cmd(%s) error = (%s)", cmd, err)
 			end
 		end)
 	end)

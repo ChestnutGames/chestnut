@@ -1,5 +1,5 @@
 local log = require "chestnut.skynet.log"
-local table_dump = require "common.luaTableDump"
+local table_dump = require "luaTableDump"
 local string_format = string.format
 
 local _M = {}
