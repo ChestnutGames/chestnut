@@ -257,13 +257,13 @@ mallctl_opt(const char* name, int* newval) {
 	return 0;
 }
 
-bool   
+bool
 mallctl_bool(const char* name, bool* newval) {
 	skynet_error(NULL, "No jemalloc : mallctl_bool %s.", name);
 	return 0;
 }
 
-int    
+int
 mallctl_cmd(const char* name) {
 	skynet_error(NULL, "No jemalloc : mallctl_cmd %s.", name);
 	return 0;

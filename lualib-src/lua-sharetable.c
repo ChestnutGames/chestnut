@@ -6,8 +6,6 @@
 
 #include "lstring.h"
 #include "lobject.h"
-#include "ltable.h"
-#include "lstate.h"
 #include "lapi.h"
 #include "lgc.h"
 
@@ -41,16 +39,16 @@ mark_shared(lua_State *L) {
 			case LUA_TLIGHTUSERDATA:
 				break;
 			case LUA_TFUNCTION:
-				if (!lua_iscfunction(L, idx) || lua_getupvalue(L, idx, 1) != NULL)
-					luaL_error(L, "Invalid function");
+				if (lua_getupvalue(L, idx, 1) != NULL) {
+					luaL_error(L, "Invalid function with upvalue");
+				} else if (!lua_iscfunction(L, idx)) {
+					LClosure *f = (LClosure *)lua_topointer(L, idx);
+					makeshared(f);
+				}
 				break;
-			case LUA_TSTRING: {
-				const char *str = lua_tostring(L, idx);
-				TString *ts = (TString *)(str - sizeof(UTString));
-				if(ts->tt==LUA_TLNGSTR)
-					makeshared(ts);
+			case LUA_TSTRING:
+				lua_sharestring(L, idx);
 				break;
-			}
 			default:
 				luaL_error(L, "Invalid type [%s]", lua_typename(L, t));
 				break;
@@ -58,6 +56,17 @@ mark_shared(lua_State *L) {
 		}
 		lua_pop(L, 1);
 	}
+}
+
+static int
+lis_sharedtable(lua_State* L) {
+	int b = 0;
+	if(lua_type(L, 1) == LUA_TTABLE) {
+		Table * t = (Table *)lua_topointer(L, 1);
+		b = isshared(t);
+	}
+	lua_pushboolean(L, b);
+	return 1;
 }
 
 static int
@@ -218,6 +227,7 @@ luaopen_skynet_sharetable_core(lua_State *L) {
 	luaL_Reg l[] = {
 		{ "clone", clone_table },
 		{ "matrix", matrix_from_file },
+		{ "is_sharedtable", lis_sharedtable },
 		{ NULL, NULL },
 	};
 	luaL_newlib(L, l);

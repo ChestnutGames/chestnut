@@ -75,7 +75,6 @@ void luaS_clearcache (global_State *g) {
   int i, j;
   for (i = 0; i < STRCACHE_N; i++)
     for (j = 0; j < STRCACHE_M; j++) {
-    if (!isshared(g->strcache[i][j]) && iswhite(g->strcache[i][j]))  /* will entry be collected? */
       g->strcache[i][j] = g->memerrmsg;  /* replace it with something fixed */
     }
 }
@@ -431,12 +430,12 @@ mergeset(struct ssm_ref *set, struct ssm_ref * rset, int changeref) {
 	for (i=0;i<rset->hsize;i++) {
 		TString * s = rset->hash[i];
 		if (s) {
-			insert_ref(set, s);
+			markref(set, s, changeref);
 		}
 	}
 	for (i=0;i<rset->asize;i++) {
 		TString * s = rset->array[i];
-		insert_ref(set, s);
+		markref(set, s, changeref);
 	}
 	delete_ref(rset);
 	remove_duplicate(set, changeref);
@@ -446,7 +445,7 @@ mergeset(struct ssm_ref *set, struct ssm_ref * rset, int changeref) {
 static void
 merge_last(struct collect_queue * c) {
 	void *key = c->key;
-	int hash = (int)((uintptr_t)key % VMHASHSLOTS);
+	int hash = (int)((size_t)key % VMHASHSLOTS);
 	struct shrmap * s = &SSM;
 	struct collect_queue * slot = s->vm[hash];
 	if (slot == NULL) {
@@ -486,7 +485,7 @@ merge_last(struct collect_queue * c) {
 static void
 clear_vm(struct collect_queue * c) {
 	void *key = c->key;
-	int hash = (int)((uintptr_t)key % VMHASHSLOTS);
+	int hash = (int)((size_t)key % VMHASHSLOTS);
 	struct shrmap * s = &SSM;
 	struct collect_queue * slot = s->vm[hash];
 	lua_assert(slot == c);
@@ -524,11 +523,6 @@ exist(struct ssm_ref *r, TString *s) {
 	return 0;
 }
 
-static void
-release_tstring(TString *s) {
-	DEC_SREF(s);
-}
-
 static int
 collectref(struct collect_queue * c) {
 	int i;
@@ -547,7 +541,8 @@ collectref(struct collect_queue * c) {
 			if (s) {
 				if (!exist(mark, s) && !exist(fix, s)) {
 					save->hash[i] = NULL;
-					release_tstring(s);
+					--save->nuse;
+					DEC_SREF(s);
 					++total;
 				}
 			}
@@ -557,8 +552,9 @@ collectref(struct collect_queue * c) {
 			TString * s = save->array[i];
 			if (!exist(mark, s) && !exist(fix, s)) {
 				--save->asize;
+				--save->nuse;
 				save->array[i] = save->array[save->asize];
-				release_tstring(s);
+				DEC_SREF(s);
 				++total;
 			} else {
 				++i;
@@ -569,13 +565,13 @@ collectref(struct collect_queue * c) {
 		for (i=0;i<save->hsize;i++) {
 			TString * s = save->hash[i];
 			if (s) {
-				release_tstring(s);
+				DEC_SREF(s);
 				++total;
 			}
 		}
 		for (i=0;i<save->asize;i++) {
 			TString * s = save->array[i];
-			release_tstring(s);
+			DEC_SREF(s);
 			++total;
 		}
 		clear_vm(c);
@@ -939,6 +935,7 @@ new_string(unsigned int h, const char *str, lu_byte l) {
 	memset(ts, 0, sz);
 	setbits(ts->marked, WHITEBITS);
 	gray2black(ts);
+	makeshared(ts);
 	ts->tt = LUA_TSHRSTR;
 	ts->hash = h;
 	ts->shrlen = l;
