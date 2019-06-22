@@ -214,9 +214,14 @@ skynet_calloc(size_t nmemb,size_t size) {
 
 void *
 skynet_memalign(size_t alignment, size_t size) {
+#if defined(WIN32)
+	assert(false);
+	return NULL;
+#else
 	void* ptr = je_memalign(alignment, size + PREFIX_SIZE);
-	if(!ptr) malloc_oom(size);
+	if (!ptr) malloc_oom(size);
 	return fill_prefix(ptr);
+#endif
 }
 
 void *

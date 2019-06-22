@@ -1,7 +1,9 @@
-#ifndef skynet_malloc_h
+﻿#ifndef skynet_malloc_h
 #define skynet_malloc_h
 
 #include <stddef.h>
+
+#ifdef NOUSE_JEMALLOC
 
 #define skynet_malloc malloc
 #define skynet_calloc calloc
@@ -11,7 +13,7 @@
 #define skynet_aligned_alloc aligned_alloc
 #define skynet_posix_memalign posix_memalign
 
-#ifndef NOUSE_JEMALLOC
+#else
 void * skynet_malloc(size_t sz);
 void * skynet_calloc(size_t nmemb,size_t size);
 void * skynet_realloc(void *ptr, size_t size);

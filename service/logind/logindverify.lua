@@ -25,6 +25,15 @@ local function new_account(username, password, uid)
 	skynet.call(".DB", "lua", "write_new_account", account)
 end
 
+local function new_unionid(unionid, uid)
+	-- body
+	assert(unionid and uid)
+	local db_union = {}
+	db_union.unionid = unionid
+	db_union.uid = uid
+	skynet.call(".DB", "lua", "write_new_union", db_union)
+end
+
 local function new_user(uid, sex, nickname, province, city, country, headimg, openid)
 	-- body
 	assert(uid and sex and nickname and province and city and country and headimg)
@@ -46,15 +55,7 @@ local function new_user(uid, sex, nickname, province, city, country, headimg, op
 	skynet.call(".DB", "lua", "write_new_user", user)
 end
 
-local function new_unionid(unionid, uid)
-	-- body
-	assert(unionid and uid)
-	local db_union = {}
-	db_union.unionid = unionid
-	db_union.uid = uid
-	-- skynet.call(".DB", "lua", "write_new_union", db_union)
-end
-
+-- @breif 账号登陆 username => uid
 local function auth_win_myself(username, password)
 	-- body
 	print(username, password)
@@ -96,12 +97,12 @@ local function auth_win_myself(username, password)
 		local headimg  = "xx"
 
 		new_account(username, password, uid)
-		-- new_unionid(unionid, uid)
 		new_user(uid, sex, nickname, province, city, country, headimg, 0)
 		return uid
 	end
 end
 
+-- @breif OpenAuth登陆 openid => uid
 local function auth_android_wx(code, ... )
 	-- body
 	httpc.dns()
